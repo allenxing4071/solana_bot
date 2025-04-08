@@ -1,0 +1,107 @@
+{
+  "network": {
+    "cluster": "mainnet-beta",
+    "connection": {
+      "commitment": "confirmed",
+      "confirmTransactionInitialTimeout": 60000
+    },
+    "rpcUrl": "https://api.mainnet-beta.solana.com",
+    "wsUrl": "wss://api.mainnet-beta.solana.com"
+  },
+  "monitoring": {
+    "poolMonitor": {
+      "checkInterval": 5000,
+      "targets": [
+        {
+          "name": "raydium",
+          "programId": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
+          "enabled": true
+        },
+        {
+          "name": "orca",
+          "programId": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+          "enabled": true
+        }
+      ]
+    },
+    "priceMonitor": {
+      "interval": 3000,
+      "sources": ["raydium", "jupiter"]
+    }
+  },
+  "trading": {
+    "buyStrategy": {
+      "maxAmountPerTrade": 0.1,
+      "maxSlippage": 5,
+      "priorityFee": {
+        "enabled": true,
+        "baseFee": 0.000005,
+        "maxFee": 0.00005
+      },
+      "simulation": {
+        "required": true,
+        "retryOnFail": 2
+      }
+    },
+    "sellStrategy": {
+      "takeProfit": {
+        "percentage": 20,
+        "enabled": true
+      },
+      "stopLoss": {
+        "percentage": 10,
+        "enabled": true
+      },
+      "trailingStop": {
+        "percentage": 5,
+        "enabled": false
+      },
+      "timeLimit": {
+        "seconds": 300,
+        "enabled": false
+      },
+      "maxSlippage": 5
+    },
+    "exchanges": {
+      "preferredRoutes": ["raydium", "jupiter", "orca"]
+    }
+  },
+  "security": {
+    "tokenValidation": {
+      "useWhitelist": false,
+      "useBlacklist": true,
+      "minLiquidityUsd": 1000,
+      "minPoolBalanceToken": 100,
+      "requireMetadata": true
+    },
+    "transactionSafety": {
+      "simulateBeforeSend": true,
+      "maxRetryCount": 3,
+      "maxPendingTx": 5
+    }
+  },
+  "jitoMev": {
+    "enabled": false,
+    "tipPercent": 80
+  },
+  "notification": {
+    "telegram": {
+      "enabled": false,
+      "events": {
+        "startup": true,
+        "newTokenDetected": true,
+        "buyExecuted": true,
+        "sellExecuted": true,
+        "error": true
+      }
+    }
+  },
+  "logging": {
+    "level": "info",
+    "console": true,
+    "file": true,
+    "filename": "logs/bot.log",
+    "maxFiles": 5,
+    "maxSize": "10m"
+  }
+} 

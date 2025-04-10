@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solana MEV机器人 - 控制面板</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="icon" type="image/png" href="img/favicon.png">
+    
+    <!-- 环境配置 -->
+    <script id="env-config" type="application/json">
+    {
+        "environment": "production",
+        "dataSource": {
+            "useMockData": false
+        }
+    }
+    </script>
+    
+    <!-- 全局配置和工具库 -->
+    <script src="config.js"></script>
+    
+    <!-- 引入Chart.js图表库 -->
+    <script src="js/lib/chart.min.js"></script>
+    <!-- 添加错误处理脚本 -->
+    <script>
+        window.addEventListener('error', function(event) {
+            console.error('捕获到错误:', event.message);
+            // 如果是Chart未定义错误，尝试重新加载
+            if (event.message.includes('Chart is not defined')) {
+                console.warn('正在尝试重新加载Chart.js...');
+                const script = document.createElement('script');
+                script.src = 'js/lib/chart.min.js';
+                document.head.appendChild(script);
+            }
+        });
+    </script>
+</head>
+<body class="dark-theme dashboard-page">
+    <div class="dashboard-container">
+        <!-- 侧边栏导航 -->
+        <div class="sidebar">
+            <!-- 侧边栏内容将通过sidebar.js动态生成 -->
+        </div>
+        
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <header>
+                <div class="header-title">
+                    <h1>仪表盘概览</h1>
+                </div>
+                <div class="user-actions">
+                    <div class="date-time" id="currentDateTime">
+                        加载中...
+                    </div>
+                    <button class="btn btn-outline-primary" id="refreshData">
+                        <i class="icon-refresh"></i> 刷新数据
+                    </button>
+                </div>
+            </header>
+            
+            <!-- 统计卡片 -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-icon cpu-icon"></div>
+                    <div class="stat-info">
+                        <h3>CPU使用率</h3>
+                        <p id="cpuUsage">0%</p>
+                        <div class="progress-bar">
+                            <div id="cpuBar" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon memory-icon"></div>
+                    <div class="stat-info">
+                        <h3>内存使用率</h3>
+                        <p id="memoryUsage">0%</p>
+                        <div class="progress-bar">
+                            <div id="memoryBar" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon clock-icon"></div>
+                    <div class="stat-info">
+                        <h3>运行时间</h3>
+                        <p id="uptime">0小时 0分钟 0秒</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon wallet-icon"></div>
+                    <div class="stat-info">
+                        <h3>总收益</h3>
+                        <p id="totalProfit" class="gradient-text">0.0000 SOL</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 图表区域 -->
+            <div class="charts-container">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>代币发现趋势</h3>
+                        <span>最近12小时</span>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="tokenDiscoveryChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>利润趋势</h3>
+                        <span>最近7天</span>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="profitTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 交易统计区 -->
+            <div class="trading-stats">
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>监控代币</h3>
+                        <p id="monitoredTokens">0</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>活跃池</h3>
+                        <p id="activePools">0</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>执行交易</h3>
+                        <p id="executedTrades">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 日志和最近活动区 -->
+            <div class="logs-recent-container">
+                <!-- 日志区域 -->
+                <div class="log-container-wrapper">
+                    <div class="logs-header">
+                        <h3>系统日志</h3>
+                        <button id="clearLogsBtn" class="btn btn-sm btn-outline-secondary"><i class="icon-clear"></i> 清除日志</button>
+                    </div>
+                    <div id="logContainer" class="logs-container">
+                        <!-- 日志内容将通过JavaScript动态添加 -->
+                    </div>
+                </div>
+                
+                <!-- 最近交易 -->
+                <div class="recent-container">
+                    <div class="logs-header">
+                        <h3>最近交易</h3>
+                        <button class="btn btn-sm btn-outline-secondary">查看全部</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>交易ID</th>
+                                    <th>代币对</th>
+                                    <th>数量</th>
+                                    <th>收益</th>
+                                    <th>时间</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tradesTableBody">
+                                <!-- 交易数据将通过JavaScript动态添加 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 最近发现的代币 -->
+            <div class="recent-tokens">
+                <div class="panel-header">
+                    <h3>最近发现的代币</h3>
+                    <button class="btn btn-sm btn-outline-secondary">查看全部</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>代币名称</th>
+                                <th>地址</th>
+                                <th>发现时间</th>
+                                <th>流动性</th>
+                                <th>风险等级</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tokensTableBody">
+                            <!-- 代币数据将通过JavaScript动态添加 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- 引入JavaScript脚本 -->
+    <script src="js/common.js"></script>
+    <script src="js/common/sidebar.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/datetime.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html> 

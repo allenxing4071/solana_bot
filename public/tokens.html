@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代币监控 - Solana MEV机器人</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fix.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="icon" type="image/png" href="img/favicon.png">
+    
+    <!-- 环境配置 -->
+    <script id="env-config" type="application/json">
+    {
+        "environment": "production",
+        "dataSource": {
+            "useMockData": false
+        }
+    }
+    </script>
+    
+    <!-- 全局配置和工具库 -->
+    <script src="config.js"></script>
+</head>
+<body class="dark-theme">
+    <div class="dashboard-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="img/logo.svg" alt="Logo" class="logo">
+                <h2>Solana MEV机器人</h2>
+            </div>
+            <div class="sidebar-content">
+                <!-- 导航菜单 -->
+                <nav class="sidebar-nav">
+                    <ul>
+                        <li><a href="index.html"><i class="icon-dashboard"></i> 仪表盘</a></li>
+                        <li><a href="pools.html"><i class="icon-pools"></i> 流动性池</a></li>
+                        <li class="active"><a href="tokens.html"><i class="icon-tokens"></i> 代币监控</a></li>
+                        <li><a href="trades.html"><i class="icon-trades"></i> 交易记录</a></li>
+                        <li><a href="memory.html"><i class="icon-memory"></i> 内存监控</a></li>
+                        <li><a href="settings.html"><i class="icon-settings"></i> 设置</a></li>
+                    </ul>
+                </nav>
+                
+                <!-- 系统状态 - 底部 -->
+                <div class="status-wrapper">
+                    <div class="bot-status">
+                        <span class="status-indicator status-stopped"></span>
+                        <span id="statusText">系统已停止</span>
+                    </div>
+                    <div class="bot-controls">
+                        <button class="btn btn-primary btn-sm" id="startBtn">
+                            <i class="icon-play"></i>
+                            启动
+                        </button>
+                        <button class="btn btn-danger btn-sm" id="stopBtn" disabled>
+                            <i class="icon-stop"></i>
+                            停止
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <header>
+                <div class="header-title">
+                    <h1>代币监控</h1>
+                </div>
+                <div class="user-actions">
+                    <div class="date-time" id="currentDateTime">
+                        加载中...
+                    </div>
+                    <button class="btn-icon" id="themeToggleBtn" title="切换主题">
+                        <i class="icon-theme"></i>
+                    </button>
+                </div>
+            </header>
+            
+            <!-- 代币统计卡片 -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-icon whitelist-icon"></div>
+                    <div class="stat-info">
+                        <h3>白名单代币</h3>
+                        <p id="whitelistCount">加载中...</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon blacklist-icon"></div>
+                    <div class="stat-info">
+                        <h3>黑名单代币</h3>
+                        <p id="blacklistCount">加载中...</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon detected-icon"></div>
+                    <div class="stat-info">
+                        <h3>今日检测</h3>
+                        <p id="detectedToday">加载中...</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon risk-icon"></div>
+                    <div class="stat-info">
+                        <h3>平均风险评分</h3>
+                        <p id="avgRiskScore">加载中...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 代币筛选和管理工具 -->
+            <div class="filter-toolbar">
+                <div class="search-box">
+                    <input type="text" id="tokenFilter" placeholder="搜索代币..." class="search-input">
+                </div>
+                <div class="filter-options">
+                    <select id="tokenTypeFilter" class="filter-select" aria-label="代币类型">
+                        <option value="all">全部</option>
+                        <option value="whitelist">白名单</option>
+                        <option value="blacklist">黑名单</option>
+                        <option value="monitored">监控中</option>
+                    </select>
+                    <button id="addWhitelistBtn" class="btn btn-primary btn-sm">
+                        <i class="icon-add"></i> 添加白名单
+                    </button>
+                    <button id="addBlacklistBtn" class="btn btn-danger btn-sm">
+                        <i class="icon-add"></i> 添加黑名单
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 代币表格 -->
+            <div class="table-container">
+                <table class="data-table" id="tokensTable">
+                    <thead>
+                        <tr>
+                            <th>代币名称</th>
+                            <th>符号</th>
+                            <th>地址</th>
+                            <th>类型</th>
+                            <th>风险评分</th>
+                            <th>价格</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tokensTableBody">
+                        <!-- 示例数据 -->
+                        <tr>
+                            <td>Solana</td>
+                            <td>SOL</td>
+                            <td>So11111111111111111111111111111111111111112</td>
+                            <td><span class="badge badge-success">白名单</span></td>
+                            <td><span class="badge badge-success">1.2</span></td>
+                            <td>$103.45</td>
+                            <td class="actions">
+                                <button class="btn btn-sm btn-info token-detail-btn">详情</button>
+                                <button class="btn btn-sm btn-danger token-action-btn">移除</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Unknown Token</td>
+                            <td>UNK</td>
+                            <td>7i5KKsX2weiTkry7jA4ZwSuXGhs5eJBEjY8vVxR4pfRx</td>
+                            <td><span class="badge badge-danger">黑名单</span></td>
+                            <td><span class="badge badge-danger">8.7</span></td>
+                            <td>$0.0045</td>
+                            <td class="actions">
+                                <button class="btn btn-sm btn-info token-detail-btn">详情</button>
+                                <button class="btn btn-sm btn-danger token-action-btn">移除</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 代币详情模态框 -->
+            <div id="tokenDetailModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000;">
+                <div class="modal-content" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 800px; background: var(--card-bg); border-radius: var(--card-border-radius); padding: 20px; max-height: 90vh; overflow-y: auto;">
+                    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 id="modalTokenName">代币详情</h2>
+                        <button class="btn-icon close-modal" style="background: none; border: none;">
+                            <i style="font-size: 24px; color: var(--text-secondary);">×</i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="tokenDetailContent">
+                            <!-- 代币详情将通过JavaScript动态添加 -->
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="margin-top: 20px; text-align: right;">
+                        <button id="closeModalBtn" class="btn btn-secondary">关闭</button>
+                        <button id="tokenActionBtn" class="btn btn-primary">操作</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 添加代币模态框 -->
+            <div id="addTokenModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000;">
+                <div class="modal-content" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 600px; background: var(--card-bg); border-radius: var(--card-border-radius); padding: 20px; max-height: 90vh; overflow-y: auto;">
+                    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 id="addTokenModalTitle">添加代币</h2>
+                        <button class="btn-icon close-modal" style="background: none; border: none;">
+                            <i style="font-size: 24px; color: var(--text-secondary);">×</i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addTokenForm">
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="tokenAddress" style="display: block; margin-bottom: 5px; color: var(--text-primary);">代币地址：</label>
+                                <input type="text" id="tokenAddress" required placeholder="输入Solana代币Mint地址..." class="form-control" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="tokenSymbol" style="display: block; margin-bottom: 5px; color: var(--text-primary);">代币符号：</label>
+                                <input type="text" id="tokenSymbol" placeholder="可选，如SOL, USDC等" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="tokenName" style="display: block; margin-bottom: 5px; color: var(--text-primary);">代币名称：</label>
+                                <input type="text" id="tokenName" placeholder="可选，如Solana" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary);">
+                            </div>
+                            <div id="reasonGroup" class="form-group" style="margin-bottom: 15px; display: none;">
+                                <label for="blacklistReason" style="display: block; margin-bottom: 5px; color: var(--text-primary);">原因：</label>
+                                <textarea id="blacklistReason" placeholder="添加到黑名单的原因" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary);" rows="3"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer" style="margin-top: 20px; text-align: right;">
+                        <button id="cancelAddTokenBtn" class="btn btn-secondary">取消</button>
+                        <button id="submitAddTokenBtn" class="btn btn-primary">确认添加</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- JavaScript脚本 -->
+    <script src="js/common.js"></script>
+    <script src="js/tokens.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/datetime.js"></script>
+</body>
+</html>

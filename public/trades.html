@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交易记录 - Solana MEV机器人</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fix.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="icon" type="image/png" href="img/favicon.png">
+    
+    <!-- 环境配置 -->
+    <script id="env-config" type="application/json">
+    {
+        "environment": "production",
+        "dataSource": {
+            "useMockData": false
+        }
+    }
+    </script>
+    
+    <!-- 全局配置和工具库 -->
+    <script src="config.js"></script>
+</head>
+<body class="dark-theme trades-page">
+    <div class="dashboard-container">
+        <!-- 侧边栏导航 -->
+        <div class="sidebar">
+            <!-- 侧边栏内容将通过sidebar.js动态生成 -->
+        </div>
+        
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <header>
+                <div class="header-title">
+                    <h1>交易记录</h1>
+                </div>
+                <div class="user-actions">
+                    <div class="date-time" id="currentDateTime">
+                        加载中...
+                    </div>
+                    <button class="btn-icon" id="themeToggleBtn" title="切换主题">
+                        <i class="icon-theme"></i>
+                    </button>
+                </div>
+            </header>
+            
+            <!-- 交易统计卡片 -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>总交易数</h3>
+                        <p id="totalTrades">加载中...</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>成功率</h3>
+                        <p id="successRate">加载中...</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>总收益</h3>
+                        <p id="totalProfit">加载中...</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>平均收益</h3>
+                        <p id="avgProfit">加载中...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 交易图表 -->
+            <div class="charts-container">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>交易量趋势</h3>
+                        <div class="chart-controls">
+                            <select id="tradeVolumeTimeRange" class="filter-select" aria-label="时间范围">
+                                <option value="day">最近24小时</option>
+                                <option value="week" selected>最近7天</option>
+                                <option value="month">最近30天</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="tradeVolumeChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>收益分析</h3>
+                        <div class="chart-controls">
+                            <select id="profitTimeRange" class="filter-select" aria-label="时间范围">
+                                <option value="day">最近24小时</option>
+                                <option value="week" selected>最近7天</option>
+                                <option value="month">最近30天</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="profitChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 交易筛选和管理工具 -->
+            <div class="filter-toolbar">
+                <div class="search-box">
+                    <input type="text" id="tradeFilter" placeholder="搜索交易..." class="search-input">
+                </div>
+                <div class="filter-options">
+                    <select id="tradeStatusFilter" class="filter-select" aria-label="交易状态">
+                        <option value="all">全部</option>
+                        <option value="success">成功</option>
+                        <option value="failed">失败</option>
+                        <option value="pending">处理中</option>
+                    </select>
+                    <select id="tradeTypeFilter" class="filter-select" aria-label="交易类型">
+                        <option value="all">全部</option>
+                        <option value="buy">买入</option>
+                        <option value="sell">卖出</option>
+                    </select>
+                    <button id="exportTradesBtn" class="btn btn-primary btn-sm">
+                        <i class="icon-export"></i> 导出数据
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 交易表格 -->
+            <div class="table-container">
+                <table class="data-table" id="tradesTable">
+                    <thead>
+                        <tr>
+                            <th>交易ID</th>
+                            <th>时间</th>
+                            <th>代币</th>
+                            <th>类型</th>
+                            <th>交易池</th>
+                            <th>数量</th>
+                            <th>价格</th>
+                            <th>价值(USDC)</th>
+                            <th>费用</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tradesTableBody">
+                        <!-- 示例数据行 -->
+                        <tr>
+                            <td>tx123...7890</td>
+                            <td>2023/04/09 15:30</td>
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <img src="img/tokens/sol.svg" alt="SOL" width="20" height="20" style="border-radius: 50%; margin-right: 5px;">
+                                    <span>SOL</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-success">买入</span></td>
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <img src="img/pools/jup.svg" alt="JUP" width="20" height="20" style="border-radius: 50%; margin-right: 5px;">
+                                    <span>JUP</span>
+                                </div>
+                            </td>
+                            <td>0.5</td>
+                            <td>$105.23</td>
+                            <td>$52.62</td>
+                            <td>0.00012 SOL</td>
+                            <td><span class="status success">成功</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewTradeDetails('tx123...7890')">
+                                    详情
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>tx456...3210</td>
+                            <td>2023/04/09 16:45</td>
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <img src="img/tokens/jup.svg" alt="JUP" width="20" height="20" style="border-radius: 50%; margin-right: 5px;">
+                                    <span>JUP</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-danger">卖出</span></td>
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <img src="img/pools/jup.svg" alt="JUP" width="20" height="20" style="border-radius: 50%; margin-right: 5px;">
+                                    <span>JUP</span>
+                                </div>
+                            </td>
+                            <td>120</td>
+                            <td>$1.05</td>
+                            <td>$126.00</td>
+                            <td>0.00018 SOL</td>
+                            <td><span class="status success">成功</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewTradeDetails('tx456...3210')">
+                                    详情
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页控件 -->
+            <div class="pagination" style="display: flex; justify-content: center; margin-top: 20px;">
+                <button id="prevPageBtn" class="btn btn-outline-secondary btn-sm" disabled><i class="icon-left"></i> 上一页</button>
+                <span id="pageInfo" style="margin: 0 15px; line-height: 31px;">第 1 页，共 5 页</span>
+                <button id="nextPageBtn" class="btn btn-outline-secondary btn-sm">下一页 <i class="icon-right"></i></button>
+            </div>
+            
+            <!-- 交易详情模态框 -->
+            <div id="tradeDetailModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000;">
+                <div class="modal-content" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 900px; background: var(--card-bg); border-radius: var(--card-border-radius); padding: 20px; max-height: 90vh; overflow-y: auto;">
+                    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 id="modalTradeId">交易详情</h2>
+                        <button class="btn-icon close-modal" style="background: none; border: none;">
+                            <i style="font-size: 24px; color: var(--text-secondary);">×</i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="tradeDetailContent">
+                            <!-- 交易详情将通过JavaScript动态添加 -->
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="margin-top: 20px; text-align: right;">
+                        <button id="closeModalBtn" class="btn btn-secondary">关闭</button>
+                        <button id="viewExplorerBtn" class="btn btn-primary">在区块浏览器查看</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- JavaScript脚本 -->
+    <script src="js/common.js"></script>
+    <script src="js/common/sidebar.js"></script>
+    <script src="js/trades.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/datetime.js"></script>
+</body>
+</html>

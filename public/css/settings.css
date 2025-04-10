@@ -1,0 +1,297 @@
+/* 
+ * 设置页面专用样式
+ * 优化设置页界面的视觉效果和用户体验
+ */
+
+/* 设置页面整体布局 */
+.settings-page {
+    background-color: var(--bg-color);
+    min-height: calc(100vh - var(--header-height));
+}
+
+/* 设置导航样式 */
+.settings-nav {
+    display: flex;
+    overflow-x: auto;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+    gap: 8px;
+}
+
+.settings-nav .nav-item {
+    padding: 12px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    background-color: transparent;
+}
+
+.settings-nav .nav-item i {
+    margin-right: 8px;
+    font-size: 18px;
+}
+
+.settings-nav .nav-item:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.settings-nav .nav-item.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* 设置面板样式 */
+.settings-panel {
+    display: none;
+    background-color: var(--card-bg);
+    border-radius: var(--card-border-radius);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--box-shadow);
+    padding: 25px;
+    margin-bottom: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+.settings-panel.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 面板标题样式 */
+.panel-header {
+    margin-bottom: 25px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 15px;
+}
+
+.panel-header h2 {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.panel-description {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 14px;
+}
+
+/* 表单元素样式优化 */
+.settings-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.form-group {
+    margin-bottom: 0;
+}
+
+/* 全宽表单项 */
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+/* 警告框样式 */
+.warning-box {
+    background-color: rgba(255, 209, 102, 0.1);
+    border-left: 4px solid var(--warning-color);
+    padding: 12px 15px;
+    border-radius: 6px;
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    grid-column: 1 / -1;
+}
+
+.warning-box i {
+    color: var(--warning-color);
+    font-size: 20px;
+    margin-right: 12px;
+}
+
+.warning-box.danger {
+    background-color: rgba(239, 71, 111, 0.1);
+    border-left: 4px solid var(--danger-color);
+}
+
+.warning-box.danger i {
+    color: var(--danger-color);
+}
+
+.warning-box p {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+/* 输入控件样式优化 */
+.settings-form input[type="text"],
+.settings-form input[type="number"],
+.settings-form input[type="email"],
+.settings-form input[type="url"],
+.settings-form select,
+.settings-form textarea {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: 10px 14px;
+    width: 100%;
+    height: 42px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.settings-form textarea {
+    min-height: 80px;
+    height: auto;
+    resize: vertical;
+}
+
+.settings-form input:focus,
+.settings-form select:focus,
+.settings-form textarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.2);
+    outline: none;
+}
+
+/* 开关样式优化 */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: .3s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--primary-color);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+/* 单选框和复选框样式 */
+.radio-group, .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.radio-label, .checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    color: var(--text-primary);
+}
+
+.radio-label input, .checkbox-label input {
+    margin-right: 10px;
+}
+
+/* 嵌套表单 */
+.nested-form {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    grid-column: 1 / -1;
+}
+
+/* 操作按钮区域 */
+.settings-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 20px;
+}
+
+.settings-actions button {
+    margin-left: 10px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .settings-form {
+        grid-template-columns: 1fr;
+    }
+    
+    .settings-nav {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 5px;
+    }
+    
+    .settings-nav .nav-item {
+        padding: 10px 15px;
+        font-size: 13px;
+    }
+    
+    .settings-actions {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .settings-actions div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .settings-actions button {
+        margin-left: 0;
+    }
+}
+
+/* 模态框样式优化 */
+.modal-content {
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+} 

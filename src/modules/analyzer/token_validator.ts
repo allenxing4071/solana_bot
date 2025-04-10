@@ -9,7 +9,7 @@ import path from 'path';
 import appConfig from '../../core/config';
 import logger from '../../core/logger';
 import rpcService from '../../services/rpc_service';
-import { TokenInfo } from '../../core/types';
+import type { TokenInfo } from '../../core/types';
 
 const MODULE_NAME = 'TokenValidator';
 
@@ -106,8 +106,27 @@ class TokenValidator {
       // 加载黑名单
       const blacklistPath = appConfig.security.tokenValidation.blacklistPath;
 
+      logger.info('开始加载代币列表', MODULE_NAME, {
+        whitelistPath,
+        blacklistPath
+      });
+
       // 检查是否是完整的代币列表文件
       let tokenListData: TokenListData | null = null;
+
+      // 确保白名单文件存在
+      if (!fs.existsSync(whitelistPath)) {
+        logger.warn(`白名单文件不存在，创建空白名单: ${whitelistPath}`, MODULE_NAME);
+        await fs.ensureFile(whitelistPath);
+        await fs.writeJson(whitelistPath, [], { spaces: 2 });
+      }
+
+      // 确保黑名单文件存在
+      if (!fs.existsSync(blacklistPath)) {
+        logger.warn(`黑名单文件不存在，创建空黑名单: ${blacklistPath}`, MODULE_NAME);
+        await fs.ensureFile(blacklistPath);
+        await fs.writeJson(blacklistPath, [], { spaces: 2 });
+      }
 
       if (fs.existsSync(whitelistPath)) {
         try {
@@ -118,15 +137,23 @@ class TokenValidator {
           if (data.whitelist && data.blacklist) {
             tokenListData = data as TokenListData;
             logger.info('从单一文件加载代币列表数据', MODULE_NAME);
+          } else if (Array.isArray(data)) {
+            // 仅包含白名单数组
+            this.loadWhitelist(data);
           } else if (data.tokens) {
-            // 仅包含白名单
+            // 包含tokens字段的白名单
             this.loadWhitelist(data.tokens);
+          } else {
+            logger.warn(`白名单文件格式不正确: ${whitelistPath}，使用空白名单`, MODULE_NAME);
+            this.loadWhitelist([]);
           }
         } catch (error) {
           logger.error(`无法解析白名单文件 ${whitelistPath}`, MODULE_NAME, error);
+          this.loadWhitelist([]);
         }
       } else {
         logger.warn(`白名单文件 ${whitelistPath} 不存在`, MODULE_NAME);
+        this.loadWhitelist([]);
       }
 
       // 如果没有从单一文件加载数据，尝试分别加载黑名单
@@ -135,14 +162,23 @@ class TokenValidator {
           const fileData = await fs.readFile(blacklistPath, 'utf8');
           const data = JSON.parse(fileData);
           
-          if (data.tokens) {
+          if (Array.isArray(data)) {
+            // 黑名单是简单数组
+            this.loadBlacklist(data, []);
+          } else if (data.tokens) {
+            // 黑名单有tokens字段
             this.loadBlacklist(data.tokens, data.patterns || []);
+          } else {
+            logger.warn(`黑名单文件格式不正确: ${blacklistPath}，使用空黑名单`, MODULE_NAME);
+            this.loadBlacklist([], []);
           }
         } catch (error) {
           logger.error(`无法解析黑名单文件 ${blacklistPath}`, MODULE_NAME, error);
+          this.loadBlacklist([], []);
         }
       } else if (!tokenListData) {
         logger.warn(`黑名单文件 ${blacklistPath} 不存在`, MODULE_NAME);
+        this.loadBlacklist([], []);
       }
 
       // 如果使用完整格式的代币列表数据
@@ -160,6 +196,10 @@ class TokenValidator {
       });
     } catch (error) {
       logger.error('加载代币列表时出错', MODULE_NAME, error);
+      // 确保即使出错也有空的列表
+      this.whitelist.clear();
+      this.blacklist.clear();
+      this.blacklistPatterns = [];
     }
   }
 

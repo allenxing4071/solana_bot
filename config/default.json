@@ -72,7 +72,8 @@
       "useBlacklist": true,
       "minLiquidityUsd": 1000,
       "minPoolBalanceToken": 100,
-      "requireMetadata": true
+      "requireMetadata": true,
+      "maxInitialPriceUsd": 0.01
     },
     "transactionSafety": {
       "simulateBeforeSend": true,

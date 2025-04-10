@@ -333,6 +333,12 @@ class PoolMonitor extends EventEmitter {
     // 就像记录接收到的声纳信号
     logger.debug(`检测到 ${dexName} 程序账户变化`, MODULE_NAME);
     
+    // 确保accountInfo及其pubkey属性存在
+    if (!accountInfo || !accountInfo.pubkey) {
+      logger.warn(`接收到无效的账户信息，缺少pubkey`, MODULE_NAME, { dex: dexName });
+      return;
+    }
+    
     // 解析数据查找池子创建
     // 就像分析声纳信号寻找鱼群
     this.checkForNewPool(dexName, accountInfo.pubkey, accountInfo.account);
@@ -505,6 +511,18 @@ class PoolMonitor extends EventEmitter {
    * @param accountData 账户数据
    */
   private checkForNewPool(dexName: DexType, pubkey: PublicKey, accountData: any): void {
+    // 确保pubkey存在且有toBase58方法
+    if (!pubkey || typeof pubkey.toBase58 !== 'function') {
+      logger.warn(`检查新池子时收到无效的pubkey: ${dexName}`, MODULE_NAME);
+      return;
+    }
+    
+    // 确保accountData存在且格式正确
+    if (!accountData || typeof accountData !== 'object') {
+      logger.debug(`跳过处理: 账户数据无效 (${pubkey.toBase58()})`, MODULE_NAME);
+      return;
+    }
+    
     const poolKey = `${dexName}:${pubkey.toBase58()}`;
     
     // 如果已知此池子，跳过
@@ -512,41 +530,48 @@ class PoolMonitor extends EventEmitter {
       return;
     }
     
-    // 这里需要根据不同DEX的数据结构进行解析，判断是否为池子
-    // 实际实现会更复杂，这里简化处理
-    const isPool = this.analyzeAccountForPool(dexName, pubkey, accountData);
-    
-    if (isPool) {
-      // 创建池子信息对象
-      const poolInfo: PoolInfo = {
-        address: pubkey,
-        dex: dexName,
-        tokenAMint: new PublicKey('11111111111111111111111111111111'), // 示例，实际需要从数据中解析
-        tokenBMint: new PublicKey('11111111111111111111111111111111'), // 示例，实际需要从数据中解析
-        createdAt: Date.now(),
-        firstDetectedAt: Date.now()
-      };
+    try {
+      // 这里需要根据不同DEX的数据结构进行解析，判断是否为池子
+      // 实际实现会更复杂，这里简化处理
+      const isPool = this.analyzeAccountForPool(dexName, pubkey, accountData);
       
-      // 记录新池子
-      this.knownPools.set(poolKey, poolInfo);
-      
-      // 发出新池子事件
-      const event: SystemEvent = {
-        type: EventType.NEW_POOL_DETECTED,
-        data: poolInfo,
-        timestamp: Date.now()
-      };
-      
-      this.emit('newPool', poolInfo);
-      this.emit('event', event);
-      
-      logger.info(`检测到新池子: ${poolKey}`, MODULE_NAME, {
-        dex: dexName,
-        address: pubkey.toBase58()
+      if (isPool) {
+        // 创建池子信息对象
+        const poolInfo: PoolInfo = {
+          address: pubkey,
+          dex: dexName,
+          tokenAMint: new PublicKey('11111111111111111111111111111111'), // 示例，实际需要从数据中解析
+          tokenBMint: new PublicKey('11111111111111111111111111111111'), // 示例，实际需要从数据中解析
+          createdAt: Date.now(),
+          firstDetectedAt: Date.now()
+        };
+        
+        // 记录新池子
+        this.knownPools.set(poolKey, poolInfo);
+        
+        // 发出新池子事件
+        const event: SystemEvent = {
+          type: EventType.NEW_POOL_DETECTED,
+          data: poolInfo,
+          timestamp: Date.now()
+        };
+        
+        this.emit('newPool', poolInfo);
+        this.emit('event', event);
+        
+        logger.info(`检测到新池子: ${poolKey}`, MODULE_NAME, {
+          dex: dexName,
+          address: pubkey.toBase58()
+        });
+        
+        // 进一步分析池子中的代币
+        this.analyzePoolTokens(poolInfo);
+      }
+    } catch (error) {
+      logger.warn(`处理潜在新池子时出错: ${pubkey.toBase58()}`, MODULE_NAME, {
+        error: error instanceof Error ? error.message : String(error),
+        dex: dexName
       });
-      
-      // 进一步分析池子中的代币
-      this.analyzePoolTokens(poolInfo);
     }
   }
 
@@ -568,15 +593,37 @@ class PoolMonitor extends EventEmitter {
         return false;
       }
       
+      // 确保data属性是Buffer类型或Uint8Array类型
+      const accountDataBuffer = accountData.data;
+      if (!Buffer.isBuffer(accountDataBuffer) && !(accountDataBuffer instanceof Uint8Array)) {
+        logger.debug(`账户数据不是有效的Buffer: ${pubkey.toBase58()}`, MODULE_NAME);
+        return false;
+      }
+      
+      // 确保数据有足够的长度进行分析
+      if (accountDataBuffer.length < 32) {
+        logger.debug(`账户数据长度不足以进行分析: ${pubkey.toBase58()}`, MODULE_NAME);
+        return false;
+      }
+      
       switch (dexName) {
         case DexType.RAYDIUM:
           // Raydium池子账户特征判断
           // 示例: 检查数据长度、特定字节模式等
-          return accountData.data.length > 200;
+          // 这里使用简化判断，实际可能需要查找特定的字节序列模式
+          const isRaydiumPool = accountDataBuffer.length > 200;
+          if (isRaydiumPool) {
+            logger.debug(`发现可能的Raydium池子: ${pubkey.toBase58()}`, MODULE_NAME);
+          }
+          return isRaydiumPool;
           
         case DexType.ORCA:
           // Orca池子账户特征判断
-          return accountData.data.length > 240;
+          const isOrcaPool = accountDataBuffer.length > 240;
+          if (isOrcaPool) {
+            logger.debug(`发现可能的Orca池子: ${pubkey.toBase58()}`, MODULE_NAME);
+          }
+          return isOrcaPool;
           
         default:
           // 通用判断

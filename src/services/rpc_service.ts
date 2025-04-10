@@ -445,22 +445,46 @@ class RPCService {
 
   /**
    * 获取程序账户
-   * @param programId 程序ID
-   * @param commitment 确认级别
-   * @returns 程序账户列表
+   * 
+   * 【比喻解释】
+   * 这就像请求获取某一类通讯记录的完整清单：
+   * - 指定某个特定频道（程序ID）
+   * - 获取该频道上所有活跃通讯者（程序账户）的详细资料
+   * 
+   * @param {PublicKey} programId - 程序ID
+   * @param {Commitment} commitment - 确认级别
+   * @returns {Promise<Array>} - 账户信息数组
    */
   async getProgramAccounts(programId: PublicKey, commitment?: Commitment): Promise<ReadonlyArray<{
     pubkey: PublicKey;
     account: AccountInfo<Buffer>;
   }>> {
-    return this.withRetry(
-      async () => {
-        return await this._connection.getProgramAccounts(
-          programId,
-          { commitment: commitment || connectionConfig.commitment as Commitment }
-        );
-      }
-    );
+    try {
+      // 使用带重试功能的方法调用
+      return await this.withRetry(async () => {
+        // 设置过滤器以减少返回数据量
+        const accounts = await this._connection.getProgramAccounts(programId, {
+          commitment: commitment || connectionConfig.commitment,
+          // 可以添加更具体的过滤器以优化性能
+          filters: [],
+          encoding: 'base64',
+        });
+        
+        logger.debug(`获取到 ${accounts.length} 个程序账户`, MODULE_NAME, {
+          programId: programId.toBase58(),
+          count: accounts.length
+        });
+        
+        return accounts;
+      });
+    } catch (error) {
+      logger.error(`获取程序账户失败: ${programId.toBase58()}`, MODULE_NAME, {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      
+      // 出错时返回空数组，避免整个流程崩溃
+      return [];
+    }
   }
 
   /**

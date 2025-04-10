@@ -5,9 +5,9 @@
 
 import config from 'config';
 import dotenv from 'dotenv';
-import path from 'path';
+import path from 'node:path';
 import fs from 'fs-extra';
-import { DexType, StrategyConfig, StrategyType } from './types';
+import { DexType, StrategyConfig, StrategyType, SecurityConfig } from './types';
 
 // 加载环境变量
 dotenv.config();
@@ -81,26 +81,6 @@ interface JitoConfig {
 }
 
 /**
- * 安全配置接口
- */
-interface SecurityConfig {
-  tokenValidation: {
-    useWhitelist: boolean;
-    useBlacklist: boolean;
-    whitelistPath: string;
-    blacklistPath: string;
-    minLiquidityUsd: number;
-    minPoolBalanceToken: number;
-    requireMetadata: boolean;
-  };
-  transactionSafety: {
-    simulateBeforeSend: boolean;
-    maxRetryCount: number;
-    maxPendingTx: number;
-  };
-}
-
-/**
  * 完整配置接口
  */
 export interface AppConfig {
@@ -132,7 +112,7 @@ function getNetworkConfig(): NetworkConfig {
 function getWalletConfig(): WalletConfig {
   return {
     privateKey: process.env.WALLET_PRIVATE_KEY || '',
-    maxTransactionAmount: parseFloat(process.env.MAX_TRANSACTION_AMOUNT || '1.0'),
+    maxTransactionAmount: Number.parseFloat(process.env.MAX_TRANSACTION_AMOUNT || '1.0'),
   };
 }
 
@@ -144,14 +124,17 @@ function getDexesConfig(): DexConfig[] {
   
   // 从config文件获取DEX列表
   if (config.has('monitoring.poolMonitor.targets')) {
-    const targets = config.get<any[]>('monitoring.poolMonitor.targets');
-    targets.forEach(target => {
-      dexes.push({
-        name: target.name.toLowerCase() as DexType,
-        programId: target.programId,
-        enabled: target.enabled
-      });
-    });
+    const targets = config.get<Record<string, unknown>[]>('monitoring.poolMonitor.targets');
+    
+    for (const target of targets) {
+      if (typeof target === 'object' && target && 'name' in target && 'programId' in target) {
+        dexes.push({
+          name: (target.name as string).toLowerCase() as DexType,
+          programId: target.programId as string,
+          enabled: 'enabled' in target ? Boolean(target.enabled) : true
+        });
+      }
+    }
   }
   
   // 添加环境变量中的DEX(如果有)
@@ -190,44 +173,66 @@ function getMonitoringConfig(): MonitoringConfig {
  */
 function getTradingConfig(): StrategyConfig {
   const tradingConfig = config.has('trading') 
-    ? config.get<any>('trading') 
+    ? config.get<Record<string, unknown>>('trading') 
     : {};
   
   return {
     buyStrategy: {
-      maxAmountPerTrade: parseFloat(process.env.BUY_AMOUNT_SOL || tradingConfig.buyStrategy?.maxAmountPerTrade || '0.1'),
-      maxSlippage: parseFloat(process.env.MAX_BUY_SLIPPAGE || tradingConfig.buyStrategy?.maxSlippage || '5'),
+      enabled: process.env.ENABLE_BUY_STRATEGY !== 'false',
+      maxAmountPerTrade: Number.parseFloat(process.env.BUY_AMOUNT_SOL || 
+        (tradingConfig.buyStrategy as Record<string, unknown>)?.maxAmountPerTrade as string || '0.1'),
+      maxSlippage: Number.parseFloat(process.env.MAX_BUY_SLIPPAGE || 
+        (tradingConfig.buyStrategy as Record<string, unknown>)?.maxSlippage as string || '5'),
+      minConfidence: Number.parseFloat(process.env.MIN_CONFIDENCE || 
+        (tradingConfig.buyStrategy as Record<string, unknown>)?.minConfidence as string || '0.7'),
       priorityFee: {
-        enabled: process.env.TX_PRIORITY_FEE ? true : (tradingConfig.buyStrategy?.priorityFee?.enabled || false),
-        baseFee: parseFloat(process.env.TX_PRIORITY_FEE || tradingConfig.buyStrategy?.priorityFee?.baseFee || '0.000005'),
-        maxFee: parseFloat(process.env.TX_MAX_PRIORITY_FEE || tradingConfig.buyStrategy?.priorityFee?.maxFee || '0.00005')
+        enabled: process.env.TX_PRIORITY_FEE ? true : 
+          ((tradingConfig.buyStrategy as Record<string, unknown>)?.priorityFee as Record<string, unknown>)?.enabled as boolean || false,
+        multiplier: Number.parseFloat(process.env.TX_PRIORITY_FEE_MULTIPLIER || 
+          ((tradingConfig.buyStrategy as Record<string, unknown>)?.priorityFee as Record<string, unknown>)?.multiplier as string || '1.5'),
+        baseFee: Number.parseFloat(process.env.TX_PRIORITY_FEE || 
+          ((tradingConfig.buyStrategy as Record<string, unknown>)?.priorityFee as Record<string, unknown>)?.baseFee as string || '0.000005'),
+        maxFee: Number.parseFloat(process.env.TX_MAX_PRIORITY_FEE || 
+          ((tradingConfig.buyStrategy as Record<string, unknown>)?.priorityFee as Record<string, unknown>)?.maxFee as string || '0.00005')
       }
     },
     sellStrategy: {
+      enabled: process.env.ENABLE_SELL_STRATEGY !== 'false',
       conditions: [
         {
           type: StrategyType.TAKE_PROFIT,
-          percentage: parseFloat(process.env.TAKE_PROFIT_PERCENTAGE || tradingConfig.sellStrategy?.takeProfit?.percentage || '20'),
-          enabled: process.env.TAKE_PROFIT_PERCENTAGE ? true : (tradingConfig.sellStrategy?.takeProfit?.enabled || true)
+          percentage: Number.parseFloat(process.env.TAKE_PROFIT_PERCENTAGE || 
+            (tradingConfig.sellStrategy as Record<string, unknown>)?.takeProfit?.percentage as string || '20'),
+          enabled: process.env.TAKE_PROFIT_PERCENTAGE ? true : 
+            (tradingConfig.sellStrategy as Record<string, unknown>)?.takeProfit?.enabled as boolean || true
         },
         {
           type: StrategyType.STOP_LOSS,
-          percentage: parseFloat(process.env.STOP_LOSS_PERCENTAGE || tradingConfig.sellStrategy?.stopLoss?.percentage || '10'),
-          enabled: process.env.STOP_LOSS_PERCENTAGE ? true : (tradingConfig.sellStrategy?.stopLoss?.enabled || true)
+          percentage: Number.parseFloat(process.env.STOP_LOSS_PERCENTAGE || 
+            (tradingConfig.sellStrategy as Record<string, unknown>)?.stopLoss?.percentage as string || '10'),
+          enabled: process.env.STOP_LOSS_PERCENTAGE ? true : 
+            (tradingConfig.sellStrategy as Record<string, unknown>)?.stopLoss?.enabled as boolean || true
         },
         {
           type: StrategyType.TRAILING_STOP,
-          percentage: parseFloat(process.env.TRAILING_STOP_PERCENTAGE || tradingConfig.sellStrategy?.trailingStop?.percentage || '5'),
-          enabled: process.env.TRAILING_STOP_PERCENTAGE ? true : (tradingConfig.sellStrategy?.trailingStop?.enabled || false)
+          percentage: Number.parseFloat(process.env.TRAILING_STOP_PERCENTAGE || 
+            (tradingConfig.sellStrategy as Record<string, unknown>)?.trailingStop?.percentage as string || '5'),
+          enabled: process.env.TRAILING_STOP_PERCENTAGE ? true : 
+            (tradingConfig.sellStrategy as Record<string, unknown>)?.trailingStop?.enabled as boolean || false
         },
         {
           type: StrategyType.TIME_LIMIT,
-          timeSeconds: parseInt(process.env.TIME_LIMIT_SECONDS || tradingConfig.sellStrategy?.timeLimit?.seconds || '300'),
-          enabled: process.env.TIME_LIMIT_SECONDS ? true : (tradingConfig.sellStrategy?.timeLimit?.enabled || false)
+          timeSeconds: parseInt(process.env.TIME_LIMIT_SECONDS || 
+            (tradingConfig.sellStrategy as Record<string, unknown>)?.timeLimit?.seconds as string || '300'),
+          enabled: process.env.TIME_LIMIT_SECONDS ? true : 
+            (tradingConfig.sellStrategy as Record<string, unknown>)?.timeLimit?.enabled as boolean || false
         }
       ],
-      maxSlippage: parseFloat(process.env.MAX_SELL_SLIPPAGE || tradingConfig.sellStrategy?.maxSlippage || '5')
-    }
+      maxSlippage: Number.parseFloat(process.env.MAX_SELL_SLIPPAGE || 
+        (tradingConfig.sellStrategy as Record<string, unknown>)?.maxSlippage as string || '5')
+    },
+    txRetryCount: parseInt(process.env.TX_RETRY_COUNT || tradingConfig.txRetryCount as string || '3'),
+    txConfirmTimeout: parseInt(process.env.TX_CONFIRM_TIMEOUT || tradingConfig.txConfirmTimeout as string || '60000')
   };
 }
 
@@ -236,23 +241,31 @@ function getTradingConfig(): StrategyConfig {
  */
 function getSecurityConfig(): SecurityConfig {
   const securityConfig = config.has('security') 
-    ? config.get<any>('security') 
+    ? config.get<Record<string, unknown>>('security') 
     : {};
   
   return {
     tokenValidation: {
-      useWhitelist: process.env.USE_WHITELIST === 'true' || securityConfig.tokenValidation?.useWhitelist || false,
+      useWhitelist: process.env.USE_WHITELIST === 'true' || 
+        (securityConfig.tokenValidation as Record<string, unknown>)?.useWhitelist as boolean || false,
       useBlacklist: process.env.USE_BLACKLIST !== 'false', // 默认启用黑名单
       whitelistPath: process.env.TOKEN_WHITELIST_PATH || './config/whitelist.json',
       blacklistPath: process.env.TOKEN_BLACKLIST_PATH || './config/blacklist.json',
-      minLiquidityUsd: parseFloat(process.env.MIN_LIQUIDITY_USD || securityConfig.tokenValidation?.minLiquidityUsd || '1000'),
-      minPoolBalanceToken: parseFloat(process.env.MIN_POOL_BALANCE_TOKEN || securityConfig.tokenValidation?.minPoolBalanceToken || '100'),
-      requireMetadata: process.env.REQUIRE_METADATA === 'true' || securityConfig.tokenValidation?.requireMetadata || true
+      minLiquidityUsd: Number.parseFloat(process.env.MIN_LIQUIDITY_USD || 
+        (securityConfig.tokenValidation as Record<string, unknown>)?.minLiquidityUsd as string || '1000'),
+      minPoolBalanceToken: Number.parseFloat(process.env.MIN_POOL_BALANCE_TOKEN || 
+        (securityConfig.tokenValidation as Record<string, unknown>)?.minPoolBalanceToken as string || '100'),
+      requireMetadata: process.env.REQUIRE_METADATA === 'true' || 
+        (securityConfig.tokenValidation as Record<string, unknown>)?.requireMetadata as boolean || true,
+      maxInitialPriceUsd: Number.parseFloat(process.env.MAX_INITIAL_PRICE_USD || 
+        (securityConfig.tokenValidation as Record<string, unknown>)?.maxInitialPriceUsd as string || '0.01')
     },
     transactionSafety: {
       simulateBeforeSend: process.env.SIMULATE_BEFORE_SEND !== 'false',
-      maxRetryCount: parseInt(process.env.TX_RETRY_COUNT || securityConfig.transactionSafety?.maxRetryCount || '3'),
-      maxPendingTx: parseInt(process.env.MAX_PENDING_TX || securityConfig.transactionSafety?.maxPendingTx || '5')
+      maxRetryCount: parseInt(process.env.TX_RETRY_COUNT || 
+        (securityConfig.transactionSafety as Record<string, unknown>)?.maxRetryCount as string || '3'),
+      maxPendingTx: parseInt(process.env.MAX_PENDING_TX || 
+        (securityConfig.transactionSafety as Record<string, unknown>)?.maxPendingTx as string || '5')
     }
   };
 }
@@ -262,15 +275,16 @@ function getSecurityConfig(): SecurityConfig {
  */
 function getNotificationConfig(): NotificationConfig {
   const notificationConfig = config.has('notification') 
-    ? config.get<any>('notification') 
+    ? config.get<Record<string, unknown>>('notification') 
     : {};
   
   return {
     telegram: {
-      enabled: process.env.ENABLE_TELEGRAM_NOTIFICATIONS === 'true' || notificationConfig.telegram?.enabled || false,
+      enabled: process.env.ENABLE_TELEGRAM_NOTIFICATIONS === 'true' || 
+        (notificationConfig.telegram as Record<string, unknown>)?.enabled as boolean || false,
       botToken: process.env.TELEGRAM_BOT_TOKEN || null,
       chatId: process.env.TELEGRAM_CHAT_ID || null,
-      events: notificationConfig.telegram?.events || {
+      events: ((notificationConfig.telegram as Record<string, unknown>)?.events as Record<string, boolean>) || {
         startup: true,
         newTokenDetected: true,
         buyExecuted: true,
@@ -286,16 +300,16 @@ function getNotificationConfig(): NotificationConfig {
  */
 function getLoggingConfig(): LoggingConfig {
   const loggingConfig = config.has('logging') 
-    ? config.get<any>('logging') 
+    ? config.get<Record<string, unknown>>('logging') 
     : {};
   
   return {
-    level: process.env.LOG_LEVEL || loggingConfig.level || 'info',
+    level: process.env.LOG_LEVEL || loggingConfig.level as string || 'info',
     console: process.env.LOG_TO_CONSOLE !== 'false',
-    file: process.env.LOG_TO_FILE === 'true' || loggingConfig.file || false,
-    filename: process.env.LOG_FILE_PATH || loggingConfig.filename || './logs/bot.log',
-    maxFiles: parseInt(process.env.LOG_MAX_FILES || loggingConfig.maxFiles || '5'),
-    maxSize: process.env.LOG_MAX_SIZE || loggingConfig.maxSize || '10m'
+    file: process.env.LOG_TO_FILE === 'true' || loggingConfig.file as boolean || false,
+    filename: process.env.LOG_FILE_PATH || loggingConfig.filename as string || './logs/bot.log',
+    maxFiles: parseInt(process.env.LOG_MAX_FILES || loggingConfig.maxFiles as string || '5'),
+    maxSize: process.env.LOG_MAX_SIZE || loggingConfig.maxSize as string || '10m'
   };
 }
 
@@ -304,12 +318,12 @@ function getLoggingConfig(): LoggingConfig {
  */
 function getJitoConfig(): JitoConfig {
   const jitoConfig = config.has('jitoMev') 
-    ? config.get<any>('jitoMev') 
+    ? config.get<Record<string, unknown>>('jitoMev') 
     : {};
   
   return {
-    enabled: process.env.USE_JITO_BUNDLE === 'true' || jitoConfig.enabled || false,
-    tipPercent: parseInt(process.env.JITO_TIP_PERCENT || jitoConfig.tipPercent || '80'),
+    enabled: process.env.USE_JITO_BUNDLE === 'true' || jitoConfig.enabled as boolean || false,
+    tipPercent: parseInt(process.env.JITO_TIP_PERCENT || jitoConfig.tipPercent as string || '80'),
     authKeypair: process.env.JITO_AUTH_KEYPAIR || null
   };
 }
@@ -317,7 +331,7 @@ function getJitoConfig(): JitoConfig {
 /**
  * 构建完整配置
  */
-function buildConfig(): AppConfig {
+function buildConfig() {
   return {
     network: getNetworkConfig(),
     wallet: getWalletConfig(),
@@ -334,7 +348,7 @@ function buildConfig(): AppConfig {
 /**
  * 验证配置是否有效
  */
-function validateConfig(config: AppConfig): boolean {
+function validateConfig(config: ReturnType<typeof buildConfig>): boolean {
   // 验证必要的网络设置
   if (!config.network.rpcUrl) {
     throw new Error('未设置Solana RPC URL，请在.env文件或配置文件中设置SOLANA_RPC_URL');

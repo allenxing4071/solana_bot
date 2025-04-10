@@ -13,12 +13,15 @@ import {
   ConfirmedTransaction
 } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { Buffer } from 'buffer';
 import BN from 'bn.js';
+import bs58 from 'bs58';
 import logger from '../../core/logger';
 import rpcService from '../../services/rpc_service';
 import { TransactionBuilder } from './transaction_builder';
 import { TokenInfo, PoolInfo, TradeResult, TradingOpportunity } from '../../core/types';
 import appConfig from '../../core/config';
+import transactionBuilder from './transaction_builder';
 
 const MODULE_NAME = 'TraderExecutor';
 
@@ -27,7 +30,7 @@ const MODULE_NAME = 'TraderExecutor';
  */
 interface TradeExecutionParams {
   opportunity: TradingOpportunity;  // 交易机会
-  wallet: Keypair;                  // 钱包密钥对
+  wallet?: Keypair;                 // 钱包密钥对(可选，默认使用配置的钱包)
   maxRetries?: number;              // 最大重试次数
   confirmTimeout?: number;          // 确认超时时间(毫秒)
 }
@@ -38,7 +41,7 @@ interface TradeExecutionParams {
  */
 export class TraderExecutor {
   private connection: Connection;
-  private txBuilder: TransactionBuilder;
+  private txBuilder: any; // 交易构建器
   private walletKeypair: Keypair;
 
   // 交易配置
@@ -53,11 +56,11 @@ export class TraderExecutor {
    */
   constructor(walletPrivateKey: string | Uint8Array) {
     this.connection = rpcService.connection;
-    this.txBuilder = new TransactionBuilder();
+    this.txBuilder = transactionBuilder;
     
     // 创建钱包Keypair
     if (typeof walletPrivateKey === 'string') {
-      const privateKeyBytes = Buffer.from(walletPrivateKey, 'base58');
+      const privateKeyBytes = bs58.decode(walletPrivateKey);
       this.walletKeypair = Keypair.fromSecretKey(privateKeyBytes);
     } else {
       this.walletKeypair = Keypair.fromSecretKey(walletPrivateKey);

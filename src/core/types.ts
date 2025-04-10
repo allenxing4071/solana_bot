@@ -141,19 +141,14 @@ export interface StrategyConfig {
     priorityFee: {
       enabled: boolean;            // 是否启用优先费
       multiplier: number;
+      baseFee: number;             // 基本优先费
+      maxFee: number;              // 最大优先费
     }
   };
   sellStrategy: {
     enabled: boolean;
     conditions: StrategyCondition[]; // 卖出条件
-  };
-  tokenValidation: {
-    enabled: boolean;
-    minLiquidityUsd: number;
-    maxInitialPriceUsd: number;
-    requiresMetadata: boolean;
-    blacklistEnabled: boolean;
-    whitelistEnabled: boolean;
+    maxSlippage: number;            // 最大卖出滑点
   };
   txRetryCount: number;
   txConfirmTimeout: number;
@@ -176,7 +171,9 @@ export enum SystemStatus {
   RUNNING = 'running',              // 运行中
   PAUSED = 'paused',                // 暂停
   ERROR = 'error',                  // 错误
-  SHUTDOWN = 'shutdown'             // 关闭
+  SHUTDOWN = 'shutdown',            // 关闭
+  STOPPING = 'stopping',            // 正在停止
+  STOPPED = 'stopped'               // 已停止
 }
 
 /**
@@ -184,6 +181,7 @@ export enum SystemStatus {
  */
 export enum EventType {
   POOL_CREATED = 'pool_created',
+  NEW_POOL_DETECTED = 'new_pool_detected',
   TRADE_EXECUTED = 'trade_executed',
   POSITION_UPDATED = 'position_updated',
   PRICE_UPDATED = 'price_updated',
@@ -290,43 +288,91 @@ export interface LogEntry {
 }
 
 /**
+ * 安全配置接口
+ */
+export interface SecurityConfig {
+  tokenValidation: {
+    useWhitelist: boolean;
+    useBlacklist: boolean;
+    whitelistPath: string;
+    blacklistPath: string;
+    minLiquidityUsd: number;
+    minPoolBalanceToken: number;
+    requireMetadata: boolean;
+    maxInitialPriceUsd?: number; // 初始价格上限(美元)
+  };
+  transactionSafety: {
+    simulateBeforeSend: boolean;
+    maxRetryCount: number;
+    maxPendingTx: number;
+  };
+}
+
+/**
  * 配置文件接口
  */
 export interface AppConfig {
-  // RPC配置
-  rpc: {
-    endpoints: Array<{
-      url: string;
-      weight: number;
-      name?: string;
-      enabled?: boolean;
-    }>;
-    reconnectInterval: number;
-    maxRetries: number;
+  // 网络配置
+  network: {
+    cluster: string;
+    rpcUrl: string;
+    wsUrl: string;
+    connection?: {
+      commitment: string;
+      confirmTransactionInitialTimeout: number;
+    }
+  };
+  
+  // 钱包配置
+  wallet: {
+    privateKey: string;
+    maxTransactionAmount: number;
   };
   
   // DEX配置
   dexes: Array<{
-    name: string;
+    name: DexType;
     programId: string;
     enabled: boolean;
-    poolAddressFilter?: string;
   }>;
   
-  // 日志配置
-  logging: {
-    level: string;
-    file?: string;
-    console: boolean;
-  };
-  
-  // 系统配置
-  system: {
-    pollInterval: number;
+  // 监控配置
+  monitoring: {
+    poolMonitorInterval: number;
     priceCheckInterval: number;
-    monitoringEnabled: boolean;
+    healthCheckInterval: number;
   };
   
   // 交易策略配置
   trading: StrategyConfig;
+  
+  // 安全配置
+  security: SecurityConfig;
+  
+  // 通知配置
+  notification: {
+    telegram: {
+      enabled: boolean;
+      botToken: string | null;
+      chatId: string | null;
+      events: Record<string, boolean>;
+    }
+  };
+  
+  // 日志配置
+  logging: {
+    level: string;
+    console: boolean;
+    file: boolean;
+    filename: string;
+    maxFiles: number;
+    maxSize: string;
+  };
+  
+  // Jito MEV配置
+  jitoMev: {
+    enabled: boolean;
+    tipPercent: number;
+    authKeypair: string | null;
+  };
 } 

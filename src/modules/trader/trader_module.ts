@@ -7,17 +7,16 @@ import { EventEmitter } from 'events';
 import { PublicKey } from '@solana/web3.js';
 import logger from '../../core/logger';
 import { 
-  PoolInfo, 
+  PoolInfo,
   TradingOpportunity, 
-  TradeResult, 
-  SystemEvent, 
-  EventType,
-  Position
+  TradeResult,
+  Position,
+  SystemEvent,
+  EventType
 } from '../../core/types';
 import opportunityDetector from '../analyzer/opportunity_detector';
-import tokenValidator from '../analyzer/token_validator';
-import traderExecutor from './trader_executor';
 import strategyManager from './strategy_manager';
+import traderExecutor from './trader_executor';
 import appConfig from '../../core/config';
 
 const MODULE_NAME = 'TraderModule';
@@ -45,7 +44,15 @@ export class TraderModule extends EventEmitter {
    */
   constructor() {
     super();
-    this.priceCheckInterval = appConfig.system.priceCheckInterval || 5000;
+    
+    // 初始化属性
+    this.isEnabled = false;
+    this.isInitialized = false;
+    
+    // 设置价格检查间隔
+    this.priceCheckInterval = appConfig.monitoring.priceCheckInterval || 5000;
+    
+    logger.info('交易模块已创建', MODULE_NAME);
   }
   
   /**
@@ -80,13 +87,21 @@ export class TraderModule extends EventEmitter {
   
   /**
    * 启动交易模块
+   * @param enableExecution 是否启用交易执行
    */
-  async start(): Promise<void> {
+  async start(enableExecution: boolean = true): Promise<void> {
     if (!this.isInitialized) {
       await this.initialize();
     }
     
     logger.info('启动交易模块...', MODULE_NAME);
+    console.log('交易模块状态 - 启动过程:');
+    console.log('enableExecution 参数:', enableExecution);
+    console.log('LISTEN_ONLY环境变量:', process.env.LISTEN_ONLY);
+    console.log('交易禁用状态:', !this.isEnabled);
+    
+    // 设置是否启用交易执行
+    this.isEnabled = enableExecution;
     
     if (!this.isEnabled) {
       logger.info('交易功能已禁用，将仅监听新池子', MODULE_NAME);
@@ -96,7 +111,7 @@ export class TraderModule extends EventEmitter {
     // 启动价格检查定时器
     this.startPriceChecking();
     
-    logger.info('交易模块已启动', MODULE_NAME);
+    logger.info('交易模块已启动，交易功能已启用', MODULE_NAME);
   }
   
   /**
@@ -195,7 +210,6 @@ export class TraderModule extends EventEmitter {
    */
   private async executeTrade(opportunity: TradingOpportunity): Promise<TradeResult> {
     const targetToken = opportunity.targetToken;
-    const baseToken = opportunity.baseToken;
     
     logger.info(`准备执行交易: ${targetToken.symbol || targetToken.mint.toBase58()}`, MODULE_NAME, {
       dex: opportunity.pool.dex,

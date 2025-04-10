@@ -28,7 +28,9 @@
  */
 
 import dotenv from 'dotenv';
-import appConfig from './core/config';
+// 加载环境变量后再导入其他模块
+dotenv.config();
+
 import logger from './core/logger';
 import { poolMonitor } from './modules/listener/pool_monitor';
 import traderModule from './modules/trader/trader_module';
@@ -36,17 +38,21 @@ import { SystemStatus, EventType, SystemEvent } from './core/types';
 import dataAnalysisSystem from './modules/analyzer/data_analysis_system';
 import performanceMonitor from './modules/monitor/performance_monitor';
 
-// 加载环境变量
-// 就像出海前查看天气预报和海图
-dotenv.config();
-
 // 模块名称
 // 就像渔船的识别标志
 const MODULE_NAME = 'Main';
 
-// 仅监听模式标志
-// 就像设置"观察模式"，只观察鱼群不实际捕捞
+// 确定是否为仅监听模式
+// 如果命令行参数包含--listen-only 或环境变量LISTEN_ONLY为'true'，则启用仅监听模式
 const LISTEN_ONLY_MODE = process.argv.includes('--listen-only') || process.env.LISTEN_ONLY === 'true';
+
+// 添加详细日志，方便调试
+console.log('调试信息 - 环境变量:');
+console.log('LISTEN_ONLY:', process.env.LISTEN_ONLY);
+console.log('LISTEN_ONLY === \'true\':', process.env.LISTEN_ONLY === 'true');
+console.log('process.argv:', process.argv);
+console.log('--listen-only 参数:', process.argv.includes('--listen-only'));
+console.log('最终监听模式状态:', LISTEN_ONLY_MODE);
 
 /**
  * 应用程序类

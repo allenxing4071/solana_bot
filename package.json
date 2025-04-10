@@ -1,0 +1,59 @@
+{
+  "name": "solana-mevbot",
+  "version": "0.1.0",
+  "description": "Solana MEV机器人 - 新币监听、抢购和自动卖出",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:listen-only": "node dist/index.js --listen-only",
+    "dev": "ts-node src/index.ts",
+    "dev:listen-only": "ts-node src/index.ts --listen-only",
+    "test": "jest",
+    "test:connection": "ts-node scripts/test_connection.ts",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix"
+  },
+  "keywords": [
+    "solana",
+    "blockchain",
+    "mev",
+    "bot",
+    "trading",
+    "defi"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@orca-so/sdk": "^1.2.26",
+    "@project-serum/anchor": "^0.26.0",
+    "@solana/spl-token": "^0.3.8",
+    "@solana/web3.js": "^1.77.3",
+    "axios": "^1.4.0",
+    "bn.js": "^5.2.1",
+    "bs58": "^6.0.0",
+    "config": "^3.3.9",
+    "dotenv": "^16.3.1",
+    "fs-extra": "^11.3.0",
+    "node-telegram-bot-api": "^0.61.0",
+    "winston": "^3.10.0",
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.1",
+    "@types/config": "^3.3.0",
+    "@types/fs-extra": "^11.0.4",
+    "@types/jest": "^29.5.3",
+    "@types/node": "^20.4.9",
+    "@types/node-telegram-bot-api": "^0.61.7",
+    "@types/winston": "^2.4.4",
+    "@types/ws": "^8.5.5",
+    "@typescript-eslint/eslint-plugin": "^6.3.0",
+    "@typescript-eslint/parser": "^6.3.0",
+    "eslint": "^8.46.0",
+    "jest": "^29.6.2",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
+  }
+}

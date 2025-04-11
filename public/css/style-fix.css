@@ -1,0 +1,195 @@
+/* 
+ * 样式修复文件
+ * 解决dashboard样式混乱问题
+ */
+
+/* 重置全局变量设置，确保一致性 */
+:root {
+    /* 基础颜色 */
+    --primary-color: #3a86ff;
+    --secondary-color: #8338ec;
+    --success-color: #06d6a0;
+    --danger-color: #ef476f;
+    --warning-color: #ffd166;
+    --light-color: #f8f9fa;
+    --dark-color: #212529;
+    --grey-color: #6c757d;
+    
+    /* 布局尺寸 */
+    --sidebar-width: 260px;
+    --header-height: 70px;
+    --card-border-radius: 12px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    
+    /* 深色主题统一设置 */
+    --bg-color: #1a1a2e;
+    --card-bg: #21213a;
+    --text-primary: #e6e6e6;
+    --text-secondary: #b0b0cc;
+    --border-color: #2d2d50;
+    --hover-bg: #2a2a45;
+    --table-header-bg: rgba(176, 176, 204, 0.05);
+    
+    /* 渐变 */
+    --gradient-primary: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+}
+
+/* 确保body样式正确 */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 修复dashboard布局 */
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* 确保主内容区域正确布局 */
+.main-content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    padding: 20px;
+    min-height: 100vh;
+    max-width: calc(100% - var(--sidebar-width));
+}
+
+/* 统一卡片样式 */
+.stat-card, .chart-card, .log-container-wrapper, .recent-container {
+    background-color: var(--card-bg);
+    border-radius: var(--card-border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 20px;
+    border: 1px solid var(--border-color);
+}
+
+/* 确保按钮样式一致 */
+.btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+/* 表格统一样式 */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.data-table th {
+    text-align: left;
+    padding: 12px 15px;
+    background-color: var(--table-header-bg);
+    color: var(--text-secondary);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* 修复适配问题 */
+@media (max-width: 1024px) {
+    .main-content {
+        margin-left: 0;
+        max-width: 100%;
+    }
+    
+    .logs-recent-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 修复设置页面样式 */
+.settings-page .panel-container {
+    background-color: var(--card-bg);
+    border-radius: var(--card-border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.settings-page input[type="text"],
+.settings-page input[type="number"],
+.settings-page select {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    padding: 8px 12px;
+    width: 100%;
+    height: 38px;
+}
+
+.settings-page .form-group {
+    margin-bottom: 15px;
+}
+
+.settings-page label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+
+/* 修复图表样式 */
+.chart-body {
+    width: 100%;
+    height: 100%;
+    min-height: 250px;
+}
+
+/* 修复状态样式 */
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.status-running {
+    background-color: var(--success-color);
+    box-shadow: 0 0 8px var(--success-color);
+}
+
+.status-stopped {
+    background-color: var(--danger-color);
+    box-shadow: 0 0 8px var(--danger-color);
+}
+
+/* 修复单选和复选框样式 */
+input[type="radio"],
+input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+/* 确保保存按钮样式正确 */
+.save-button {
+    background-color: var(--success-color);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    float: right;
+} 

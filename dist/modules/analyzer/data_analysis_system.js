@@ -1,26 +1,78 @@
 "use strict";
 /**
- * 数据分析与报告系统
+ * 数据分析与报告系统（渔船航行日志与捕获分析中心）
  * 负责收集交易数据，生成分析报告，提供决策支持
+ *
+ * 【编程基础概念通俗比喻】
+ * 1. 数据分析(Data Analysis) = 渔获记录整理:
+ *    就像渔船船长整理每天的捕鱼记录，分析哪些渔场产量高
+ *    例如：analyzeMarketTrend()就像分析近期哪片海域鱼群最活跃
+ *
+ * 2. 报告生成(Report Generation) = 航海日志总结:
+ *    就像定期汇总航行记录，记录捕获情况和渔场条件
+ *    例如：generateReport()就像编写一份完整的捕鱼季报告
+ *
+ * 3. 交易记录(Trade Record) = 单次捕鱼记录:
+ *    记录每次下网的具体情况，包括位置、时间和捕获量
+ *    例如：TradeRecord就像一页渔获日记，记录何时何地捕到何种鱼
+ *
+ * 4. 绩效评估(Performance Evaluation) = 渔场产量评估:
+ *    评价不同渔场和捕鱼方法的效果
+ *    例如：TokenPerformance就像不同海域的鱼类丰产程度记录
+ *
+ * 5. 趋势分析(Trend Analysis) = 洋流和鱼群动向预测:
+ *    分析捕鱼数据找出规律，预测未来的捕获机会
+ *    例如：MarketTrend就像海洋季节性变化图表
+ *
+ * 【比喻解释】
+ * 这个模块就像渔船上的航海记录室：
+ * - 记录每次捕鱼行动的过程和结果(记录交易)
+ * - 分析不同渔场(代币)的产量情况(绩效分析)
+ * - 评估不同捕鱼方法(交易策略)的效果(策略评估)
+ * - 研究海洋变化趋势，预测鱼群动向(市场趋势分析)
+ * - 为船长提供下一步航行建议(生成决策报告)
  */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DataAnalysisSystem = void 0;
-const events_1 = require("events");
+const node_events_1 = require("node:events");
 const logger_1 = __importDefault(require("../../core/logger"));
 const node_fs_1 = __importDefault(require("node:fs"));
 const node_path_1 = __importDefault(require("node:path"));
 // 模块名称
+// 就像航海记录室的牌匾
 const MODULE_NAME = 'DataAnalysisSystem';
 /**
  * 数据分析与报告系统类
+ *
+ * 【比喻解释】
+ * 这就像渔船上的航海记录与分析中心：
+ * - 记录每次捕鱼行动的详细情况(记录交易)
+ * - 分析不同鱼类的产量和价值(代币绩效)
+ * - 评估各种捕鱼方法的效果(策略评估)
+ * - 研究海洋环境变化和鱼群动向(市场趋势)
+ * - 定期生成捕鱼报告指导决策(报告生成)
+ * - 为船长提供下一步航行和捕鱼建议(提供建议)
+ *
+ * 【编程语法通俗翻译】
+ * class = 专业部门：船上的一个功能完整的工作小组
+ * private = 内部资料：只有部门内部才能查看的记录
+ * extends = 扩展功能：在基础设施上增加的新功能
  */
-class DataAnalysisSystem extends events_1.EventEmitter {
+class DataAnalysisSystem extends node_events_1.EventEmitter {
     /**
      * 构造函数
-     * @param config 配置参数
+     *
+     * 【比喻解释】
+     * 就像航海记录室的初始化准备：
+     * - 准备记录本和分析工具(初始化配置)
+     * - 确认记录本的格式和分类方式(设置默认配置)
+     * - 检查是否有历史航海日志需要继续(加载历史数据)
+     * - 向船长报告记录系统已准备就绪(日志记录)
+     *
+     * @param config 配置参数，就像记录系统的自定义设置
      */
     constructor(config) {
         super();
@@ -55,6 +107,12 @@ class DataAnalysisSystem extends events_1.EventEmitter {
     }
     /**
      * 启动分析系统
+     *
+     * 【比喻解释】
+     * 就像开始定期整理航海日志和捕鱼记录：
+     * - 设置定期分析的时间表(启动自动分析计时器)
+     * - 立即进行一次完整的记录整理(立即执行一次分析)
+     * - 通知船长分析系统已经开始工作(日志记录)
      */
     start() {
         // 启动自动分析计时器
@@ -70,6 +128,12 @@ class DataAnalysisSystem extends events_1.EventEmitter {
     }
     /**
      * 停止分析系统
+     *
+     * 【比喻解释】
+     * 就像暂停航海日志的整理工作：
+     * - 取消预定的定期分析计划(清除定时器)
+     * - 确认分析工作已经停止(重置计时器变量)
+     * - 通知船长分析系统已经停止工作(日志记录)
      */
     stop() {
         if (this.analysisTimer) {
@@ -80,6 +144,18 @@ class DataAnalysisSystem extends events_1.EventEmitter {
     }
     /**
      * 加载历史数据
+     *
+     * 【比喻解释】
+     * 就像检查并整理过去的航海日志：
+     * - 确认航海记录存放的位置(检查数据目录)
+     * - 如果是新船，创建全新的记录本(创建数据目录)
+     * - 读取过往的捕鱼记录(加载交易记录)
+     * - 清理过时的旧记录(清理过期数据)
+     * - 重新计算渔获统计和趋势(重建性能指标)
+     * - 向船长报告历史记录的恢复情况(日志记录)
+     *
+     * 【编程语法通俗翻译】
+     * try/catch = 安全操作：像是小心翼翼地翻阅珍贵的航海日志
      */
     loadData() {
         try {
@@ -114,6 +190,13 @@ class DataAnalysisSystem extends events_1.EventEmitter {
     }
     /**
      * 保存数据到文件
+     *
+     * 【比喻解释】
+     * 就像将船长的航海日志存档保存：
+     * - 确认是否需要长期保存记录(检查配置)
+     * - 确保记录本有安全的存放地点(检查目录)
+     * - 整理并记录所有捕鱼情况(写入文件)
+     * - 确认记录已安全存档(日志记录)
      */
     saveData() {
         if (!this.config.persistData) {
@@ -170,6 +253,23 @@ class DataAnalysisSystem extends events_1.EventEmitter {
     }
     /**
      * 记录买入交易
+     *
+     * 【比喻解释】
+     * 就像记录一次新的捕鱼行动开始：
+     * - 为这次捕鱼行动创建唯一编号(生成交易ID)
+     * - 记录目标鱼类、数量和成本(创建交易记录)
+     * - 将这次行动记入航海日志(添加到记录列表)
+     * - 确保记录被永久保存(保存数据)
+     * - 向船长确认捕鱼记录已完成(日志记录)
+     *
+     * @param token 代币信息，就像目标鱼类信息
+     * @param amount 数量，就像捕获数量
+     * @param price 价格，就像每条鱼的价格
+     * @param cost 成本，就像捕鱼行动总成本
+     * @param strategy 策略，就像使用的捕鱼方法
+     * @param latency 延迟，就像反应时间
+     * @param reason 原因，就像选择该渔场的依据
+     * @returns 交易ID，就像捕鱼行动的编号
      */
     recordBuy(token, amount, price, cost, strategy, latency, reason) {
         // 生成唯一交易ID
@@ -204,6 +304,23 @@ class DataAnalysisSystem extends events_1.EventEmitter {
     }
     /**
      * 记录卖出交易
+     *
+     * 【比喻解释】
+     * 就像记录一次捕鱼行动的完成和鱼获售卖：
+     * - 查找对应的捕鱼行动记录(查找买入交易)
+     * - 记录售卖时间、价格和获得的收入(更新交易记录)
+     * - 计算这次捕鱼行动的利润(计算盈利)
+     * - 记录从捕获到售卖的总时长(计算持仓时间)
+     * - 更新该鱼种的产量统计(更新性能数据)
+     * - 更新该捕鱼方法的效果评估(更新策略评估)
+     * - 确保记录被永久保存(保存数据)
+     * - 向船长报告捕鱼行动完成情况(日志记录)
+     *
+     * @param tradeId 交易ID，就像捕鱼行动编号
+     * @param price 价格，就像售卖价格
+     * @param amount 数量，就像售卖数量
+     * @param proceeds 收益，就像售卖收入
+     * @returns 是否成功记录，就像记录是否完成
      */
     recordSell(tradeId, price, amount, proceeds) {
         // 查找对应的买入交易
@@ -255,6 +372,19 @@ class DataAnalysisSystem extends events_1.EventEmitter {
     }
     /**
      * 更新代币绩效数据
+     *
+     * 【比喻解释】
+     * 就像更新特定鱼种的捕获记录表：
+     * - 只处理已经完成的捕鱼行动(检查是否已完成)
+     * - 查找该鱼种的历史产量记录(获取现有绩效记录)
+     * - 如果是首次捕获这种鱼，创建新的记录表(创建新记录)
+     * - 增加捕获次数和记录最近捕获时间(更新基本统计)
+     * - 统计成功的捕获次数(记录成功次数)
+     * - 计算总收益和平均收益(更新利润数据)
+     * - 计算平均储存周期(更新持仓时间)
+     * - 保存更新后的记录(更新性能数据)
+     *
+     * @param record 交易记录，就像某次捕鱼的详细记录
      */
     updateTokenPerformance(record) {
         if (!record.sellTimestamp) {
@@ -279,21 +409,37 @@ class DataAnalysisSystem extends events_1.EventEmitter {
         // 更新统计数据
         performance.trades++;
         performance.lastTrade = record.sellTimestamp;
-        if (record.profit > 0) {
+        // 安全地访问profit，避免使用非空断言
+        const profit = record.profit || 0;
+        if (profit > 0) {
             performance.successTrades++;
         }
         // 更新总利润
-        performance.totalProfit += record.profit;
+        performance.totalProfit += profit;
         // 更新平均利润
         performance.avgProfit = performance.totalProfit / performance.trades;
-        // 更新平均持仓时间
-        const totalHoldingTime = (performance.avgHoldingTime * (performance.trades - 1)) + record.holdingTime;
+        // 更新平均持仓时间，安全地访问holdingTime
+        const holdingTime = record.holdingTime || 0;
+        const totalHoldingTime = (performance.avgHoldingTime * (performance.trades - 1)) + holdingTime;
         performance.avgHoldingTime = totalHoldingTime / performance.trades;
         // 保存更新后的绩效数据
         this.tokenPerformance.set(record.tokenMint, performance);
     }
     /**
      * 更新策略评估数据
+     *
+     * 【比喻解释】
+     * 就像评估特定捕鱼方法的效果：
+     * - 只分析已完成的捕鱼行动(检查是否已完成)
+     * - 查找该捕鱼方法的历史评估记录(获取现有评估)
+     * - 如果是首次使用这种方法，创建新的评估表(创建新记录)
+     * - 增加使用该方法的次数(更新次数)
+     * - 计算使用该方法的成功率(更新成功率)
+     * - 分析平均收益和捕鱼周期(更新平均数据)
+     * - 评估风险与回报的比例(更新风险回报比)
+     * - 保存更新后的评估结果(更新评估数据)
+     *
+     * @param record 交易记录，就像某次捕鱼的详细记录
      */
     updateStrategyEvaluation(record) {
         if (!record.sellTimestamp) {
@@ -318,19 +464,22 @@ class DataAnalysisSystem extends events_1.EventEmitter {
         }
         // 更新统计数据
         evaluation.trades++;
+        // 安全地访问profit，避免使用非空断言
+        const profit = record.profit || 0;
         // 更新成功率
-        const successTrades = record.profit > 0 ? 1 : 0;
+        const successTrades = profit > 0 ? 1 : 0;
         const totalSuccessTrades = (evaluation.successRate * (evaluation.trades - 1) / 100) + successTrades;
         evaluation.successRate = (totalSuccessTrades / evaluation.trades) * 100;
         // 更新平均利润
-        const totalProfit = (evaluation.avgProfit * (evaluation.trades - 1)) + record.profit;
+        const totalProfit = (evaluation.avgProfit * (evaluation.trades - 1)) + profit;
         evaluation.avgProfit = totalProfit / evaluation.trades;
-        // 更新平均持仓时间
-        const totalHoldingTime = (evaluation.avgHoldingTime * (evaluation.trades - 1)) + record.holdingTime;
+        // 更新平均持仓时间，安全地访问holdingTime
+        const holdingTime = record.holdingTime || 0;
+        const totalHoldingTime = (evaluation.avgHoldingTime * (evaluation.trades - 1)) + holdingTime;
         evaluation.avgHoldingTime = totalHoldingTime / evaluation.trades;
         // 更新风险回报比
         evaluation.riskReturnRatio = evaluation.avgProfit / (1 - evaluation.successRate / 100);
-        if (!isFinite(evaluation.riskReturnRatio)) {
+        if (!Number.isFinite(evaluation.riskReturnRatio)) {
             evaluation.riskReturnRatio = 0;
         }
         // 保存更新后的评估数据
@@ -373,6 +522,19 @@ class DataAnalysisSystem extends events_1.EventEmitter {
     /**
      * 分析市场趋势
      * 分析最近交易数据，识别市场模式和趋势
+     *
+     * 【比喻解释】
+     * 就像渔船的海洋学家分析近期海况和鱼群动向：
+     * - 确认有足够的捕鱼记录可供分析(确认数据充足)
+     * - 按时间顺序排列捕鱼记录(排序交易数据)
+     * - 确定分析的时间范围(确定分析周期)
+     * - 计算总体捕获效率和收益(计算总体指标)
+     * - 跟踪收益和捕获量的变化趋势(收集趋势数据)
+     * - 评估海况的稳定性(计算波动性指标)
+     * - 判断是涨潮还是退潮，或是平静期(分析市场信号)
+     * - 找出产量最高的鱼种(获取表现最好的代币)
+     * - 提供下一步捕鱼建议(生成机会建议)
+     * - 向船长汇报海况分析结果(日志记录)
      */
     analyzeMarketTrend() {
         // 确保有足够的已完成交易
@@ -430,22 +592,22 @@ class DataAnalysisSystem extends events_1.EventEmitter {
         }
         // 计算波动性指标 - 使用利润的标准差
         const profitMean = profitTrend.reduce((sum, p) => sum + p, 0) / profitTrend.length;
-        const profitVariance = profitTrend.reduce((sum, p) => sum + Math.pow(p - profitMean, 2), 0) / profitTrend.length;
+        const profitVariance = profitTrend.reduce((sum, p) => sum + (p - profitMean) ** 2, 0) / profitTrend.length;
         const volatility = Math.sqrt(profitVariance);
         // 分析市场信号
         const recentTrend = profitTrend.slice(-5); // 最近5个数据点
         const trendSlope = this.calculateTrendSlope(recentTrend);
         const signals = {
-            bullish: trendSlope > 0.1, // 正向趋势
-            bearish: trendSlope < -0.1, // 负向趋势
-            sideways: Math.abs(trendSlope) <= 0.1, // 盘整
+            bullish: trendSlope > 0.1, // 正向趋势，就像鱼群增多趋势
+            bearish: trendSlope < -0.1, // 负向趋势，就像鱼群减少趋势
+            sideways: Math.abs(trendSlope) <= 0.1, // 盘整，就像鱼群稳定期
             volatility: volatility > 1 ? 'high' : volatility < 0.3 ? 'low' : 'normal'
         };
         // 获取表现最好的代币
         const topTokens = Array.from(this.tokenPerformance.values())
-            .filter(t => t.trades >= 3) // 至少有3次交易
+            .filter(t => t.trades >= 3) // 至少有3次交易，就像至少捕获3次的鱼种
             .sort((a, b) => b.avgProfit - a.avgProfit)
-            .slice(0, 5); // 取前5名
+            .slice(0, 5); // 取前5名，就像产量最高的5种鱼
         // 生成机会建议
         const opportunities = [];
         if (signals.bullish) {
@@ -483,15 +645,23 @@ class DataAnalysisSystem extends events_1.EventEmitter {
         };
         logger_1.default.info('市场趋势分析完成', MODULE_NAME, {
             period: `${periodDays}天`,
-            successRate: successRate.toFixed(2) + '%',
+            successRate: `${successRate.toFixed(2)}%`,
             signal: signals.bullish ? '看涨' : signals.bearish ? '看跌' : '盘整'
         });
     }
     /**
      * 计算趋势斜率
      * 使用简单线性回归计算斜率
-     * @param data 数据点数组
-     * @returns 趋势斜率
+     *
+     * 【比喻解释】
+     * 就像计算潮汐变化的方向和速度：
+     * - 收集一系列的水位测量数据(数据点数组)
+     * - 应用数学方法计算海平面变化趋势(线性回归计算)
+     * - 确定潮水是在上涨还是退去(计算斜率)
+     * - 如果数据有问题，给出合理预估(处理异常情况)
+     *
+     * @param data 数据点数组，就像一系列潮位测量值
+     * @returns 趋势斜率，就像潮水变化的方向和速度
      */
     calculateTrendSlope(data) {
         if (data.length < 2)
@@ -506,10 +676,26 @@ class DataAnalysisSystem extends events_1.EventEmitter {
         // 计算斜率: (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX)
         const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
         // 处理分母为零的情况
-        return isNaN(slope) ? 0 : slope;
+        return Number.isNaN(slope) ? 0 : slope;
     }
     /**
      * 生成分析报告
+     *
+     * 【比喻解释】
+     * 就像编写一份完整的捕鱼季总结报告：
+     * - 确保已经进行了海况分析(确认有市场趋势分析)
+     * - 汇总所有完成的捕鱼记录(统计已完成交易)
+     * - 计算成功率和总收益(计算成功率和利润)
+     * - 找出最丰收和最糟糕的捕捞行动(查找最佳和最差交易)
+     * - 按日期整理捕鱼成果(收集每日表现)
+     * - 评估各种鱼类的产量情况(获取代币绩效)
+     * - 分析不同捕鱼方法的效果(获取策略评估)
+     * - 根据分析提出捕鱼建议(生成交易建议)
+     * - 提出改进捕鱼策略的方法(生成策略建议)
+     * - 提供风险防控措施(生成风险管理建议)
+     * - 整合所有信息形成完整报告(构建分析报告)
+     * - 将报告永久保存以供参考(保存报告)
+     * - 通知船长报告已经完成(日志记录)
      */
     generateReport() {
         // 确保有市场趋势分析结果

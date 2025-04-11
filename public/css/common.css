@@ -1,0 +1,340 @@
+/**
+ * 公共CSS样式
+ * 统一所有页面的样式元素
+ */
+
+/* 搜索和过滤器样式统一 */
+.filter-toolbar {
+    background-color: var(--card-bg);
+    border-radius: var(--card-border-radius);
+    box-shadow: var(--box-shadow);
+    border: 1px solid var(--border-color);
+    padding: 10px !important;
+    margin-bottom: 20px !important;
+    min-height: auto;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-options {
+    display: flex;
+    gap: 10px;
+    margin-left: 10px;
+    flex-wrap: wrap;
+}
+
+.search-input, .filter-select {
+    height: 38px;
+    line-height: 38px;
+    padding: 0 12px !important;
+    border-radius: 6px !important;
+    border: 1px solid var(--border-color) !important;
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+.search-input {
+    width: 100%;
+    height: 38px;
+}
+
+/* 卡片统一样式 */
+.chart-card, 
+.log-container-wrapper, 
+.panel-container, 
+.recent-container,
+.settings-panel,
+.stats-card {
+    background-color: var(--card-bg);
+    border-radius: var(--card-border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+/* 内容高度统一 */
+.chart-card {
+    height: 320px;
+    display: flex;
+    flex-direction: column;
+}
+
+.log-container-wrapper, 
+.recent-container {
+    height: 320px;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-body {
+    flex: 1;
+    min-height: 200px;
+    position: relative;
+}
+
+.logs-container,
+.table-container {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 200px;
+}
+
+/* 头部样式统一 */
+.chart-header, 
+.logs-header, 
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.chart-header h3, 
+.logs-header h3, 
+.panel-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+}
+
+/* 分页控件样式 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    margin-bottom: 1.5rem;
+}
+
+.pagination button {
+    padding: 6px 12px;
+    margin: 0 5px;
+}
+
+/* 数据加载状态样式 */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    border-radius: var(--card-border-radius);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.filter-options .btn {
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-options .btn i {
+    margin-right: 4px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .filter-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .filter-options {
+        margin-left: 0;
+        justify-content: space-between;
+    }
+    
+    .charts-container,
+    .logs-recent-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-card, 
+    .log-container-wrapper, 
+    .recent-container {
+        height: auto;
+        min-height: 300px;
+    }
+    
+    .search-box {
+        margin-bottom: 10px;
+        width: 100%;
+    }
+}
+
+/* 统一内存监控页面的卡片样式 */
+.logs-recent-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* 统一所有页面卡片的内部间距和高度 */
+.chart-card, 
+.log-container-wrapper, 
+.panel-container, 
+.recent-container,
+.settings-panel,
+.stats-card {
+    background-color: var(--card-bg);
+    border-radius: var(--card-border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+/* 内容高度统一 */
+.chart-card {
+    height: 320px;
+    display: flex;
+    flex-direction: column;
+}
+
+.log-container-wrapper, 
+.recent-container {
+    height: 320px;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-body {
+    flex: 1;
+    min-height: 200px;
+    position: relative;
+}
+
+.logs-container,
+.table-container {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 200px;
+}
+
+/* 统一头部样式 */
+.chart-header, 
+.logs-header, 
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* 自定义搜索和过滤样式 */
+.search-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 状态标记样式 */
+.status-badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-low {
+    background-color: rgba(6, 214, 160, 0.2);
+    color: #06d6a0;
+}
+
+.status-medium {
+    background-color: rgba(255, 209, 102, 0.2);
+    color: #ffd166;
+}
+
+.status-high {
+    background-color: rgba(239, 71, 111, 0.2);
+    color: #ef476f;
+}
+
+/* 带颜色的日志级别 */
+.log-entry {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-level-info {
+    border-left: 3px solid var(--primary-color);
+}
+
+.log-level-warning {
+    border-left: 3px solid var(--warning-color);
+}
+
+.log-level-error {
+    border-left: 3px solid var(--danger-color);
+}
+
+.log-level-success {
+    border-left: 3px solid var(--success-color);
+}
+
+/* 建议列表样式 */
+.suggestions-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.suggestions-list li {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    position: relative;
+    padding-left: 20px;
+}
+
+.suggestions-list li:before {
+    content: "•";
+    position: absolute;
+    left: 5px;
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+.suggestions-list li:last-child {
+    border-bottom: none;
+} 

@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "mint": "E3GzbpPTkHYUC4yk8y7jZ9DvhGDvsMxv2VqCNB7TKqhg",
+    "symbol": "TEST",
+    "name": "Test Token",
+    "reason": "测试黑名单功能"
+  }
+]

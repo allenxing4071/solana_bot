@@ -1,102 +1,193 @@
 /**
- * 性能监控系统
+ * 性能监控系统（渔船航行状态监测中心）
  * 负责监控系统性能指标，自动分析系统瓶颈，提供优化建议
+ * 
+ * 【编程基础概念通俗比喻】
+ * 1. 性能监控(Performance Monitor) = 船舶仪表盘:
+ *    就像船长的控制台，实时显示船只各部分的工作状态
+ *    例如：CPU使用率就像引擎的转速表
+ *    
+ * 2. 资源指标(Metrics) = 航行指标:
+ *    船舶航行中需要关注的各种数据
+ *    例如：内存使用率就像船舱的载重量
+ *    
+ * 3. 性能警报(Alert) = 船舶警告信号:
+ *    当某些指标超出安全范围时发出的警告
+ *    例如：CPU过高警报就像引擎过热警告灯
+ *    
+ * 4. 瓶颈分析(Bottleneck Analysis) = 航行障碍检测:
+ *    找出限制船只速度的因素
+ *    例如：网络延迟瓶颈就像船只遇到了强逆流
+ * 
+ * 5. 响应时间(Response Time) = 操作反应时间:
+ *    从发出指令到执行完成所需的时间
+ *    例如：交易延迟就像从下达捕鱼指令到网具完全展开的时间
+ * 
+ * 【比喻解释】
+ * 这个模块就像渔船的导航控制室：
+ * - 监测渔船各系统的工作状态(监控系统性能)
+ * - 及时发现引擎过热或燃油不足等问题(检测性能瓶颈)
+ * - 当风浪过大或设备异常时发出警报(性能警报系统)
+ * - 记录航行过程中的各项数据供日后分析(指标历史记录)
+ * - 向船长提供最佳航线和渔场建议(优化建议)
  */
 
-import os from 'os';
-import { EventEmitter } from 'events';
+import os from 'node:os';
+import { EventEmitter } from 'node:events';
 import logger from '../../core/logger';
 import { TradeResult } from '../../core/types';
 
 // 模块名称
+// 就像船舶控制中心的门牌
 const MODULE_NAME = 'PerformanceMonitor';
 
 /**
  * 性能指标接口
+ * 
+ * 【比喻解释】
+ * 就像船舶主要航行参数表：
+ * - 记录引擎转速(CPU使用率)
+ * - 监测载重情况(内存使用)
+ * - 跟踪航行时间(运行时间)
+ * - 记录各项读数的更新时间
  */
 export interface PerformanceMetrics {
-  cpuUsage: number;              // CPU使用率 (%)
-  memoryUsage: number;           // 内存使用率 (%)
-  totalMemory: number;           // 总内存 (MB)
-  usedMemory: number;            // 已用内存 (MB)
-  uptime: number;                // 运行时间 (秒)
-  lastUpdateTime: number;        // 最后更新时间
+  cpuUsage: number;              // CPU使用率 (%)，就像船舶引擎负载百分比
+  memoryUsage: number;           // 内存使用率 (%)，就像船舱载重比例
+  totalMemory: number;           // 总内存 (MB)，就像船舶最大载重量
+  usedMemory: number;            // 已用内存 (MB)，就像当前船上的货物重量
+  uptime: number;                // 运行时间 (秒)，就像本次航行持续时间
+  lastUpdateTime: number;        // 最后更新时间，就像仪表盘最后读数时间
 }
 
 /**
  * 系统性能接口
+ * 
+ * 【比喻解释】
+ * 就像完整的船舶状态报告：
+ * - 包含船舶本身的状态(system)
+ * - 捕鱼作业的效率数据(application)
+ * - 各种资源消耗情况(resources)
+ * - 当前航行中的主要问题(bottlenecks)
+ * - 报告生成的时间点(timestamp)
  */
 export interface SystemPerformance {
-  system: PerformanceMetrics;    // 系统性能指标
-  application: {                 // 应用性能指标
-    rpcResponseTime: number;     // RPC响应时间 (ms)
-    avgTradeLatency: number;     // 平均交易延迟 (ms)
-    transactionsPerSecond: number; // 每秒交易数
-    successRate: number;         // 成功率 (%)
-    poolsMonitored: number;      // 监控池数量
-    tradesExecuted: number;      // 执行交易数
-    errorRate: number;           // 错误率 (%)
+  system: PerformanceMetrics;    // 系统性能指标，就像船体状态数据
+  application: {                 // 应用性能指标，就像捕鱼作业数据
+    rpcResponseTime: number;     // RPC响应时间 (ms)，就像雷达信号反馈时间
+    avgTradeLatency: number;     // 平均交易延迟 (ms)，就像平均投网到收网时间
+    transactionsPerSecond: number; // 每秒交易数，就像单位时间捕获效率
+    successRate: number;         // 成功率 (%)，就像捕鱼成功率
+    poolsMonitored: number;      // 监控池数量，就像监测的渔场数量
+    tradesExecuted: number;      // 执行交易数，就像已完成的捕捞次数
+    errorRate: number;           // 错误率 (%)，就像捕捞失败率
   };
-  resources: {                   // 资源使用
-    diskUsage: number;           // 磁盘使用率 (%)
-    networkIn: number;           // 网络入流量 (KB/s)
-    networkOut: number;          // 网络出流量 (KB/s)
-    openHandles: number;         // 打开的句柄数
+  resources: {                   // 资源使用，就像船舶资源消耗
+    diskUsage: number;           // 磁盘使用率 (%)，就像货舱填充率
+    networkIn: number;           // 网络入流量 (KB/s)，就像收到的无线电信息量
+    networkOut: number;          // 网络出流量 (KB/s)，就像发送的无线电信息量
+    openHandles: number;         // 打开的句柄数，就像当前活跃的设备数
   };
-  bottlenecks: string[];         // 当前瓶颈
-  timestamp: number;             // 时间戳
+  bottlenecks: string[];         // 当前瓶颈，就像航行中的主要阻碍
+  timestamp: number;             // 时间戳，就像报告生成的时间点
 }
 
 /**
  * 性能警报级别枚举
+ * 
+ * 【比喻解释】
+ * 就像船舶警报的紧急程度：
+ * - 信息(INFO)：值得注意但不紧急的情况
+ * - 警告(WARNING)：需要关注的潜在问题
+ * - 严重(CRITICAL)：需要立即处理的紧急情况
  */
 export enum AlertLevel {
-  INFO = 'info',
-  WARNING = 'warning',
-  CRITICAL = 'critical'
+  INFO = 'info',          // 信息级别，就像天气预报提醒
+  WARNING = 'warning',    // 警告级别，就像风浪加大警告
+  CRITICAL = 'critical'   // 严重级别，就像船体进水警报
 }
 
 /**
  * 性能警报接口
+ * 
+ * 【比喻解释】
+ * 就像船舶警报通知单：
+ * - 标明警报的严重程度(level)
+ * - 指出哪个系统出现问题(metric)
+ * - 记录当前的异常数值(value)
+ * - 说明正常范围的阈值(threshold)
+ * - 详细描述问题情况(message)
+ * - 提供处理建议(recommendation)
+ * - 记录警报发生的时间(timestamp)
  */
 export interface PerformanceAlert {
-  level: AlertLevel;             // 警报级别
-  metric: string;                // 指标名称
-  value: number;                 // 当前值
-  threshold: number;             // 阈值
-  message: string;               // 警报信息
-  recommendation: string;        // 建议
-  timestamp: number;             // 时间戳
+  level: AlertLevel;             // 警报级别，就像警报的紧急程度
+  metric: string;                // 指标名称，就像出问题的船舶系统
+  value: number;                 // 当前值，就像异常读数
+  threshold: number;             // 阈值，就像安全范围上限
+  message: string;               // 警报信息，就像故障描述
+  recommendation: string;        // 建议，就像船长应采取的措施
+  timestamp: number;             // 时间戳，就像警报发生的时间
 }
 
 /**
  * 响应时间记录接口
+ * 
+ * 【比喻解释】
+ * 就像船员执行任务的计时记录：
+ * - 记录执行的具体任务(operation)
+ * - 开始执行的时间点(startTime)
+ * - 任务完成的时间点(endTime)
+ * - 整个任务花费的时间(duration)
+ * - 任务是否成功完成(success)
+ * - 如果失败，记录失败原因(error)
  */
 export interface ResponseTimeRecord {
-  operation: string;             // 操作名称
-  startTime: number;             // 开始时间
-  endTime?: number;              // 结束时间
-  duration?: number;             // 持续时间
-  success?: boolean;             // 是否成功
-  error?: string;                // 错误信息
+  operation: string;             // 操作名称，就像任务类型
+  startTime: number;             // 开始时间，就像开始执行的时间点
+  endTime?: number;              // 结束时间，就像任务完成的时间点
+  duration?: number;             // 持续时间，就像任务耗时
+  success?: boolean;             // 是否成功，就像任务是否完成
+  error?: string;                // 错误信息，就像任务失败的原因
 }
 
 /**
  * 性能监控配置接口
+ * 
+ * 【比喻解释】
+ * 就像船舶监控系统的设置面板：
+ * - 设定检查各系统的频率(interval)
+ * - 调整各种警报的触发阈值
+ * - 配置是否在严重故障时自动采取措施(autoRestart)
+ * - 设置是否保存历史航行数据(collectHistory)
+ * - 决定保存多少历史记录(historyLength)
  */
 export interface PerformanceMonitorConfig {
-  interval: number;              // 监控间隔 (ms)
-  memoryWarningThreshold: number; // 内存警告阈值 (%)
-  cpuWarningThreshold: number;   // CPU警告阈值 (%)
-  tradeLatencyWarningThreshold: number; // 交易延迟警告阈值 (ms)
-  errorRateWarningThreshold: number; // 错误率警告阈值 (%)
-  autoRestart: boolean;          // 是否自动重启
-  collectHistory: boolean;       // 是否收集历史数据
-  historyLength: number;         // 历史数据长度
+  interval: number;              // 监控间隔 (ms)，就像检查仪表盘的频率
+  memoryWarningThreshold: number; // 内存警告阈值 (%)，就像载重警告线
+  cpuWarningThreshold: number;   // CPU警告阈值 (%)，就像引擎负载警告线
+  tradeLatencyWarningThreshold: number; // 交易延迟警告阈值 (ms)，就像捕鱼操作延迟警告
+  errorRateWarningThreshold: number; // 错误率警告阈值 (%)，就像可接受的失败率上限
+  autoRestart: boolean;          // 是否自动重启，就像故障时的自动处理
+  collectHistory: boolean;       // 是否收集历史数据，就像保存航行日志
+  historyLength: number;         // 历史数据长度，就像航行日志保存的页数
 }
 
 /**
  * 性能监控系统类
+ * 
+ * 【比喻解释】
+ * 这就像渔船的航行状态监控室：
+ * - 不断检查船只各部分的工作情况(收集指标)
+ * - 记录航行过程中的各种数据(保存历史)
+ * - 在出现异常时及时发出警报(触发警报)
+ * - 计算捕鱼效率和资源消耗(分析性能)
+ * - 向船长提供航行建议(生成报告)
+ * 
+ * 【编程语法通俗翻译】
+ * class = 专业系统：船上的一套完整设备
+ * private = 内部组件：只有系统内部才能使用的部分
+ * extends = 升级版：在基础设备上增加新功能
  */
 export class PerformanceMonitor extends EventEmitter {
   // 监控配置
@@ -156,6 +247,13 @@ export class PerformanceMonitor extends EventEmitter {
   
   /**
    * 启动监控
+   * 
+   * 【比喻解释】
+   * 就像启动船舶的仪表监控系统：
+   * - 确认系统尚未运行(避免重复启动)
+   * - 先进行一次全面的系统检查(初始化测量)
+   * - 设置定期巡检的时间间隔(定时监控)
+   * - 通知船长监控系统已经开始工作(日志记录)
    */
   public start(): void {
     if (this.monitorInterval) {
@@ -178,6 +276,13 @@ export class PerformanceMonitor extends EventEmitter {
   
   /**
    * 停止监控
+   * 
+   * 【比喻解释】
+   * 就像关闭船舶的仪表监控系统：
+   * - 确认监控系统正在运行(避免误操作)
+   * - 停止定期的系统检查(清除定时器)
+   * - 确认监控停止状态(重置变量)
+   * - 通知船长监控系统已经停止工作(日志记录)
    */
   public stop(): void {
     if (!this.monitorInterval) {
@@ -193,6 +298,19 @@ export class PerformanceMonitor extends EventEmitter {
   
   /**
    * 收集性能指标
+   * 
+   * 【比喻解释】
+   * 就像船舶工程师巡检整艘船的状态：
+   * - 检查船体各个系统的运行状况(收集系统指标)
+   * - 评估捕鱼作业的效率数据(收集应用指标)
+   * - 监测各种资源的消耗情况(收集资源指标)
+   * - 分析当前航行中的主要问题(分析瓶颈)
+   * - 记录完整的航行状态报告(创建性能报告)
+   * - 检查是否有需要提醒船长的问题(检查警报)
+   * - 保存数据到航行日志中(保存历史记录)
+   * 
+   * 【编程语法通俗翻译】
+   * try/catch = 安全操作：像是戴着安全装备检查船舱，防止意外事故
    */
   private collectMetrics(): void {
     try {
@@ -242,6 +360,13 @@ export class PerformanceMonitor extends EventEmitter {
   
   /**
    * 收集系统性能指标
+   * 
+   * 【比喻解释】
+   * 就像船舶工程师检查船体基础系统：
+   * - 检查引擎的运转状况(获取CPU使用率)
+   * - 计算船舱的载重情况(获取内存使用)
+   * - 记录船只航行的持续时间(获取运行时间)
+   * - 整理成一份船体状态报告(返回指标集合)
    */
   private collectSystemMetrics(): PerformanceMetrics {
     // 获取CPU使用率
@@ -268,6 +393,13 @@ export class PerformanceMonitor extends EventEmitter {
   
   /**
    * 获取CPU使用率
+   * 
+   * 【比喻解释】
+   * 就像测量船舶引擎的工作负荷：
+   * - 检查每个引擎气缸的运行情况(遍历所有CPU核心)
+   * - 记录每个气缸的工作时间和空闲时间(获取CPU时间)
+   * - 计算整个引擎组的平均负荷水平(计算使用率)
+   * - 将负荷水平转换为百分比格式(格式化结果)
    */
   private getCpuUsage(): number {
     const cpus = os.cpus();
@@ -292,6 +424,16 @@ export class PerformanceMonitor extends EventEmitter {
   
   /**
    * 收集应用性能指标
+   * 
+   * 【比喻解释】
+   * 就像评估船上捕鱼作业的效率：
+   * - 测量雷达响应的速度(计算RPC响应时间)
+   * - 评估从投网到收网的平均时间(计算交易延迟)
+   * - 记录捕捞的成功率(计算交易成功率)
+   * - 统计每小时捕获的鱼量(计算交易处理速度)
+   * - 监测正在观察的渔场数量(获取监控池数)
+   * - 分析作业中出现问题的频率(计算错误率)
+   * - 整理成一份捕鱼效率报告(返回应用指标)
    */
   private collectApplicationMetrics() {
     // 计算平均响应时间

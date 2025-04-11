@@ -26,7 +26,14 @@
  * - 接收各种信号并作出反应（进程处理器）
  * - 负责整体协调和安全返航（生命周期管理）
  */
-import { SystemStatus } from './core/types';
+declare enum SystemStatus {
+    INITIALIZING = "initializing",
+    STARTING = "starting",
+    RUNNING = "running",
+    STOPPING = "stopping",
+    STOPPED = "stopped",
+    ERROR = "error"
+}
 /**
  * 应用程序类
  * 管理整个系统的生命周期
@@ -78,22 +85,6 @@ declare class Application {
     private setupEventListeners;
     /**
      * 启动应用程序
-     * 按顺序初始化并启动所有系统模块
-     *
-     * 【比喻解释】
-     * 这就像渔船的完整启航流程：
-     * - 检查天气和海况（初始配置）
-     * - 按顺序启动各个系统（监控器、交易模块）
-     * - 确认所有系统正常工作（状态检查）
-     * - 正式开始航行（设置运行状态）
-     * - 向船员广播航行信息（日志记录）
-     *
-     * 【编程语法通俗翻译】
-     * async = 耐心等待：启航不是一蹴而就的，需要等待各系统准备就绪
-     * try/catch = 安全航行：时刻警惕可能的危险，出现问题立即处理
-     * await = 等待确认：某个操作完成后才能进行下一步
-     *
-     * @returns {Promise<void>} - 启动完成的信号
      */
     start(): Promise<void>;
     /**
@@ -128,6 +119,15 @@ declare class Application {
      * @returns {SystemStatus} - 当前系统状态
      */
     getSystemStatus(): SystemStatus;
+    /**
+     * 初始化系统模块
+     * 按顺序初始化各个功能模块
+     */
+    private initializeModules;
+    /**
+     * 启动业务逻辑
+     */
+    private startBusinessLogic;
 }
 declare const app: Application;
 export default app;

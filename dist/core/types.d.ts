@@ -64,10 +64,13 @@ export interface TradingOpportunity {
     estimatedPriceUsd?: number;
     estimatedOutAmount?: bigint;
     estimatedSlippage?: number;
+    estimatedProfit?: number;
     liquidityUsd?: number;
     confidence: number;
     action: 'buy' | 'sell';
+    priority: number;
     priorityScore: number;
+    tokenSymbol: string;
     timestamp: number;
     sellAmount?: bigint;
 }
@@ -98,6 +101,8 @@ export interface Position {
     currentPrice?: number;
     profitLoss?: number;
     profitLossPercentage?: number;
+    currentProfitPercentage?: number;
+    entryTimestamp: number;
     lastUpdated: number;
 }
 /**
@@ -165,23 +170,24 @@ export declare enum SystemStatus {
 /**
  * 事件类型枚举
  */
-export declare enum EventType {
+export declare const enum EventType {
     POOL_CREATED = "pool_created",
     NEW_POOL_DETECTED = "new_pool_detected",
     TRADE_EXECUTED = "trade_executed",
     POSITION_UPDATED = "position_updated",
     PRICE_UPDATED = "price_updated",
-    ERROR_OCCURRED = "error_occurred"
+    ERROR_OCCURRED = "error_occurred",
+    OPPORTUNITY_DETECTED = "opportunity_detected"
 }
 /**
  * 系统事件数据类型
  */
-export type EventData = PoolInfo | TokenInfo | TradeResult | Position | StrategyCondition | Error | SystemStatus;
+export type EventData = PoolInfo | TokenInfo | TradeResult | Position | StrategyCondition | Error | TradingOpportunity;
 /**
  * 系统事件接口
  */
 export interface SystemEvent {
-    type: EventType;
+    type: string;
     data: EventData;
     timestamp: number;
 }

@@ -1,42 +1,52 @@
 /**
- * 交易池监听器
+ * 交易池监听器（海洋探测雷达系统）
  * 监控DEX上的新交易池创建
  * 
  * 【编程基础概念通俗比喻】
- * 1. 监听器(Listener) = 海洋探测系统：
- *    就像渔船上的高级探测系统，不断扫描海域寻找鱼群活动
- *    例如：connection.onProgramAccountChange() 就是持续观察海域的雷达装置
+ * 1. 监听器(Listener) = 渔船上的海洋探测雷达：
+ *    就像渔船上的高级声纳和雷达设备，不断扫描海域寻找鱼群聚集地
+ *    例如：connection.onProgramAccountChange() 就是持续工作的声纳装置，能捕捉到水下鱼群活动
  *    
- * 2. 事件(Event) = 海洋信号：
- *    水下的各种动静，可能代表不同的海洋活动
- *    例如：代币创建事件就像海底火山喷发，新鱼种出现的信号
+ * 2. 事件(Event) = 雷达捕获的信号：
+ *    雷达屏幕上显示的各种不同亮点，代表不同的海洋活动
+ *    例如：代币池创建事件就像发现了一片新的鱼群聚集地，立刻在雷达上显示特殊标记
  *    
- * 3. 过滤器(Filter) = 信号筛选器：
- *    不是所有信号都值得关注，需要筛选出真正有价值的信号
- *    例如：memcmp过滤条件就像设置雷达只对特定大小的鱼群反应
+ * 3. 过滤器(Filter) = 雷达信号筛选器：
+ *    不是所有雷达信号都值得渔船关注，需要筛选出真正有价值的鱼群信号
+ *    例如：memcmp过滤条件就像设置雷达只显示特定大小和密度的鱼群，忽略海草和小型生物
  *    
- * 4. 订阅(Subscription) = 观察任务：
- *    分配船员执行的各种观察任务，每个任务关注不同区域
- *    例如：this.subscriptions数组就是当前进行中的所有观察任务清单
+ * 4. 订阅(Subscription) = 雷达监测任务：
+ *    分配给不同船员的观察任务，每人负责监控雷达上不同区域的动态
+ *    例如：this.subscriptions就是当前安排的所有监测任务清单，记录谁在监测哪个区域
+ * 
+ * 5. 池子(Pool) = 鱼群聚集地：
+ *    海洋中鱼类密集的区域，通常意味着捕鱼的好时机
+ *    例如：knownPools就像船长记录的已知鱼群位置图，标记着哪里有可捕捞的鱼群
  * 
  * 【比喻解释】
- * 这个监听器就像渔船上的探测中心：
- * - 同时运行多台探测设备，监控多个海域（不同DEX）
- * - 利用声纳和雷达（账户变化和日志分析）捕捉信号
- * - 对发现的信号进行筛选和分析（数据解析）
- * - 当发现有价值目标时通知捕捞系统（触发交易）
- * - 保持整个探测系统的高效运行（资源管理）
+ * 这个模块就像渔船上的探测指挥中心：
+ * - 配备了多套雷达和声纳，同时监控多个海域（不同DEX）
+ * - 能够自动过滤无关信号，只关注有价值的鱼群（新池子）
+ * - 发现新鱼群后立即通知捕鱼系统准备行动（事件触发）
+ * - 维护一张详细的海域鱼群分布图（池子数据库）
+ * - 定期扫描海域确保不遗漏任何新出现的鱼群（定期检查）
+ * - 负责整个探测系统的启动、运行和关闭（生命周期管理）
  */
 
-import { PublicKey } from '@solana/web3.js';
-import { EventEmitter } from 'events';
+import {
+  PublicKey,
+  LogsFilter,
+  KeyedAccountInfo,
+  AccountInfo
+} from '@solana/web3.js';
+import { EventEmitter } from 'node:events';
 import appConfig from '../../core/config';
 import logger from '../../core/logger';
 import rpcService from '../../services/rpc_service';
 import { DexType, PoolInfo, EventType, SystemEvent } from '../../core/types';
 
 // 模块名称
-// 就像这个探测系统的编号
+// 就像这个雷达系统的舱位编号
 const MODULE_NAME = 'PoolMonitor';
 
 /**
@@ -44,14 +54,11 @@ const MODULE_NAME = 'PoolMonitor';
  * 定义监控器所需的各种设置参数
  * 
  * 【比喻解释】
- * 这就像探测系统的操作手册：
- * - 规定了探测器扫描频率（检查间隔）
- * - 列出了需要监控的海域（DEX列表）
- * - 配置了每个海域的特殊标识（programId）
- * - 决定了哪些海域需要关注（enabled开关）
- * 
- * 【编程语法通俗翻译】
- * interface = 标准规范：就像一份清单，列出了必须准备的设备
+ * 这就像探测雷达的操作手册：
+ * - 规定了雷达扫描频率（检查间隔）
+ * - 列出了需要监控的海域坐标（DEX列表）
+ * - 配置了每个海域的特殊识别码（programId）
+ * - 决定了哪些海域需要重点监控（enabled开关）
  */
 interface PoolMonitorConfig {
   checkInterval: number;
@@ -67,36 +74,38 @@ interface PoolMonitorConfig {
  * 负责监听DEX合约上的新交易池创建事件
  * 
  * 【比喻解释】
- * 这就像渔船上的高级鱼群探测系统：
- * - 配备了多种传感器（监听不同DEX）
- * - 持续扫描海域寻找鱼群聚集（流动性池）
- * - 能够区分不同鱼群特征（不同池类型）
- * - 发现新鱼群后自动追踪和记录（事件处理）
- * - 定期清理过期数据保持系统高效（资源管理）
+ * 这就像渔船上的高级鱼群探测指挥中心：
+ * - 统筹协调多套探测设备的工作（多DEX监听）
+ * - 配有自动识别系统区分不同类型的鱼群（池子分类）
+ * - 能够立即向捕鱼队发出新鱼群的精确位置（事件通知）
+ * - 维护完整的海域鱼群分布档案（数据记录）
+ * - 自动过滤干扰信号，提高探测效率（数据过滤）
+ * - 全天候不间断工作，确保不错过任何机会（持续监控）
  * 
  * 【编程语法通俗翻译】
- * class = 设计图纸：这是一个完整的探测系统设计方案
- * extends EventEmitter = 继承通讯能力：这个系统能够向其他系统发送信号
+ * class = 一套完整系统：包含多种功能和组件的探测中心设计图
+ * extends EventEmitter = 带通讯功能：这个系统能够向其他系统发送信号
+ * private = 内部组件：只有系统内部可以操作的控制装置和数据
  */
 class PoolMonitor extends EventEmitter {
   // 配置信息
-  // 就像探测系统的设置参数
+  // 就像探测系统的参数设置手册
   private readonly config: PoolMonitorConfig;
   
   // 运行状态标志
-  // 就像系统的开关状态
+  // 就像整个系统的总电源开关状态
   private isRunning = false;
   
   // 定期检查的计时器
-  // 就像定期巡逻的闹钟
+  // 就像自动定时扫描的控制时钟
   private checkIntervalId: NodeJS.Timeout | null = null;
   
   // 已知池子的存储
-  // 就像已发现鱼群的记录本
+  // 就像已发现鱼群的电子海图
   private knownPools: Map<string, PoolInfo> = new Map();
   
   // 事件订阅的集合
-  // 就像分配出去的观察任务清单
+  // 就像各个探测设备的工作任务分配表
   private subscriptions: Map<string, number> = new Map();
 
   /**
@@ -104,31 +113,31 @@ class PoolMonitor extends EventEmitter {
    * 初始化池子监听器并加载配置
    * 
    * 【比喻解释】
-   * 这就像组装和校准探测系统：
-   * - 读取探测范围和频率（配置加载）
-   * - 确认要监控的海域（启用的DEX）
-   * - 准备日志记录设备（日志初始化）
-   * - 但还未实际开始工作（等待start调用）
+   * 这就像组装和校准探测指挥中心：
+   * - 读取探测任务的详细参数（配置加载）
+   * - 确认要监控的各个海域范围（启用的DEX）
+   * - 准备记录系统随时记录发现（日志初始化）
+   * - 装配好所有设备但尚未通电（等待start调用）
    * 
    * 【编程语法通俗翻译】
-   * constructor = 组装仪式：创建这个探测系统的过程
-   * super() = 继承基础功能：先完成通讯系统的基础设置
-   * this.config = 保存设置：把操作手册放在随手可得的地方
+   * constructor = 建造过程：创建并安装这套探测系统
+   * super() = 安装基础组件：先完成通讯系统的安装
+   * this.config = 保存设置手册：把操作指南放在控制台旁边随时查阅
    */
   constructor() {
     // 初始化事件发射器
-    // 就像安装基础通讯设备
+    // 就像安装基础通讯系统
     super();
 
     // 从配置中加载监控设置
-    // 就像根据操作手册设置探测参数
+    // 就像根据任务手册设置探测参数
     this.config = {
       checkInterval: appConfig.monitoring.poolMonitorInterval,
       dexes: appConfig.dexes.filter(dex => dex.enabled)
     };
 
     // 记录初始化完成
-    // 就像在日志中记录设备安装完毕
+    // 就像在航行日志中记录设备安装完毕
     logger.info('交易池监听器初始化完成', MODULE_NAME, {
       enabledDexes: this.config.dexes.map(dex => dex.name),
       checkInterval: this.config.checkInterval
@@ -140,51 +149,52 @@ class PoolMonitor extends EventEmitter {
    * 开始监控所有配置的DEX程序变化
    * 
    * 【比喻解释】
-   * 这就像启动船上所有探测设备：
-   * - 检查系统是否已经在运行（避免重复启动）
-   * - 打开各种扫描仪和传感器（设置订阅）
-   * - 加载已知鱼群数据（加载现有池子）
-   * - 安排定期巡查任务（定期检查）
-   * - 确认所有设备正常工作（状态检查）
+   * 这就像启动整个探测指挥中心：
+   * - 先确认系统没有在运行（避免重复启动）
+   * - 依次启动所有探测设备（设置订阅）
+   * - 加载已知鱼群分布图（加载现有池子）
+   * - 设置定时巡航模式（定期检查）
+   * - 确认所有系统正常运转（状态检查）
+   * - 向全船通报探测系统已启动（日志记录）
    * 
    * 【编程语法通俗翻译】
-   * async = 启动需要时间：不是一按按钮就立刻完成的
-   * if (this.isRunning) return = 防重复：如果设备已在运行就不要再启动一次
-   * try/catch = 安全操作：小心启动，出问题立即处理
+   * async = 启动需要时间：不是一按按钮就立刻完成的复杂过程
+   * if (this.isRunning) return = 重复检查：如果系统已经运行就不要再启动一次
+   * try/catch = 安全程序：小心启动，随时准备处理可能出现的故障
    * 
    * @returns {Promise<void>} - 启动完成的信号
    */
   async start(): Promise<void> {
     // 检查是否已在运行
-    // 就像确认设备是否已经开启
+    // 就像确认指挥中心是否已经开启
     if (this.isRunning) {
       logger.warn('交易池监听器已经在运行中', MODULE_NAME);
       return;
     }
 
     // 记录启动信息
-    // 就像在日志中记录开始工作
+    // 就像在航行日志中记录开始工作
     logger.info('开始启动交易池监听器', MODULE_NAME);
     
     // 设置运行标志
-    // 就像打开系统总开关
+    // 就像打开系统总电源
     this.isRunning = true;
 
     try {
       // 设置DEX程序监听
-      // 就像启动各种探测设备
+      // 就像启动各海域的探测雷达
       await this.setupProgramSubscriptions();
 
       // 初始加载现有池子
-      // 就像加载已知鱼群数据库
+      // 就像导入最新的鱼群分布图
       await this.loadExistingPools();
 
       // 设置定期检查
-      // 就像设置定期巡查任务
+      // 就像设置雷达自动扫描模式
       this.startPeriodicCheck();
 
       // 记录启动成功
-      // 就像在日志中记录系统正常运行
+      // 就像向船长报告系统已全面运行
       logger.info('交易池监听器启动成功', MODULE_NAME);
     } catch (error) {
       // 处理启动错误
@@ -200,46 +210,49 @@ class PoolMonitor extends EventEmitter {
    * 清理所有活动的监听和定时任务
    * 
    * 【比喻解释】
-   * 这就像关闭船上所有探测设备：
-   * - 取消所有定期巡查任务（清除定时器）
-   * - 收回所有探测设备（取消订阅）
-   * - 保存当前状态（记录日志）
-   * - 完全关闭系统电源（状态设置）
+   * 这就像安全关闭整个探测指挥中心：
+   * - 先通知全船准备关闭探测系统（记录日志）
+   * - 取消所有定时扫描任务（清除定时器）
+   * - 依次关闭各个探测设备（取消订阅）
+   * - 保存当前探测数据（状态保存）
+   * - 最后关闭整个系统电源（状态设置）
+   * - 向船长确认探测系统已安全关闭（完成日志）
    * 
    * 【编程语法通俗翻译】
-   * if (!this.isRunning) return = 无需操作：如果设备已经关闭就不用再关一次
-   * clearInterval = 取消定时：停止原本安排的定期巡查
+   * if (!this.isRunning) return = 无效操作检查：如果系统已经关闭就不用再关一次
+   * clearInterval = 取消定时任务：停止原本设置的自动扫描
+   * await = 耐心等待：关闭每个设备需要时间，要等所有设备都安全关闭
    * 
    * @returns {Promise<void>} - 停止完成的信号
    */
   async stop(): Promise<void> {
     // 检查是否在运行
-    // 就像确认设备是否已开启
+    // 就像确认系统是否处于开启状态
     if (!this.isRunning) {
       return;
     }
 
     // 记录停止信息
-    // 就像在日志中记录准备关闭系统
+    // 就像在航行日志中记录准备关闭系统
     logger.info('停止交易池监听器', MODULE_NAME);
 
     // 清除定时器
-    // 就像取消定期巡查任务
+    // 就像关闭自动扫描模式
     if (this.checkIntervalId) {
       clearInterval(this.checkIntervalId);
       this.checkIntervalId = null;
     }
 
     // 取消所有订阅
-    // 就像收回所有探测设备
+    // 就像依次关闭所有探测设备
     await this.unsubscribeAll();
 
     // 更新运行状态
-    // 就像关闭系统总开关
+    // 就像关闭系统总电源
     this.isRunning = false;
     
     // 记录停止完成
-    // 就像在日志中记录系统已安全关闭
+    // 就像向船长报告系统已安全关闭
     logger.info('交易池监听器已停止', MODULE_NAME);
   }
 
@@ -248,19 +261,17 @@ class PoolMonitor extends EventEmitter {
    * 为每个启用的DEX创建监听
    * 
    * 【比喻解释】
-   * 这就像为每个海域设置专门的探测器：
-   * - 为每个目标海域（DEX）准备设备
-   * - 同时使用声纳和摄像头（账户和日志监听）
-   * - 设置好信号接收方式（回调函数）
-   * - 保存每个探测器的识别码（订阅ID）
-   * - 确认所有设备工作正常（日志记录）
+   * 这就像设置各个海域的专门探测装置：
+   * - 逐一检查需要监控的海域（遍历DEX）
+   * - 针对每个海域启动特定的探测设备（创建监听）
+   * - 设置每个设备的精确参数（过滤条件）
+   * - 指派船员负责监控每个设备（回调函数）
+   * - 记录每个设备的工作状态（订阅记录）
    * 
    * 【编程语法通俗翻译】
-   * for (const dex of this.config.dexes) = 挨个设置：对每个目标海域逐一部署设备
-   * try/catch = 安全部署：如果某个设备部署失败，不影响其他设备
-   * 
-   * @returns {Promise<void>} - 设置完成的信号
-   * @private
+   * private = 内部操作：只有指挥中心内部才能执行的设置过程
+   * async = 耗时任务：需要时间来逐一启动所有设备
+   * for...of = 逐一处理：像是挨个检查清单上的每一项
    */
   private async setupProgramSubscriptions(): Promise<void> {
     // 为每个启用的DEX创建监听
@@ -275,15 +286,26 @@ class PoolMonitor extends EventEmitter {
         // 就像部署水下声纳设备
         const programSubId = await rpcService.subscribeProgram(
           programId,
-          (accountInfo, context) => this.handleProgramAccountChange(dex.name, programId, accountInfo, context)
+          (accountInfo) => {
+            // 添加上下文参数的模拟
+            const context = { slot: 0 }; // 简化的上下文对象
+            this.handleProgramAccountChange(dex.name, programId, accountInfo, context);
+          }
         );
         this.subscriptions.set(`program:${dex.name}`, programSubId);
         
         // 设置日志订阅
         // 就像部署海面观测设备
+        const logFilter = {
+          mentions: [programId.toBase58()]
+        } as any;
         const logsSubId = await rpcService.subscribeLogs(
-          programId,
-          (logs, context) => this.handleProgramLogs(dex.name, programId, logs, context)
+          logFilter,
+          (logs) => {
+            // 添加上下文参数的模拟
+            const context = { signature: '' }; // 简化的上下文对象
+            this.handleProgramLogs(dex.name, programId, logs, context);
+          }
         );
         this.subscriptions.set(`logs:${dex.name}`, logsSubId);
         
@@ -377,8 +399,8 @@ class PoolMonitor extends EventEmitter {
     
     // 获取交易签名和日志内容
     // 就像获取录像的编号和内容
-    const signature = context.signature;
-    const logMessages = logs.logs || [];
+    const signature = context?.signature || '';
+    const logMessages = logs?.logs || [];
     
     // 获取池子创建关键词
     // 就像获取鱼群特征的识别清单
@@ -430,9 +452,11 @@ class PoolMonitor extends EventEmitter {
   private async processTransactionWithPool(_dexName: DexType, signature: string): Promise<void> {
     try {
       // 获取交易详情
-      const txInfo = await rpcService.withRetry(
-        async () => await rpcService.connection.getParsedTransaction(signature)
-      );
+      const connection = rpcService.getConnection();
+      if (!connection) {
+        throw new Error('RPC连接未初始化');
+      }
+      const txInfo = await connection.getParsedTransaction(signature);
       
       if (!txInfo) {
         logger.warn(`无法获取交易 ${signature} 的详情`, MODULE_NAME);
@@ -520,6 +544,12 @@ class PoolMonitor extends EventEmitter {
     // 确保accountData存在且格式正确
     if (!accountData || typeof accountData !== 'object') {
       logger.debug(`跳过处理: 账户数据无效 (${pubkey.toBase58()})`, MODULE_NAME);
+      return;
+    }
+
+    // 确保accountData包含必要的字段
+    if (!accountData.data || !accountData.owner) {
+      logger.debug(`跳过处理: 账户数据缺少必要字段 (${pubkey.toBase58()})`, MODULE_NAME);
       return;
     }
     

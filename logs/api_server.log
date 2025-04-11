@@ -1,0 +1,30 @@
+WARNING: NODE_ENV value of 'production' did not match any deployment config file names.
+WARNING: See https://github.com/node-config/node-config/wiki/Strict-Mode
+bigint: Failed to load bindings, pure JS will be used (try npm run rebuild?)
+[2025-04-08 19:04:59.822] [[33mwarn[39m] [RPCService]: [33mWebSocket连接创建失败，使用HTTP连接作为备用[39m {"error":"Endpoint URL must start with `http:` or `https:`."}
+[2025-04-08 19:04:59.822] [[34minfo[39m] [RPCService]: [34mRPC服务初始化完成[39m {"cluster":"mainnet-beta","rpcUrl":"https://mainnet.helius-rpc.com/?api-key=97ca0bfd-3b50-42e0-8422-078e4cb4a80a","wsUrl":"wss://mainnet.helius-rpc.com/?api-key=97ca0bfd-3b50-42e0-8422-078e4cb4a80a","hasBackups":true,"hasWs":false}
+[2025-04-08 19:04:59.822] [[34minfo[39m] [TokenValidator]: [34m开始加载代币列表[39m {"whitelistPath":"./config/whitelist.json","blacklistPath":"./config/blacklist.json"}
+[2025-04-08 19:04:59.822] [[34minfo[39m] [RiskManager]: [34m已加载 2 个黑名单代币[39m
+[2025-04-08 19:04:59.822] [[34minfo[39m] [RiskManager]: [34m风险控制与资金管理系统初始化完成[39m
+[2025-04-08 19:04:59.826] [[34minfo[39m] [ApiServer]: [34mAPI服务器已启动，监听端口 3000[39m
+[2025-04-08 19:04:59.826] [[34minfo[39m] [ApiServerMain]: [34mAPI服务器已成功启动[39m
+[2025-04-08 19:04:59.826] [[34minfo[39m] [TokenValidator]: [34m已加载 0 个白名单代币[39m
+[2025-04-08 19:04:59.827] [[34minfo[39m] [TokenValidator]: [34m已加载 0 个黑名单代币和 0 个黑名单模式[39m
+[2025-04-08 19:04:59.827] [[34minfo[39m] [TokenValidator]: [34m代币列表加载完成[39m {"whitelistSize":0,"blacklistSize":0,"blacklistPatterns":0}
+[2025-04-08 19:08:01.297] [[34minfo[39m] [TokenController]: [34m黑名单已成功保存到: ./config/blacklist.json[39m
+[2025-04-08 19:08:01.297] [[34minfo[39m] [RiskManager]: [34m已将代币添加到黑名单: E3GzbpPTkHYUC4yk8y7jZ9DvhGDvsMxv2VqCNB7TKqhg[39m {"reason":"测试黑名单功能"}
+[2025-04-08 19:20:23.536] [[34minfo[39m] [TokenController]: [34m黑名单已成功保存到: ./config/blacklist.json[39m
+[2025-04-08 19:20:23.537] [[34minfo[39m] [RiskManager]: [34m已将代币添加到黑名单: 5tTkZSZJWyxNBzZvqzxkC1hYPhvghtCDYxvwTyzoSKFU[39m {"reason":"测试添加黑名单"}
+[2025-04-08 19:20:33.613] [[34minfo[39m] [TokenController]: [34m黑名单已成功保存到: ./config/blacklist.json[39m
+[2025-04-08 19:20:33.613] [[34minfo[39m] [RiskManager]: [34m已从黑名单移除代币: 5tTkZSZJWyxNBzZvqzxkC1hYPhvghtCDYxvwTyzoSKFU[39m
+[2025-04-08 19:20:51.516] [[34minfo[39m] [TokenController]: [34m白名单已成功保存到: ./config/whitelist.json[39m
+[2025-04-08 19:21:38.199] [[34minfo[39m] [TokenController]: [34m黑名单已成功保存到: ./config/blacklist.json[39m
+[2025-04-08 19:21:38.199] [[34minfo[39m] [RiskManager]: [34m已将代币添加到黑名单: 5tTkZSZJWyxNBzZvqzxkC1hYPhvghtCDYxvwTyzoSKFU[39m {"reason":"测试黑名单功能"}
+[2025-04-08 19:21:47.422] [[34minfo[39m] [TokenController]: [34m黑名单已成功保存到: ./config/blacklist.json[39m
+[2025-04-08 19:21:47.422] [[34minfo[39m] [RiskManager]: [34m已从黑名单移除代币: 5tTkZSZJWyxNBzZvqzxkC1hYPhvghtCDYxvwTyzoSKFU[39m
+[2025-04-08 19:22:03.988] [[34minfo[39m] [TokenController]: [34m白名单已成功保存到: ./config/whitelist.json[39m
+[2025-04-08 19:24:37.205] [[34minfo[39m] [TokenController]: [34m黑名单已成功保存到: ./config/blacklist.json[39m
+[2025-04-08 19:24:37.205] [[34minfo[39m] [RiskManager]: [34m已将代币添加到黑名单: 7VG58H5vfrVgAqTvY7xzGAMrx13cXGKwYZJSJH2qtRQD[39m {"reason":"测试添加功能"}
+[2025-04-08 19:24:50.855] [[34minfo[39m] [TokenController]: [34m黑名单已成功保存到: ./config/blacklist.json[39m
+[2025-04-08 19:24:50.855] [[34minfo[39m] [RiskManager]: [34m已从黑名单移除代币: 7VG58H5vfrVgAqTvY7xzGAMrx13cXGKwYZJSJH2qtRQD[39m
+[2025-04-08 19:25:08.857] [[34minfo[39m] [TokenController]: [34m白名单已成功保存到: ./config/whitelist.json[39m

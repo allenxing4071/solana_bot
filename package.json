@@ -7,12 +7,19 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "start:listen-only": "node dist/index.js --listen-only",
+    "api": "node dist/api-server.js",
+    "api:only": "node start_api_server.js",
     "dev": "ts-node src/index.ts",
     "dev:listen-only": "ts-node src/index.ts --listen-only",
+    "dev:api": "ts-node src/api-server.ts",
     "test": "jest",
     "test:connection": "ts-node scripts/test_connection.ts",
+    "test:api": "node tests/api_test.js",
     "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix"
+    "lint:fix": "eslint . --ext .ts --fix",
+    "api-docs": "apidoc -i src/api/ -o docs/api",
+    "memory-report": "ts-node --expose-gc src/tools/memory_report.ts",
+    "memory-monitor": "ts-node src/tools/memory_monitor.ts"
   },
   "keywords": [
     "solana",
@@ -27,14 +34,20 @@
   "dependencies": {
     "@orca-so/sdk": "^1.2.26",
     "@project-serum/anchor": "^0.26.0",
-    "@solana/spl-token": "^0.3.8",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/spl-token-metadata": "^0.1.6",
     "@solana/web3.js": "^1.77.3",
-    "axios": "^1.4.0",
+    "axios": "^1.8.4",
     "bn.js": "^5.2.1",
     "bs58": "^6.0.0",
     "config": "^3.3.9",
-    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "filesize": "^10.1.6",
     "fs-extra": "^11.3.0",
+    "http-proxy-middleware": "^3.0.3",
+    "node-fetch": "^3.3.2",
     "node-telegram-bot-api": "^0.61.0",
     "winston": "^3.10.0",
     "ws": "^8.13.0"
@@ -42,6 +55,8 @@
   "devDependencies": {
     "@types/bn.js": "^5.1.1",
     "@types/config": "^3.3.0",
+    "@types/cors": "^2.8.16",
+    "@types/express": "^4.17.21",
     "@types/fs-extra": "^11.0.4",
     "@types/jest": "^29.5.3",
     "@types/node": "^20.4.9",
@@ -50,10 +65,11 @@
     "@types/ws": "^8.5.5",
     "@typescript-eslint/eslint-plugin": "^6.3.0",
     "@typescript-eslint/parser": "^6.3.0",
+    "apidoc": "^1.2.0",
     "eslint": "^8.46.0",
     "jest": "^29.6.2",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.1",
-    "typescript": "^5.1.6"
+    "typescript": "^5.8.3"
   }
 }

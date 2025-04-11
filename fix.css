@@ -1,0 +1,132 @@
+/**
+ * 修复样式文件
+ * 用于解决布局和排版问题
+ */
+
+/* 卡片高度修复 */
+.card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 确保图表容器高度正确 */
+.chart-container {
+    flex: 1;
+    min-height: 250px;
+    position: relative;
+}
+
+/* 状态指示器改进 */
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    animation: pulse 2s infinite;
+}
+
+.status-running {
+    background-color: var(--success-color);
+    box-shadow: 0 0 0 4px rgba(77, 255, 189, 0.2);
+}
+
+.status-stopped {
+    background-color: var(--danger-color);
+    box-shadow: 0 0 0 4px rgba(255, 110, 77, 0.2);
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(77, 255, 189, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(77, 255, 189, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(77, 255, 189, 0);
+    }
+}
+
+/* 表格改进 */
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    min-width: 100%;
+}
+
+tbody tr {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+/* 改进的统计卡片 */
+.stat-info p {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+/* 刷新按钮旋转效果 */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.btn-refreshing i {
+    animation: spin 1s linear infinite;
+}
+
+/* 确保内容不溢出 */
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 侧边栏活动项目更明显 */
+.sidebar-nav li.active a {
+    background-color: rgba(77, 182, 255, 0.15);
+    border-left-color: var(--primary-color);
+    font-weight: bold;
+}
+
+/* 确保图表正确渲染 */
+canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* 移动端调整 */
+@media (max-width: 768px) {
+    .stats-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-info p {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .stats-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-info p {
+        font-size: 18px;
+    }
+} 

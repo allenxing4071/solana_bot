@@ -1,0 +1,20 @@
+{
+  "name": "Solana MEV Bot API",
+  "version": "1.0.0",
+  "description": "Solana MEV机器人API文档 - 管理黑名单和白名单",
+  "title": "Solana MEV Bot API",
+  "url": "http://localhost:3000",
+  "sampleUrl": "http://localhost:3000",
+  "template": {
+    "withGenerator": true,
+    "withCompare": true
+  },
+  "header": {
+    "title": "API概述",
+    "filename": "src/api/header.md"
+  },
+  "footer": {
+    "title": "使用说明",
+    "filename": "src/api/footer.md"
+  }
+} 

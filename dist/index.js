@@ -35,24 +35,32 @@ const dotenv_1 = __importDefault(require("dotenv"));
 // 加载环境变量后再导入其他模块
 dotenv_1.default.config();
 const logger_1 = __importDefault(require("./core/logger"));
-const pool_monitor_1 = require("./modules/listener/pool_monitor");
-const trader_module_1 = __importDefault(require("./modules/trader/trader_module"));
-const types_1 = require("./core/types");
-const data_analysis_system_1 = __importDefault(require("./modules/analyzer/data_analysis_system"));
+const rpc_service_1 = __importDefault(require("./services/rpc_service"));
+const pool_monitor_1 = __importDefault(require("./modules/listener/pool_monitor"));
+const risk_manager_1 = __importDefault(require("./modules/risk/risk_manager"));
 const performance_monitor_1 = __importDefault(require("./modules/monitor/performance_monitor"));
-// 模块名称
-// 就像渔船的识别标志
-const MODULE_NAME = 'Main';
-// 确定是否为仅监听模式
-// 如果命令行参数包含--listen-only 或环境变量LISTEN_ONLY为'true'，则启用仅监听模式
-const LISTEN_ONLY_MODE = process.argv.includes('--listen-only') || process.env.LISTEN_ONLY === 'true';
-// 添加详细日志，方便调试
-console.log('调试信息 - 环境变量:');
-console.log('LISTEN_ONLY:', process.env.LISTEN_ONLY);
-console.log('LISTEN_ONLY === \'true\':', process.env.LISTEN_ONLY === 'true');
-console.log('process.argv:', process.argv);
-console.log('--listen-only 参数:', process.argv.includes('--listen-only'));
-console.log('最终监听模式状态:', LISTEN_ONLY_MODE);
+const server_1 = __importDefault(require("./api/server"));
+const trader_module_1 = __importDefault(require("./modules/trader/trader_module"));
+// 类型断言
+const asService = (obj) => obj;
+const asRPCService = (obj) => obj;
+const asRiskManager = (obj) => obj;
+const asPerformanceMonitor = (obj) => obj;
+// 程序名称
+const MODULE_NAME = 'App';
+// 系统状态常量
+var SystemStatus;
+(function (SystemStatus) {
+    SystemStatus["INITIALIZING"] = "initializing";
+    SystemStatus["STARTING"] = "starting";
+    SystemStatus["RUNNING"] = "running";
+    SystemStatus["STOPPING"] = "stopping";
+    SystemStatus["STOPPED"] = "stopped";
+    SystemStatus["ERROR"] = "error";
+})(SystemStatus || (SystemStatus = {}));
+// 是否处于仅监听模式
+const LISTEN_ONLY_MODE = process.argv.includes('--listen-only') ||
+    process.env.LISTEN_ONLY === 'true';
 /**
  * 应用程序类
  * 管理整个系统的生命周期
@@ -82,7 +90,7 @@ class Application {
     constructor() {
         // 系统状态，初始为启动中
         // 就像渔船的航行状态指示牌
-        this.systemStatus = types_1.SystemStatus.STARTING;
+        this.systemStatus = SystemStatus.INITIALIZING;
         // 设置进程退出处理
         // 就像安装船只紧急处理系统
         this.setupProcessHandlers();
@@ -121,7 +129,7 @@ class Application {
         // 就像处理"船体意外损坏"警报
         process.on('uncaughtException', (error) => {
             logger_1.default.error('捕获到未处理的异常', MODULE_NAME, { error: error instanceof Error ? error.toString() : String(error) });
-            this.setSystemStatus(types_1.SystemStatus.ERROR);
+            this.setSystemStatus(SystemStatus.ERROR);
         });
         // 处理未处理的Promise拒绝
         // 就像处理"潜在隐患"警告
@@ -135,113 +143,66 @@ class Application {
      */
     setupEventListeners() {
         // 监听池子监控器的新池子事件
-        pool_monitor_1.poolMonitor.on('newPool', (poolInfo) => {
-            // 将新池子事件转发给交易模块
-            trader_module_1.default.handleNewPool(poolInfo);
-        });
+        const poolMonitorObj = asService(pool_monitor_1.default);
+        const traderModuleObj = asService(trader_module_1.default);
+        const performanceMonitorObj = asService(performance_monitor_1.default);
+        if (poolMonitorObj.on && traderModuleObj.handleNewPool) {
+            poolMonitorObj.on('newPool', (poolInfo) => {
+                traderModuleObj.handleNewPool?.(poolInfo);
+            });
+        }
         // 监听系统事件
-        trader_module_1.default.on('event', (event) => {
-            // 处理交易模块发出的事件
-            switch (event.type) {
-                case types_1.EventType.TRADE_EXECUTED:
-                    // 交易执行事件
-                    logger_1.default.info('交易已执行', MODULE_NAME, { event });
-                    break;
-                case types_1.EventType.POSITION_UPDATED:
-                    // 持仓更新事件
-                    logger_1.default.info('持仓已更新', MODULE_NAME, { event });
-                    break;
-                case types_1.EventType.ERROR_OCCURRED:
-                    // 错误事件
-                    logger_1.default.error('发生错误', MODULE_NAME, { event });
-                    break;
-            }
-        });
-        // 监听数据分析系统事件
-        data_analysis_system_1.default.on('analysisComplete', (result) => {
-            logger_1.default.info('数据分析完成', MODULE_NAME, {
-                timestamp: new Date(result.timestamp).toISOString(),
-                reportGenerated: result.report !== null
+        if (traderModuleObj.on) {
+            traderModuleObj.on('event', (event) => {
+                // 处理交易模块发出的事件
+                switch (event.type) {
+                    case "trade_executed" /* EventType.TRADE_EXECUTED */:
+                        // 交易执行事件
+                        logger_1.default.info('交易已执行', MODULE_NAME, { event });
+                        break;
+                    case "position_updated" /* EventType.POSITION_UPDATED */:
+                        // 持仓更新事件
+                        logger_1.default.info('持仓已更新', MODULE_NAME, { event });
+                        break;
+                    case "error_occurred" /* EventType.ERROR_OCCURRED */:
+                        // 错误事件
+                        logger_1.default.error('发生错误', MODULE_NAME, { event });
+                        break;
+                }
             });
-            // 可以在此处添加对分析结果的处理逻辑
-        });
+        }
         // 监听性能监控系统警报
-        performance_monitor_1.default.on('alert', (alert) => {
-            logger_1.default.warn(`性能警报: ${alert.message}`, MODULE_NAME, {
-                level: alert.level,
-                metric: alert.metric,
-                value: alert.value,
-                threshold: alert.threshold
+        if (performanceMonitorObj.on) {
+            performanceMonitorObj.on('alert', (alert) => {
+                logger_1.default.warn(`性能警报: ${alert.message}`, MODULE_NAME, {
+                    level: alert.level,
+                    metric: alert.metric,
+                    value: alert.value,
+                    threshold: alert.threshold
+                });
             });
-            // 可以在这里添加对性能警报的处理逻辑
-        });
+        }
     }
     /**
      * 启动应用程序
-     * 按顺序初始化并启动所有系统模块
-     *
-     * 【比喻解释】
-     * 这就像渔船的完整启航流程：
-     * - 检查天气和海况（初始配置）
-     * - 按顺序启动各个系统（监控器、交易模块）
-     * - 确认所有系统正常工作（状态检查）
-     * - 正式开始航行（设置运行状态）
-     * - 向船员广播航行信息（日志记录）
-     *
-     * 【编程语法通俗翻译】
-     * async = 耐心等待：启航不是一蹴而就的，需要等待各系统准备就绪
-     * try/catch = 安全航行：时刻警惕可能的危险，出现问题立即处理
-     * await = 等待确认：某个操作完成后才能进行下一步
-     *
-     * @returns {Promise<void>} - 启动完成的信号
      */
     async start() {
         try {
-            logger_1.default.info('=== 正在启动 Solana MEV 机器人 ===', MODULE_NAME);
+            this.setSystemStatus(SystemStatus.STARTING);
+            logger_1.default.info('正在启动Solana MEV机器人...', MODULE_NAME);
             if (LISTEN_ONLY_MODE) {
-                // 仅监听模式提示
-                // 就像告诉船员"这次只是观察鱼群，不实际捕捞"
                 logger_1.default.info('仅监听模式已启用 - 只会监听新池子/代币，不会执行交易', MODULE_NAME);
             }
-            // 1. 设置系统状态
-            // 就像改变船只航行状态旗帜为"准备中"
-            this.setSystemStatus(types_1.SystemStatus.STARTING);
-            // 2. 启动池子监听器
-            // 就像启动鱼群探测雷达
-            logger_1.default.info('正在启动池子监听器...', MODULE_NAME);
-            await pool_monitor_1.poolMonitor.start();
-            logger_1.default.info('池子监听器启动成功', MODULE_NAME);
-            // 3. 启动交易模块
-            // 就像准备捕鱼网和绞盘
-            logger_1.default.info('正在启动交易模块...', MODULE_NAME);
-            await trader_module_1.default.start(!LISTEN_ONLY_MODE);
-            logger_1.default.info('交易模块启动成功', MODULE_NAME, {
-                executionEnabled: !LISTEN_ONLY_MODE
-            });
-            // 4. 启动性能监控系统
-            // 就像启动船只状态监控系统
-            logger_1.default.info('正在启动性能监控系统...', MODULE_NAME);
-            performance_monitor_1.default.start();
-            logger_1.default.info('性能监控系统启动成功', MODULE_NAME);
-            // 5. 启动数据分析系统
-            // 就像启动数据分析和决策支持系统
-            logger_1.default.info('正在启动数据分析系统...', MODULE_NAME);
-            data_analysis_system_1.default.start();
-            logger_1.default.info('数据分析系统启动成功', MODULE_NAME);
-            // 6. 设置系统状态为运行中
-            // 就像宣布"船只已进入正常航行状态"
-            this.setSystemStatus(types_1.SystemStatus.RUNNING);
-            logger_1.default.info('=== Solana MEV 机器人启动完成 ===', MODULE_NAME);
+            // 初始化和启动各系统模块
+            await this.initializeModules();
+            // 启动业务逻辑
+            await this.startBusinessLogic();
+            this.setSystemStatus(SystemStatus.RUNNING);
+            logger_1.default.info('Solana MEV机器人启动完成', MODULE_NAME);
         }
         catch (error) {
-            // 处理启动过程中的错误
-            logger_1.default.error('启动过程出错', MODULE_NAME, {
-                error: error instanceof Error ? error.message : String(error)
-            });
-            this.setSystemStatus(types_1.SystemStatus.ERROR);
-            // 尝试关闭已启动的模块
-            await this.shutdown();
-            // 继续抛出错误，允许外部处理
+            this.setSystemStatus(SystemStatus.ERROR);
+            logger_1.default.error('启动失败', MODULE_NAME, error);
             throw error;
         }
     }
@@ -258,33 +219,35 @@ class Application {
      * @returns {Promise<void>} - 关闭完成的信号
      */
     async shutdown() {
-        logger_1.default.info('正在关闭系统...', MODULE_NAME);
-        // 设置系统状态为关闭中
-        this.setSystemStatus(types_1.SystemStatus.STOPPING);
         try {
-            // 按照与启动相反的顺序关闭各模块
-            // 1. 关闭数据分析系统
-            logger_1.default.info('正在关闭数据分析系统...', MODULE_NAME);
-            data_analysis_system_1.default.stop();
-            // 2. 关闭性能监控系统
-            logger_1.default.info('正在关闭性能监控系统...', MODULE_NAME);
-            performance_monitor_1.default.stop();
-            // 3. 关闭交易模块
-            logger_1.default.info('正在关闭交易模块...', MODULE_NAME);
-            await trader_module_1.default.stop();
-            // 4. 关闭池子监听器
-            logger_1.default.info('正在关闭池子监听器...', MODULE_NAME);
-            await pool_monitor_1.poolMonitor.stop();
-            // 设置系统状态为已停止
-            this.setSystemStatus(types_1.SystemStatus.STOPPED);
-            logger_1.default.info('系统已完全关闭', MODULE_NAME);
+            this.setSystemStatus(SystemStatus.STOPPING);
+            logger_1.default.info('正在关闭Solana MEV机器人...', MODULE_NAME);
+            // 关闭各个模块
+            const serviceModules = [
+                pool_monitor_1.default,
+                trader_module_1.default,
+                performance_monitor_1.default,
+                server_1.default
+            ];
+            for (const service of serviceModules) {
+                const serviceObj = asService(service);
+                if (serviceObj.start) {
+                    try {
+                        await serviceObj.start();
+                        logger_1.default.info(`已关闭服务: ${service.constructor.name}`, MODULE_NAME);
+                    }
+                    catch (error) {
+                        logger_1.default.error(`关闭服务失败: ${service.constructor.name}`, MODULE_NAME, error);
+                    }
+                }
+            }
+            this.setSystemStatus(SystemStatus.STOPPED);
+            logger_1.default.info('Solana MEV机器人已关闭', MODULE_NAME);
         }
         catch (error) {
-            logger_1.default.error('系统关闭过程中出错', MODULE_NAME, {
-                error: error instanceof Error ? error.message : String(error)
-            });
-            // 即使出错，也将状态标记为已停止
-            this.setSystemStatus(types_1.SystemStatus.STOPPED);
+            this.setSystemStatus(SystemStatus.ERROR);
+            logger_1.default.error('关闭失败', MODULE_NAME, error);
+            throw error;
         }
     }
     /**
@@ -321,14 +284,94 @@ class Application {
     getSystemStatus() {
         return this.systemStatus;
     }
+    /**
+     * 初始化系统模块
+     * 按顺序初始化各个功能模块
+     */
+    async initializeModules() {
+        try {
+            logger_1.default.info('开始初始化系统模块...', MODULE_NAME);
+            // 检查RPC连接
+            const rpcServiceObj = asService(rpc_service_1.default);
+            if (rpcServiceObj.isConnectionHealthy) {
+                const isHealthy = await rpcServiceObj.isConnectionHealthy();
+                if (!isHealthy) {
+                    throw new Error('RPC连接不健康');
+                }
+                logger_1.default.info('RPC服务连接正常', MODULE_NAME);
+            }
+            // 启动其他服务
+            const riskManagerObj = asService(risk_manager_1.default);
+            if (riskManagerObj.start) {
+                await riskManagerObj.start();
+                logger_1.default.info('风险管理器启动完成', MODULE_NAME);
+            }
+            const performanceMonitorObj = asService(performance_monitor_1.default);
+            if (performanceMonitorObj.start) {
+                await performanceMonitorObj.start();
+                logger_1.default.info('性能监控器启动完成', MODULE_NAME);
+            }
+            // 启动池子监控器
+            const poolMonitorObj = asService(pool_monitor_1.default);
+            if (poolMonitorObj.start) {
+                await poolMonitorObj.start();
+                logger_1.default.info('池子监控器启动完成', MODULE_NAME);
+            }
+            // 启动交易模块
+            const traderModuleObj = asService(trader_module_1.default);
+            if (traderModuleObj.start) {
+                await traderModuleObj.start();
+                logger_1.default.info('交易模块启动完成', MODULE_NAME);
+            }
+            // 启动API服务器
+            const apiServerObj = asService(server_1.default);
+            if (apiServerObj.start) {
+                await apiServerObj.start();
+                logger_1.default.info('API服务器启动完成', MODULE_NAME);
+            }
+            logger_1.default.info('所有系统模块初始化完成', MODULE_NAME);
+        }
+        catch (error) {
+            logger_1.default.error('系统模块初始化失败', MODULE_NAME, error);
+            throw error;
+        }
+    }
+    /**
+     * 启动业务逻辑
+     */
+    async startBusinessLogic() {
+        try {
+            // 启动池子监控
+            const poolMonitorObj = asService(pool_monitor_1.default);
+            if (poolMonitorObj.startMonitoring) {
+                await poolMonitorObj.startMonitoring();
+                logger_1.default.info('池子监控已启动', MODULE_NAME);
+            }
+            // 启动交易模块
+            const traderModuleObj = asService(trader_module_1.default);
+            if (traderModuleObj.startTrading && !LISTEN_ONLY_MODE) {
+                await traderModuleObj.startTrading();
+                logger_1.default.info('交易模块已启动', MODULE_NAME);
+            }
+            // 启动性能监控
+            const performanceMonitorObj = asService(performance_monitor_1.default);
+            if (performanceMonitorObj.startMonitoring) {
+                await performanceMonitorObj.startMonitoring();
+                logger_1.default.info('性能监控已启动', MODULE_NAME);
+            }
+            logger_1.default.info('所有业务逻辑已启动', MODULE_NAME);
+        }
+        catch (error) {
+            logger_1.default.error('业务逻辑启动失败', MODULE_NAME, error);
+            throw error;
+        }
+    }
 }
-// 创建应用程序实例
+// 创建应用实例
 const app = new Application();
-// 启动应用程序
+// 启动应用程序并处理错误
 app.start().catch(error => {
-    logger_1.default.error('应用程序启动失败，程序将退出', MODULE_NAME, {
-        error: error instanceof Error ? error.message : String(error)
-    });
+    logger_1.default.error('应用程序启动失败', MODULE_NAME, { error: error instanceof Error ? error.toString() : String(error) });
     process.exit(1);
 });
 // 导出应用程序实例

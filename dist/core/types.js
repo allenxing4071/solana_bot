@@ -4,7 +4,7 @@
  * 定义了整个系统中使用的基本数据类型和接口
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LogLevel = exports.NotificationLevel = exports.EventType = exports.SystemStatus = exports.StrategyType = exports.DexType = void 0;
+exports.LogLevel = exports.NotificationLevel = exports.SystemStatus = exports.StrategyType = exports.DexType = void 0;
 /**
  * DEX交易所类型
  */
@@ -37,18 +37,6 @@ var SystemStatus;
     SystemStatus["STOPPING"] = "stopping";
     SystemStatus["STOPPED"] = "stopped"; // 已停止
 })(SystemStatus || (exports.SystemStatus = SystemStatus = {}));
-/**
- * 事件类型枚举
- */
-var EventType;
-(function (EventType) {
-    EventType["POOL_CREATED"] = "pool_created";
-    EventType["NEW_POOL_DETECTED"] = "new_pool_detected";
-    EventType["TRADE_EXECUTED"] = "trade_executed";
-    EventType["POSITION_UPDATED"] = "position_updated";
-    EventType["PRICE_UPDATED"] = "price_updated";
-    EventType["ERROR_OCCURRED"] = "error_occurred";
-})(EventType || (exports.EventType = EventType = {}));
 /**
  * 通知级别枚举
  */

@@ -194,5 +194,19 @@
     <script src="js/memory.js"></script>
     <script src="js/theme.js"></script>
     <script src="js/datetime.js"></script>
+    <script src="js/memory-fix.js"></script>
+    <script src="js/memory-optimize.js"></script>
+    <!-- 确保UI控件被正确初始化 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 安全调用setupUIControls函数(如果它存在)
+            if (typeof setupUIControls === 'function') {
+                console.log('正在初始化UI控件...');
+                setupUIControls();
+            } else {
+                console.warn('setupUIControls函数未定义，跳过UI控件初始化');
+            }
+        });
+    </script>
 </body>
 </html> 

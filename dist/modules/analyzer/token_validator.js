@@ -1,15 +1,38 @@
 "use strict";
 /**
- * 代币验证器
+ * 代币验证器(鱼类安全检测系统)
  * 负责验证代币的合法性和安全性，包括白名单/黑名单检查
+ *
+ * 【编程基础概念通俗比喻】
+ * 1. 验证器 = 渔船上的鱼类检测仪:
+ *    就像渔船上用来区分安全和危险鱼类的专业设备
+ *    例如：validateToken() 就像是"鱼类安全扫描"功能
+ *
+ * 2. 白名单/黑名单 = 已知安全/危险鱼类图鉴:
+ *    记录了已知的安全鱼类和危险鱼类信息
+ *    例如：whitelist 就像是"优质鱼类图鉴"，blacklist 就像是"有毒鱼类警示录"
+ *
+ * 3. 模式匹配 = 鱼类特征识别:
+ *    根据鱼的外观特征来识别潜在危险
+ *    例如：blacklistPatterns 就像是"危险鱼类特征数据库"
+ *
+ * 4. 代币信息 = 鱼类档案:
+ *    记录每种鱼的详细信息和特性
+ *    例如：TokenInfo 就像是"鱼类百科信息卡"
+ *
+ * 【比喻解释】
+ * 这个模块就像渔船上的鱼类检验站：
+ * - 负责检查捕获的每条鱼是否安全可食(代币是否可交易)
+ * - 维护着已知安全鱼类和危险鱼类的名录(白名单和黑名单)
+ * - 能够识别某些危险鱼类的共同特征(模式匹配)
+ * - 定期更新鱼类图鉴(重新加载名单)，保持信息最新
  */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.tokenValidator = void 0;
 const web3_js_1 = require("@solana/web3.js");
-const node_fs_extra_1 = __importDefault(require("fs-extra"));
+const fs_extra_1 = __importDefault(require("fs-extra"));
 const config_1 = __importDefault(require("../../core/config"));
 const logger_1 = __importDefault(require("../../core/logger"));
 const rpc_service_1 = __importDefault(require("../../services/rpc_service"));
@@ -17,10 +40,27 @@ const MODULE_NAME = 'TokenValidator';
 /**
  * 代币验证器
  * 负责检查代币是否符合交易条件，包括白名单/黑名单校验
+ *
+ * 【比喻解释】
+ * 这就像渔船上的鱼类安全检测站：
+ * - 维护着安全和危险鱼类的完整档案(白名单和黑名单)
+ * - 能够按照多种标准评估鱼的安全性(验证规则)
+ * - 定期更新鱼类知识库(自动重新加载)
+ * - 为捕获的每条鱼提供详细的安全报告(验证结果)
+ *
+ * 【编程语法通俗翻译】
+ * class = 一种完整设备：包含多个相关功能的整套系统
+ * private = 内部组件：设备内部的零件，外部无法直接操作
+ * Map = 索引表：快速查找的名录本，通过ID直接找到对应信息
  */
 class TokenValidator {
     /**
      * 构造函数
+     *
+     * 【比喻解释】
+     * 就像鱼类检测站的初始化和首次启动：
+     * - 加载所有已知的鱼类安全数据
+     * - 确保设备准备就绪可以开始工作
      */
     constructor() {
         this.whitelist = new Map();
@@ -33,6 +73,18 @@ class TokenValidator {
     }
     /**
      * 加载代币白名单和黑名单
+     *
+     * 【比喻解释】
+     * 就像更新渔船的鱼类图鉴数据库：
+     * - 从存储中读取最新的鱼类信息
+     * - 确保优质鱼类图鉴(白名单)是最新的
+     * - 更新危险鱼类警示录(黑名单)
+     * - 记录此次更新的时间，方便定期检查
+     *
+     * 【编程语法通俗翻译】
+     * async = 需要等待的任务：像是派人去取最新的图鉴，需要等他回来
+     * try/catch = 安全操作：尝试完成任务，但准备好处理可能出现的问题
+     * fs.existsSync = 检查是否存在：确认图鉴书是否在书架上
      */
     async loadTokenLists() {
         try {
@@ -47,20 +99,20 @@ class TokenValidator {
             // 检查是否是完整的代币列表文件
             let tokenListData = null;
             // 确保白名单文件存在
-            if (!node_fs_extra_1.default.existsSync(whitelistPath)) {
+            if (!fs_extra_1.default.existsSync(whitelistPath)) {
                 logger_1.default.warn(`白名单文件不存在，创建空白名单: ${whitelistPath}`, MODULE_NAME);
-                await node_fs_extra_1.default.ensureFile(whitelistPath);
-                await node_fs_extra_1.default.writeJson(whitelistPath, [], { spaces: 2 });
+                await fs_extra_1.default.ensureFile(whitelistPath);
+                await fs_extra_1.default.writeJson(whitelistPath, [], { spaces: 2 });
             }
             // 确保黑名单文件存在
-            if (!node_fs_extra_1.default.existsSync(blacklistPath)) {
+            if (!fs_extra_1.default.existsSync(blacklistPath)) {
                 logger_1.default.warn(`黑名单文件不存在，创建空黑名单: ${blacklistPath}`, MODULE_NAME);
-                await node_fs_extra_1.default.ensureFile(blacklistPath);
-                await node_fs_extra_1.default.writeJson(blacklistPath, [], { spaces: 2 });
+                await fs_extra_1.default.ensureFile(blacklistPath);
+                await fs_extra_1.default.writeJson(blacklistPath, [], { spaces: 2 });
             }
-            if (node_fs_extra_1.default.existsSync(whitelistPath)) {
+            if (fs_extra_1.default.existsSync(whitelistPath)) {
                 try {
-                    const fileData = await node_fs_extra_1.default.readFile(whitelistPath, 'utf8');
+                    const fileData = await fs_extra_1.default.readFile(whitelistPath, 'utf8');
                     const data = JSON.parse(fileData);
                     // 检查是否为完整格式的代币列表文件
                     if (data.whitelist && data.blacklist) {
@@ -90,9 +142,9 @@ class TokenValidator {
                 this.loadWhitelist([]);
             }
             // 如果没有从单一文件加载数据，尝试分别加载黑名单
-            if (!tokenListData && node_fs_extra_1.default.existsSync(blacklistPath)) {
+            if (!tokenListData && fs_extra_1.default.existsSync(blacklistPath)) {
                 try {
-                    const fileData = await node_fs_extra_1.default.readFile(blacklistPath, 'utf8');
+                    const fileData = await fs_extra_1.default.readFile(blacklistPath, 'utf8');
                     const data = JSON.parse(fileData);
                     if (Array.isArray(data)) {
                         // 黑名单是简单数组
@@ -140,6 +192,12 @@ class TokenValidator {
     /**
      * 加载白名单
      * @param tokens 白名单代币条目
+     *
+     * 【比喻解释】
+     * 就像更新优质鱼类图鉴：
+     * - 清空旧的图鉴内容
+     * - 添加每种已知安全鱼类的详细信息
+     * - 记录总共有多少种安全鱼类
      */
     loadWhitelist(tokens) {
         this.whitelist.clear();
@@ -154,6 +212,13 @@ class TokenValidator {
      * 加载黑名单
      * @param tokens 黑名单代币条目
      * @param patterns 黑名单模式
+     *
+     * 【比喻解释】
+     * 就像更新危险鱼类警示录：
+     * - 清空旧的警示录内容
+     * - 添加每种已知危险鱼类的信息
+     * - 更新危险鱼类的识别特征库
+     * - 记录总共有多少种危险鱼类和识别特征
      */
     loadBlacklist(tokens, patterns) {
         this.blacklist.clear();
@@ -168,6 +233,12 @@ class TokenValidator {
     }
     /**
      * 检查是否需要重新加载代币列表
+     *
+     * 【比喻解释】
+     * 就像定期检查鱼类图鉴是否需要更新：
+     * - 查看上次更新图鉴的时间
+     * - 如果已经过了预设的更新周期，则获取最新版本
+     * - 确保渔船总是使用最新的鱼类安全信息
      */
     async checkAndReloadIfNeeded() {
         const now = Date.now();
@@ -178,8 +249,19 @@ class TokenValidator {
     /**
      * 验证代币
      * @param token 代币信息
-     * @param liquidityUsd 流动性（美元）
+     * @param liquidityUsd 流动性(美元)
      * @returns 验证结果
+     *
+     * 【比喻解释】
+     * 就像检验捕获的鱼是否安全可食：
+     * - 先检查是否是已知的优质鱼种(白名单)
+     * - 再检查是否是已知的危险鱼种(黑名单)
+     * - 分析鱼的各项指标(流动性、价格等)
+     * - 生成一份详细的安全报告
+     *
+     * 【编程语法通俗翻译】
+     * await = 耐心等待：某些检查需要时间，必须等结果出来才能继续
+     * return = 出具报告：完成所有检查后，提供最终的安全评估结果
      */
     async validateToken(token, liquidityUsd) {
         await this.checkAndReloadIfNeeded();
@@ -251,8 +333,11 @@ class TokenValidator {
             // 如果没有元数据，尝试获取
             if (!token.metadata && (token.metadata === undefined)) {
                 try {
-                    // 这里可能需要实现获取代币元数据的逻辑
-                    // 例如: token.metadata = await getTokenMetadata(token.mint);
+                    const connection = rpc_service_1.default.getConnection();
+                    if (!connection) {
+                        throw new Error('RPC连接未初始化');
+                    }
+                    const mintInfo = await connection.getParsedAccountInfo(token.mint);
                     // 获取元数据失败的处理
                     if (!token.metadata) {
                         result.isValid = false;
@@ -291,7 +376,11 @@ class TokenValidator {
                 // 这里实现获取代币详细信息的逻辑
                 // 例如使用 SPL Token Registry 或查询代币账户
                 // 示例代码：
-                const mintInfo = await rpc_service_1.default.connection.getParsedAccountInfo(token.mint);
+                const connection = rpc_service_1.default.getConnection();
+                if (!connection) {
+                    throw new Error('RPC连接未初始化');
+                }
+                const mintInfo = await connection.getParsedAccountInfo(token.mint);
                 if (mintInfo.value && 'parsed' in mintInfo.value.data) {
                     const parsedData = mintInfo.value.data.parsed;
                     if (parsedData.type === 'mint') {
@@ -353,7 +442,7 @@ class TokenValidator {
         return null;
     }
 }
-// 创建并导出单例
-exports.tokenValidator = new TokenValidator();
-exports.default = exports.tokenValidator;
+// 创建并导出单例实例
+const tokenValidator = new TokenValidator();
+exports.default = tokenValidator;
 //# sourceMappingURL=token_validator.js.map

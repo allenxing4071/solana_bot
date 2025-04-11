@@ -70,10 +70,13 @@ export interface TradingOpportunity {
   estimatedPriceUsd?: number;  // 估计美元价格
   estimatedOutAmount?: bigint; // 估计输出数量
   estimatedSlippage?: number;  // 估计滑点
+  estimatedProfit?: number;    // 估计收益率(%)
   liquidityUsd?: number;       // 流动性(美元)
   confidence: number;          // 信心度(0-1)
   action: 'buy' | 'sell';      // 交易行为
+  priority: number;            // 优先级(0-1)
   priorityScore: number;       // 优先级分数
+  tokenSymbol: string;         // 代币符号
   timestamp: number;           // 时间戳
   sellAmount?: bigint;         // 卖出金额(仅在action=sell时使用)
 }
@@ -106,6 +109,8 @@ export interface Position {
   currentPrice?: number;       // 当前价格
   profitLoss?: number;         // 盈亏
   profitLossPercentage?: number; // 盈亏百分比
+  currentProfitPercentage?: number; // 当前盈亏百分比
+  entryTimestamp: number;      // 入场时间戳
   lastUpdated: number;         // 最后更新时间
 }
 
@@ -179,13 +184,14 @@ export enum SystemStatus {
 /**
  * 事件类型枚举
  */
-export enum EventType {
+export const enum EventType {
   POOL_CREATED = 'pool_created',
   NEW_POOL_DETECTED = 'new_pool_detected',
   TRADE_EXECUTED = 'trade_executed',
   POSITION_UPDATED = 'position_updated',
   PRICE_UPDATED = 'price_updated',
-  ERROR_OCCURRED = 'error_occurred'
+  ERROR_OCCURRED = 'error_occurred',
+  OPPORTUNITY_DETECTED = 'opportunity_detected'
 }
 
 /**
@@ -198,15 +204,15 @@ export type EventData =
   | Position 
   | StrategyCondition 
   | Error 
-  | SystemStatus;
+  | TradingOpportunity;
 
 /**
  * 系统事件接口
  */
 export interface SystemEvent {
-  type: EventType;                  // 事件类型
-  data: EventData;                  // 事件数据
-  timestamp: number;                // 时间戳
+  type: string;
+  data: EventData;
+  timestamp: number;
 }
 
 /**

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - Solana MEV机器人</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/fix.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/style-fix.css">
+    <link rel="icon" type="image/png" href="img/favicon.png">
+    
+    <!-- 环境配置 -->
+    <script id="env-config" type="application/json">
+    {
+        "environment": "production",
+        "dataSource": {
+            "useMockData": false
+        }
+    }
+    </script>
+    
+    <!-- 全局配置和工具库 -->
+    <script src="config.js"></script>
+</head>
+<body class="dark-theme settings-page">
+    <div class="dashboard-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="img/logo.svg" alt="Logo" class="logo">
+                <h2>Solana MEV机器人</h2>
+            </div>
+            <div class="sidebar-content">
+                <!-- 导航菜单 -->
+                <nav class="sidebar-nav">
+                    <ul>
+                        <li><a href="index.html"><i class="icon-dashboard"></i> 仪表盘</a></li>
+                        <li><a href="pools.html"><i class="icon-pools"></i> 流动性池</a></li>
+                        <li><a href="tokens.html"><i class="icon-tokens"></i> 代币监控</a></li>
+                        <li><a href="trades.html"><i class="icon-trades"></i> 交易记录</a></li>
+                        <li><a href="memory.html"><i class="icon-memory"></i> 内存监控</a></li>
+                        <li class="active"><a href="settings.html"><i class="icon-settings"></i> 设置</a></li>
+                    </ul>
+                </nav>
+                
+                <!-- 系统状态 - 现在位于底部 -->
+                <div class="status-wrapper">
+                    <div class="bot-status">
+                        <span class="status-indicator status-stopped"></span>
+                        <span id="statusText">系统已停止</span>
+                    </div>
+                    <div class="bot-controls">
+                        <button class="btn btn-primary btn-sm" id="startBtn">
+                            <i class="icon-play"></i>
+                            启动
+                        </button>
+                        <button class="btn btn-danger btn-sm" id="stopBtn" disabled>
+                            <i class="icon-stop"></i>
+                            停止
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <header>
+                <div class="header-title">
+                    <h1>系统设置</h1>
+                </div>
+                <div class="user-actions">
+                    <div class="date-time" id="currentDateTime">
+                        加载中...
+                    </div>
+                    <button class="btn-icon" id="themeToggleBtn" title="切换主题">
+                        <i class="icon-theme"></i>
+                    </button>
+                    <button class="btn btn-success" id="saveSettingsBtn">
+                        <i class="icon-save"></i> 保存设置
+                    </button>
+                </div>
+            </header>
+            
+            <!-- 设置面板导航 -->
+            <div class="settings-nav">
+                <div class="nav-item active" data-target="general-settings">
+                    <i class="icon-general"></i> 基本设置
+                </div>
+                <div class="nav-item" data-target="network-settings">
+                    <i class="icon-network"></i> 网络配置
+                </div>
+                <div class="nav-item" data-target="wallet-settings">
+                    <i class="icon-wallet"></i> 钱包设置
+                </div>
+                <div class="nav-item" data-target="trading-settings">
+                    <i class="icon-trading"></i> 交易策略
+                </div>
+                <div class="nav-item" data-target="notification-settings">
+                    <i class="icon-notification"></i> 通知设置
+                </div>
+                <div class="nav-item" data-target="advanced-settings">
+                    <i class="icon-advanced"></i> 高级配置
+                </div>
+            </div>
+            
+            <!-- 设置内容面板 -->
+            <div class="settings-content">
+                <!-- 基本设置面板 -->
+                <div id="general-settings" class="settings-panel active">
+                    <div class="panel-header">
+                        <h2>基本设置</h2>
+                        <p class="panel-description">配置机器人基本运行参数</p>
+                    </div>
+                    
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label for="botName">机器人名称</label>
+                            <input type="text" id="botName" class="form-control" placeholder="为机器人设置一个名称">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="logLevel">日志级别</label>
+                            <select id="logLevel" class="form-control" title="选择日志记录的详细程度">
+                                <option value="error">仅错误</option>
+                                <option value="warn">警告</option>
+                                <option value="info" selected>信息</option>
+                                <option value="debug">调试</option>
+                                <option value="trace">追踪</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="maxMemory">内存限制 (MB)</label>
+                            <input type="number" id="maxMemory" class="form-control" placeholder="机器人使用的最大内存" min="512" max="8192">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>操作模式</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="operationMode" value="auto" checked> 自动模式
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="operationMode" value="manual"> 手动模式
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="operationMode" value="listenOnly"> 仅监听模式
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="enableStats">启用统计分析</label>
+                            <label class="switch">
+                                <input type="checkbox" id="enableStats" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 网络配置面板 -->
+                <div id="network-settings" class="settings-panel">
+                    <div class="panel-header">
+                        <h2>网络配置</h2>
+                        <p class="panel-description">配置RPC节点和网络连接参数</p>
+                    </div>
+                    
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label for="primaryRpc">主要RPC节点</label>
+                            <input type="url" id="primaryRpc" class="form-control" placeholder="https://api.mainnet-beta.solana.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="backupRpc">备用RPC节点</label>
+                            <input type="url" id="backupRpc" class="form-control" placeholder="https://solana-api.projectserum.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="wsEndpoint">WebSocket端点</label>
+                            <input type="url" id="wsEndpoint" class="form-control" placeholder="wss://api.mainnet-beta.solana.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="connectionTimeout">连接超时(ms)</label>
+                            <input type="number" id="connectionTimeout" class="form-control" min="1000" max="30000">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>使用Jito MEV中继网络</label>
+                            <label class="switch">
+                                <input type="checkbox" id="useJitoRelay">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="jitoRelayUrl">Jito中继URL</label>
+                            <input type="url" id="jitoRelayUrl" class="form-control" placeholder="https://relay.jito.wtf/relay">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 钱包设置面板 -->
+                <div id="wallet-settings" class="settings-panel">
+                    <div class="panel-header">
+                        <h2>钱包设置</h2>
+                        <p class="panel-description">配置交易钱包和资金管理</p>
+                    </div>
+                    
+                    <div class="settings-form">
+                        <div class="warning-box">
+                            <i class="icon-warning"></i>
+                            <p>警告：私钥是高度敏感的信息，请确保使用安全的连接和设备。</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="walletType">钱包类型</label>
+                            <select id="walletType" class="form-control" title="选择钱包类型">
+                                <option value="keypair">密钥对</option>
+                                <option value="ledger">Ledger硬件钱包</option>
+                                <option value="phantom">Phantom钱包</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group keypair-input">
+                            <label for="walletKeypair">钱包密钥对</label>
+                            <textarea id="walletKeypair" class="form-control" placeholder="[1,2,3,...]" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="walletAddress">钱包地址(只读)</label>
+                            <input type="text" id="walletAddress" class="form-control" placeholder="Solana钱包地址" readonly>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="maxTradeAmount">最大交易金额(SOL)</label>
+                            <input type="number" id="maxTradeAmount" class="form-control" min="0.001" step="0.001">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="maxDailyTradeVolume">每日交易限额(SOL)</label>
+                            <input type="number" id="maxDailyTradeVolume" class="form-control" min="0.1" step="0.1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>启用自动资金管理</label>
+                            <label class="switch">
+                                <input type="checkbox" id="enableAutoFundManagement" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 交易策略面板 -->
+                <div id="trading-settings" class="settings-panel">
+                    <div class="panel-header">
+                        <h2>交易策略</h2>
+                        <p class="panel-description">配置交易决策和执行策略</p>
+                    </div>
+                    
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label for="tradingStrategy">默认交易策略</label>
+                            <select id="tradingStrategy" class="form-control" title="选择默认的交易策略">
+                                <option value="aggressive">激进策略</option>
+                                <option value="balanced" selected>平衡策略</option>
+                                <option value="conservative">保守策略</option>
+                                <option value="custom">自定义策略</option>
+                            </select>
+                        </div>
+                        
+                        <div id="customStrategyOptions" class="nested-form">
+                            <div class="form-group">
+                                <label for="slippageTolerance">滑点容忍度(%)</label>
+                                <input type="number" id="slippageTolerance" class="form-control" min="0.1" max="10" step="0.1">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="takeProfitTarget">止盈目标(%)</label>
+                                <input type="number" id="takeProfitTarget" class="form-control" min="1" max="1000" step="1">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="stopLossThreshold">止损阈值(%)</label>
+                                <input type="number" id="stopLossThreshold" class="form-control" min="1" max="100" step="1">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="maxConcurrentTrades">最大并发交易数</label>
+                            <input type="number" id="maxConcurrentTrades" class="form-control" min="1" max="50">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="priorityFee">优先级费用(层级)</label>
+                            <select id="priorityFee" class="form-control" title="选择交易的优先级费用">
+                                <option value="none">不使用</option>
+                                <option value="low">低(+0.000005 SOL)</option>
+                                <option value="medium" selected>中(+0.00001 SOL)</option>
+                                <option value="high">高(+0.00005 SOL)</option>
+                                <option value="max">最高(+0.0001 SOL)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>使用交易预签名</label>
+                            <label class="switch">
+                                <input type="checkbox" id="usePresignedTx" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>启用自动套利</label>
+                            <label class="switch">
+                                <input type="checkbox" id="enableAutoArbitrage" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 通知设置面板 -->
+                <div id="notification-settings" class="settings-panel">
+                    <div class="panel-header">
+                        <h2>通知设置</h2>
+                        <p class="panel-description">配置系统事件和交易通知</p>
+                    </div>
+                    
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label>启用Telegram通知</label>
+                            <label class="switch">
+                                <input type="checkbox" id="enableTelegram">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="telegramBotToken">Telegram Bot Token</label>
+                            <input type="text" id="telegramBotToken" class="form-control" placeholder="1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="telegramChatId">Telegram Chat ID</label>
+                            <input type="text" id="telegramChatId" class="form-control" placeholder="123456789">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>启用邮件通知</label>
+                            <label class="switch">
+                                <input type="checkbox" id="enableEmail">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="emailAddress">邮箱地址</label>
+                            <input type="email" id="emailAddress" class="form-control" placeholder="your@email.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>通知事件类型</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="notifyEvents" value="newPool" checked> 新池子创建
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="notifyEvents" value="trade" checked> 交易执行
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="notifyEvents" value="profit" checked> 盈利达成
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="notifyEvents" value="error" checked> 系统错误
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="notifyEvents" value="status"> 状态变化
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="minNotificationAmount">最小交易通知金额(SOL)</label>
+                            <input type="number" id="minNotificationAmount" class="form-control" min="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 高级配置面板 -->
+                <div id="advanced-settings" class="settings-panel">
+                    <div class="panel-header">
+                        <h2>高级配置</h2>
+                        <p class="panel-description">配置高级系统参数，谨慎修改</p>
+                    </div>
+                    
+                    <div class="settings-form">
+                        <div class="warning-box danger">
+                            <i class="icon-danger"></i>
+                            <p>警告：修改以下设置可能会显著影响系统性能和行为。建议在充分了解其影响的情况下进行修改。</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="poolCheckInterval">池子检查间隔(ms)</label>
+                            <input type="number" id="poolCheckInterval" class="form-control" min="100" max="60000">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="batchProcessSize">批处理大小</label>
+                            <input type="number" id="batchProcessSize" class="form-control" min="1" max="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cacheTTL">缓存有效期(秒)</label>
+                            <input type="number" id="cacheTTL" class="form-control" min="5" max="3600">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="customRpcParams">自定义RPC参数</label>
+                            <textarea id="customRpcParams" class="form-control" placeholder='{"commitment":"confirmed","timeout":30000}' rows="3"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>启用性能跟踪</label>
+                            <label class="switch">
+                                <input type="checkbox" id="enablePerformanceTracing">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>启用调试日志</label>
+                            <label class="switch">
+                                <input type="checkbox" id="enableDebugLogs">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="systemBackupFrequency">系统备份频率</label>
+                            <select id="systemBackupFrequency" class="form-control" title="选择系统备份的频率">
+                                <option value="never">从不</option>
+                                <option value="hourly">每小时</option>
+                                <option value="daily" selected>每天</option>
+                                <option value="weekly">每周</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 设置操作按钮 -->
+            <div class="settings-actions">
+                <div>
+                    <button id="resetSettingsBtn" class="btn btn-outline-danger">
+                        <i class="icon-reset"></i> 重置为默认
+                    </button>
+                </div>
+                <div>
+                    <button id="exportSettingsBtn" class="btn btn-outline-secondary">
+                        <i class="icon-export"></i> 导出配置
+                    </button>
+                    <button id="importSettingsBtn" class="btn btn-outline-secondary">
+                        <i class="icon-import"></i> 导入配置
+                    </button>
+                    <button id="applySettingsBtn" class="btn btn-primary">
+                        <i class="icon-apply"></i> 应用设置
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 导入配置模态框 -->
+            <div id="importSettingsModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000;">
+                <div class="modal-content" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 600px; background: var(--card-bg); border-radius: var(--card-border-radius); padding: 20px; max-height: 90vh; overflow-y: auto;">
+                    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2>导入配置</h2>
+                        <button class="btn-icon close-modal" style="background: none; border: none;">
+                            <i style="font-size: 24px; color: var(--text-secondary);">×</i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label for="importSettingsFile" style="display: block; margin-bottom: 5px; color: var(--text-primary);">选择配置文件</label>
+                            <input type="file" id="importSettingsFile" class="form-control" accept=".json" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary);">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label for="importSettingsText" style="display: block; margin-bottom: 5px; color: var(--text-primary);">或粘贴配置JSON</label>
+                            <textarea id="importSettingsText" class="form-control" rows="8" placeholder='{"botName":"Solana MEV Bot",...}' style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary);"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="margin-top: 20px; text-align: right;">
+                        <button id="cancelImportBtn" class="btn btn-secondary">取消</button>
+                        <button id="confirmImportBtn" class="btn btn-primary">确认导入</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- 引入JavaScript脚本 -->
+    <script src="js/theme.js"></script>
+    <script src="js/datetime.js"></script>
+    <script src="js/settings.js"></script>
+</body>
+</html>

@@ -81,6 +81,28 @@ interface JitoConfig {
 }
 
 /**
+ * 交易策略配置接口
+ */
+interface SellStrategyConfig {
+  takeProfit?: {
+    percentage: string;
+    enabled: boolean;
+  };
+  stopLoss?: {
+    percentage: string;
+    enabled: boolean;
+  };
+  trailingStop?: {
+    percentage: string;
+    enabled: boolean;
+  };
+  timeLimit?: {
+    seconds: string;
+    enabled: boolean;
+  };
+}
+
+/**
  * 完整配置接口
  */
 export interface AppConfig {
@@ -99,10 +121,29 @@ export interface AppConfig {
  * 获取网络配置
  */
 function getNetworkConfig(): NetworkConfig {
+  // 获取主RPC节点
+  let rpcUrl = process.env.SOLANA_RPC_URL || '';
+  let wsUrl = process.env.SOLANA_WS_URL || '';
+  
+  // 如果主RPC节点为空，或者明确标记为使用备用节点，则使用备用节点
+  const useBackup = !rpcUrl || process.env.USE_BACKUP_RPC === 'true';
+  
+  if (useBackup) {
+    // 从环境变量中获取备用节点列表
+    const backupEndpoints = process.env.BACKUP_RPC_ENDPOINTS?.split(',') || [];
+    
+    // 如果有备用节点，使用第一个可用的备用节点
+    if (backupEndpoints.length > 0) {
+      rpcUrl = backupEndpoints[0].trim();
+      // 对于WebSocket，我们尝试将http替换为ws，https替换为wss
+      wsUrl = rpcUrl.replace('https://', 'wss://').replace('http://', 'ws://');
+    }
+  }
+  
   return {
     cluster: process.env.SOLANA_NETWORK || config.get<string>('network.cluster'),
-    rpcUrl: process.env.SOLANA_RPC_URL || '',
-    wsUrl: process.env.SOLANA_WS_URL || '',
+    rpcUrl,
+    wsUrl,
   };
 }
 
@@ -201,31 +242,31 @@ function getTradingConfig(): StrategyConfig {
       conditions: [
         {
           type: StrategyType.TAKE_PROFIT,
-          percentage: Number.parseFloat(process.env.TAKE_PROFIT_PERCENTAGE || 
-            (tradingConfig.sellStrategy as Record<string, unknown>)?.takeProfit?.percentage as string || '20'),
-          enabled: process.env.TAKE_PROFIT_PERCENTAGE ? true : 
-            (tradingConfig.sellStrategy as Record<string, unknown>)?.takeProfit?.enabled as boolean || true
+          percentage: Number(
+            (tradingConfig.sellStrategy as SellStrategyConfig)?.takeProfit?.percentage || '20'
+          ),
+          enabled: (tradingConfig.sellStrategy as SellStrategyConfig)?.takeProfit?.enabled ?? true
         },
         {
           type: StrategyType.STOP_LOSS,
-          percentage: Number.parseFloat(process.env.STOP_LOSS_PERCENTAGE || 
-            (tradingConfig.sellStrategy as Record<string, unknown>)?.stopLoss?.percentage as string || '10'),
-          enabled: process.env.STOP_LOSS_PERCENTAGE ? true : 
-            (tradingConfig.sellStrategy as Record<string, unknown>)?.stopLoss?.enabled as boolean || true
+          percentage: Number(
+            (tradingConfig.sellStrategy as SellStrategyConfig)?.stopLoss?.percentage || '10'
+          ),
+          enabled: (tradingConfig.sellStrategy as SellStrategyConfig)?.stopLoss?.enabled ?? true
         },
         {
           type: StrategyType.TRAILING_STOP,
-          percentage: Number.parseFloat(process.env.TRAILING_STOP_PERCENTAGE || 
-            (tradingConfig.sellStrategy as Record<string, unknown>)?.trailingStop?.percentage as string || '5'),
-          enabled: process.env.TRAILING_STOP_PERCENTAGE ? true : 
-            (tradingConfig.sellStrategy as Record<string, unknown>)?.trailingStop?.enabled as boolean || false
+          percentage: Number(
+            (tradingConfig.sellStrategy as SellStrategyConfig)?.trailingStop?.percentage || '5'
+          ),
+          enabled: (tradingConfig.sellStrategy as SellStrategyConfig)?.trailingStop?.enabled ?? false
         },
         {
           type: StrategyType.TIME_LIMIT,
-          timeSeconds: parseInt(process.env.TIME_LIMIT_SECONDS || 
-            (tradingConfig.sellStrategy as Record<string, unknown>)?.timeLimit?.seconds as string || '300'),
-          enabled: process.env.TIME_LIMIT_SECONDS ? true : 
-            (tradingConfig.sellStrategy as Record<string, unknown>)?.timeLimit?.enabled as boolean || false
+          timeSeconds: Number(
+            (tradingConfig.sellStrategy as SellStrategyConfig)?.timeLimit?.seconds || '300'
+          ),
+          enabled: (tradingConfig.sellStrategy as SellStrategyConfig)?.timeLimit?.enabled ?? false
         }
       ],
       maxSlippage: Number.parseFloat(process.env.MAX_SELL_SLIPPAGE || 

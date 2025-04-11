@@ -1,0 +1,134 @@
+{
+  "success": true,
+  "data": {
+    "stats": {
+      "totalPools": 143,
+      "totalValue": 15728900,
+      "avgVolume": 230450,
+      "mostActiveDex": "Raydium【M】"
+    },
+    "pools": [
+      {
+        "id": "pool123456【M】",
+        "name": "SOL/USDC【M】",
+        "dex": "Raydium【M】",
+        "liquidity": 4520000,
+        "volume24h": 1250000,
+        "apy": 12.5,
+        "price": 85.25,
+        "priceChange24h": 3.2,
+        "token0": {
+          "symbol": "SOL",
+          "name": "Solana",
+          "address": "So11111111111111111111111111111111111111112"
+        },
+        "token1": {
+          "symbol": "USDC",
+          "name": "USD Coin",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        "lastUpdated": "2023-11-26T15:25:12.000Z【M】"
+      },
+      {
+        "id": "pool234567【M】",
+        "name": "SOL/BONK【M】",
+        "dex": "Orca【M】",
+        "liquidity": 1250000,
+        "volume24h": 750000,
+        "apy": 18.7,
+        "price": 0.00000234,
+        "priceChange24h": 5.8,
+        "token0": {
+          "symbol": "SOL",
+          "name": "Solana",
+          "address": "So11111111111111111111111111111111111111112"
+        },
+        "token1": {
+          "symbol": "BONK",
+          "name": "Bonk",
+          "address": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"
+        },
+        "lastUpdated": "2023-11-26T15:26:45.000Z【M】"
+      },
+      {
+        "id": "pool345678【M】",
+        "name": "SOL/JitoSOL【M】",
+        "dex": "Raydium【M】",
+        "liquidity": 3200000,
+        "volume24h": 620000,
+        "apy": 9.3,
+        "price": 0.98,
+        "priceChange24h": 0.5,
+        "token0": {
+          "symbol": "SOL",
+          "name": "Solana",
+          "address": "So11111111111111111111111111111111111111112"
+        },
+        "token1": {
+          "symbol": "JitoSOL",
+          "name": "Jito Solana",
+          "address": "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn"
+        },
+        "lastUpdated": "2023-11-26T15:28:30.000Z【M】"
+      },
+      {
+        "id": "pool456789【M】",
+        "name": "USDC/USDT【M】",
+        "dex": "Orca【M】",
+        "liquidity": 5800000,
+        "volume24h": 2100000,
+        "apy": 4.2,
+        "price": 1.0001,
+        "priceChange24h": 0.01,
+        "token0": {
+          "symbol": "USDC",
+          "name": "USD Coin",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        "token1": {
+          "symbol": "USDT",
+          "name": "Tether",
+          "address": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+        },
+        "lastUpdated": "2023-11-26T15:27:10.000Z【M】"
+      },
+      {
+        "id": "pool567890【M】",
+        "name": "MNGO/USDC【M】",
+        "dex": "Meteora【M】",
+        "liquidity": 958000,
+        "volume24h": 325000,
+        "apy": 22.3,
+        "price": 0.23,
+        "priceChange24h": -1.2,
+        "token0": {
+          "symbol": "MNGO",
+          "name": "Mango",
+          "address": "MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac"
+        },
+        "token1": {
+          "symbol": "USDC",
+          "name": "USD Coin",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        "lastUpdated": "2023-11-26T15:30:22.000Z【M】"
+      }
+    ],
+    "exchanges": [
+      "Raydium【M】",
+      "Orca【M】",
+      "Meteora【M】",
+      "Lifinity【M】",
+      "Cykura【M】",
+      "Saros【M】",
+      "Saber【M】"
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 29,
+      "totalItems": 143,
+      "itemsPerPage": 5
+    },
+    "lastUpdated": "2023-11-26T15:32:45.000Z【M】"
+  }
+} 

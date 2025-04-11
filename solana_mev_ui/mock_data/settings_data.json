@@ -1,0 +1,78 @@
+{
+  "success": true,
+  "data": {
+    "basic": {
+      "botName": "Solana MEV机器人【M】",
+      "logLevel": "info",
+      "maxMemory": 4096,
+      "operationMode": "自动",
+      "enableStats": true,
+      "autoRestart": true,
+      "startupDelay": 10
+    },
+    "network": {
+      "primaryRpc": "https://api.mainnet-beta.solana.com【M】",
+      "backupRpc": "https://solana-api.projectserum.com【M】",
+      "wsEndpoint": "wss://api.mainnet-beta.solana.com【M】",
+      "connectionTimeout": 30000,
+      "useJitoRelay": true,
+      "jitoRelayUrl": "https://jito-relay.jito.wtf【M】",
+      "maxBlockSubscriptions": 5,
+      "reconnectDelay": 1000
+    },
+    "wallet": {
+      "walletType": "文件密钥对",
+      "walletAddress": "8xM9hBbkh5KapGYsZ5pBikQceiXSEyxLEHUgaJzY2kPs【M】",
+      "maxTradeAmount": 10,
+      "maxDailyTradeVolume": 100,
+      "safetyMargin": 0.05,
+      "manualApproval": false,
+      "fundingSourceType": "自动",
+      "slippageTolerance": 0.01
+    },
+    "trading": {
+      "minProfitThreshold": 0.1,
+      "gasMultiplier": 1.5,
+      "tradingPairs": ["SOL/USDC", "SOL/BONK", "BONK/USDC", "JitoSOL/SOL", "USDC/USDT"],
+      "maxConcurrentTrades": 3,
+      "maxRetries": 2,
+      "priorityFee": 10000,
+      "tradeTimeout": 15000,
+      "enableFlashLoans": true,
+      "enableSandwich": false,
+      "enableArbitrage": true,
+      "enableLiquidations": true
+    },
+    "notifications": {
+      "enableEmailAlerts": true,
+      "emailAddress": "admin@example.com【M】",
+      "enableTelegramAlerts": false,
+      "telegramBotToken": "",
+      "telegramChatId": "",
+      "alertThreshold": 5,
+      "notifyOnProfit": true,
+      "notifyOnError": true,
+      "notifyOnNewToken": true,
+      "notifyOnMemoryWarning": true,
+      "dailySummary": true
+    },
+    "advanced": {
+      "useCustomSharedMemory": false,
+      "sharedMemoryKey": "",
+      "enablePerformanceMode": true,
+      "enableDebugLogs": false,
+      "customRpcEndpoints": [
+        "https://rpc.ankr.com/solana【M】",
+        "https://mainnet.rpcpool.com【M】"
+      ],
+      "customTransactionBuilding": false,
+      "maxBlockAge": 25,
+      "accountSubscriptionBatchSize": 100,
+      "poolRefreshInterval": 60,
+      "tokenRefreshInterval": 300,
+      "memoryCheckInterval": 60,
+      "databasePath": "/data/solana_mev.db【M】"
+    },
+    "lastUpdated": "2023-11-26T15:00:32.000Z【M】"
+  }
+} 

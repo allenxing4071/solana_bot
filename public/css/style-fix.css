@@ -85,36 +85,192 @@ body {
     transition: all 0.2s ease;
 }
 
-/* 表格统一样式 */
+/* 表格样式修复 */
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 14px;
+    border-spacing: 0;
+    font-size: 0.9rem;
+}
+
+.data-table th, 
+.data-table td {
+    padding: 10px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .data-table th {
-    text-align: left;
-    padding: 12px 15px;
-    background-color: var(--table-header-bg);
-    color: var(--text-secondary);
     font-weight: 500;
+    color: var(--text-secondary);
+    background-color: rgba(0, 0, 0, 0.02);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.data-table tr:last-child td {
+    border-bottom: none;
+}
+
+.data-table tr:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* 状态标签修复 */
+.status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+    min-width: 80px;
+    text-transform: capitalize;
+}
+
+.status.success {
+    background-color: rgba(6, 214, 160, 0.2);
+    color: #06d6a0;
+}
+
+.status.pending {
+    background-color: rgba(255, 209, 102, 0.2);
+    color: #ffd166;
+}
+
+.status.failed {
+    background-color: rgba(239, 71, 111, 0.2);
+    color: #ef476f;
+}
+
+/* 风险等级标签修复 */
+.risk-level {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+    min-width: 80px;
+    text-transform: capitalize;
+}
+
+.risk-level.low {
+    background-color: rgba(77, 255, 189, 0.2);
+    color: #4dffbd;
+}
+
+.risk-level.medium {
+    background-color: rgba(255, 159, 77, 0.2);
+    color: #ff9f4d;
+}
+
+.risk-level.high {
+    background-color: rgba(255, 77, 77, 0.2);
+    color: #ff4d4d;
+}
+
+/* 容器修复 */
+.logs-recent-container,
+.recent-tokens {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.recent-tokens {
+    margin-top: 1.5rem;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
 }
 
-.data-table td {
-    padding: 12px 15px;
-    border-bottom: 1px solid var(--border-color);
+.panel-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
 }
 
-/* 修复适配问题 */
-@media (max-width: 1024px) {
-    .main-content {
-        margin-left: 0;
-        max-width: 100%;
-    }
-    
+.table-container {
+    padding: 0;
+    overflow-x: auto;
+}
+
+.logs-container {
+    height: 250px;
+    overflow-y: auto;
+    padding: 10px 15px;
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.log-entry {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+
+.log-timestamp {
+    color: var(--text-secondary);
+    margin-right: 10px;
+    font-weight: 500;
+}
+
+.log-level-info {
+    color: var(--info-color);
+    margin-right: 5px;
+}
+
+.log-level-warning {
+    color: var(--warning-color);
+    margin-right: 5px;
+}
+
+.log-level-error {
+    color: var(--danger-color);
+    margin-right: 5px;
+}
+
+.log-level-success {
+    color: var(--success-color);
+    margin-right: 5px;
+}
+
+/* 深色主题下的样式调整 */
+body.dark-theme .data-table th {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+body.dark-theme .data-table tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-theme .logs-container {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* 追加一些响应式调整 */
+@media (max-width: 768px) {
     .logs-recent-container {
         grid-template-columns: 1fr;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .status,
+    .risk-level {
+        min-width: 60px;
+        padding: 3px 6px;
     }
 }
 

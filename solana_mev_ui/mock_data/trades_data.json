@@ -1,0 +1,140 @@
+{
+  "success": true,
+  "data": {
+    "stats": {
+      "totalTrades": 156,
+      "successRate": 91.7,
+      "totalProfit": 142.57,
+      "avgProfit": 0.92
+    },
+    "volumeChart": {
+      "timeRanges": ["24小时", "7天", "30天", "全部"],
+      "currentRange": "7天",
+      "data": [
+        {"date": "2023-11-20", "volume": 156800},
+        {"date": "2023-11-21", "volume": 189500},
+        {"date": "2023-11-22", "volume": 145200},
+        {"date": "2023-11-23", "volume": 210500},
+        {"date": "2023-11-24", "volume": 198600},
+        {"date": "2023-11-25", "volume": 178900},
+        {"date": "2023-11-26", "volume": 163400}
+      ]
+    },
+    "profitChart": {
+      "timeRanges": ["24小时", "7天", "30天", "全部"],
+      "currentRange": "7天",
+      "data": [
+        {"date": "2023-11-20", "profit": 10.23},
+        {"date": "2023-11-21", "profit": 12.56},
+        {"date": "2023-11-22", "profit": 9.87},
+        {"date": "2023-11-23", "profit": 15.42},
+        {"date": "2023-11-24", "profit": 14.78},
+        {"date": "2023-11-25", "profit": 15.91},
+        {"date": "2023-11-26", "profit": 12.34}
+      ]
+    },
+    "trades": [
+      {
+        "id": "tx123456789【M】",
+        "timestamp": "2023-11-26T15:10:23.000Z",
+        "tokenPair": "SOL/USDC",
+        "type": "套利",
+        "pool": "Raydium【M】",
+        "amount": 2.5,
+        "price": 86.2,
+        "value": 215.5,
+        "fee": 0.32,
+        "profit": 1.24,
+        "status": "成功",
+        "route": [
+          {"dex": "Raydium", "action": "买入", "price": 85.8, "amount": 2.5},
+          {"dex": "Orca", "action": "卖出", "price": 86.3, "amount": 2.5}
+        ],
+        "txHash": "4KpAGKztyuHKJGPGpJCoaH9tJYyFRJNtvBrPExgk7Rmg【M】",
+        "lastUpdated": "2023-11-26T15:10:45.000Z【M】"
+      },
+      {
+        "id": "tx234567890【M】",
+        "timestamp": "2023-11-26T14:55:18.000Z",
+        "tokenPair": "BONK/USDC",
+        "type": "闪电贷套利",
+        "pool": "Orca【M】",
+        "amount": 5000000,
+        "price": 0.00000235,
+        "value": 11.75,
+        "fee": 0.12,
+        "profit": 0.58,
+        "status": "成功",
+        "route": [
+          {"dex": "Orca", "action": "买入", "price": 0.00000230, "amount": 5000000},
+          {"dex": "Raydium", "action": "卖出", "price": 0.00000238, "amount": 5000000}
+        ],
+        "txHash": "3ZS6VNRjfcTZbS7HPnLLK5mMnjaYKtYVxk9uxX2JudK9【M】",
+        "lastUpdated": "2023-11-26T14:55:42.000Z【M】"
+      },
+      {
+        "id": "tx345678901【M】",
+        "timestamp": "2023-11-26T14:32:05.000Z",
+        "tokenPair": "JitoSOL/SOL",
+        "type": "清算",
+        "pool": "Meteora【M】",
+        "amount": 10.2,
+        "price": 0.98,
+        "value": 867,
+        "fee": 0.65,
+        "profit": 3.75,
+        "status": "成功",
+        "route": [
+          {"dex": "Meteora", "action": "清算", "price": 0.98, "amount": 10.2}
+        ],
+        "txHash": "5JS8Tn3yZ2ZkjK1Lp7bJ5ZxzVGqNFgpvUKyHmvYEdhPB【M】",
+        "lastUpdated": "2023-11-26T14:32:30.000Z【M】"
+      },
+      {
+        "id": "tx456789012【M】",
+        "timestamp": "2023-11-26T14:20:45.000Z",
+        "tokenPair": "SOL/USDC",
+        "type": "套利",
+        "pool": "Raydium【M】",
+        "amount": 1.8,
+        "price": 85.9,
+        "value": 154.62,
+        "fee": 0.28,
+        "profit": 0.94,
+        "status": "成功",
+        "route": [
+          {"dex": "Raydium", "action": "卖出", "price": 85.9, "amount": 1.8},
+          {"dex": "Orca", "action": "买入", "price": 85.4, "amount": 1.8}
+        ],
+        "txHash": "2PGwcCuDBMVKLVTxG9ZkyuYYMDinRUVDnWpRXNyTGP1m【M】",
+        "lastUpdated": "2023-11-26T14:21:10.000Z【M】"
+      },
+      {
+        "id": "tx567890123【M】",
+        "timestamp": "2023-11-26T14:05:12.000Z",
+        "tokenPair": "MNGO/USDC",
+        "type": "闪电贷套利",
+        "pool": "Orca【M】",
+        "amount": 500,
+        "price": 0.22,
+        "value": 110,
+        "fee": 0.22,
+        "profit": 0,
+        "status": "失败",
+        "errorReason": "交易执行超时，Gas价格过低【M】",
+        "route": [],
+        "txHash": "失败【M】",
+        "lastUpdated": "2023-11-26T14:05:30.000Z【M】"
+      }
+    ],
+    "tradeTypes": ["套利", "闪电贷套利", "清算", "机枪池"],
+    "tradeStatuses": ["成功", "失败", "处理中"],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 32,
+      "totalItems": 156,
+      "itemsPerPage": 5
+    },
+    "lastUpdated": "2023-11-26T15:32:45.000Z【M】"
+  }
+} 

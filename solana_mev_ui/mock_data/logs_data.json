@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "data": {
+    "logs": [
+      {"timestamp": "2023-11-26T15:32:10.000Z", "level": "INFO", "module": "系统", "message": "系统状态检查完成【M】"},
+      {"timestamp": "2023-11-26T15:31:45.000Z", "level": "INFO", "module": "交易", "message": "成功执行套利交易 tx123456789, 收益: 1.24 USDC【M】"},
+      {"timestamp": "2023-11-26T15:30:22.000Z", "level": "WARNING", "module": "内存", "message": "缓存服务内存使用超过阈值，触发自动清理【M】"},
+      {"timestamp": "2023-11-26T15:28:15.000Z", "level": "INFO", "module": "代币", "message": "发现新代币: NEW678, 地址: New6789...1234【M】"},
+      {"timestamp": "2023-11-26T15:25:50.000Z", "level": "ERROR", "module": "网络", "message": "主RPC节点连接超时，切换至备用节点【M】"},
+      {"timestamp": "2023-11-26T15:25:30.000Z", "level": "INFO", "module": "网络", "message": "备用RPC节点连接成功【M】"},
+      {"timestamp": "2023-11-26T15:24:10.000Z", "level": "INFO", "module": "流动性池", "message": "更新SOL/USDC池信息，当前流动性: 4520000【M】"},
+      {"timestamp": "2023-11-26T15:22:45.000Z", "level": "WARNING", "module": "代币", "message": "检测到可疑代币SCAM，已加入黑名单【M】"},
+      {"timestamp": "2023-11-26T15:20:30.000Z", "level": "INFO", "module": "交易", "message": "监测到套利机会: SOL/USDC Raydium-Orca 价差0.5%【M】"},
+      {"timestamp": "2023-11-26T15:18:15.000Z", "level": "ERROR", "module": "交易", "message": "交易tx567890123执行失败，原因: 交易执行超时，Gas价格过低【M】"},
+      {"timestamp": "2023-11-26T15:16:40.000Z", "level": "INFO", "module": "系统", "message": "系统内存使用率: 39.1%【M】"},
+      {"timestamp": "2023-11-26T15:15:20.000Z", "level": "INFO", "module": "代币", "message": "已添加15个新代币到监控列表【M】"},
+      {"timestamp": "2023-11-26T15:12:05.000Z", "level": "WARNING", "module": "钱包", "message": "当日交易量接近设定限额 (已用: 87.4%)【M】"},
+      {"timestamp": "2023-11-26T15:10:30.000Z", "level": "INFO", "module": "交易", "message": "成功执行套利交易 tx234567890, 收益: 0.58 USDC【M】"},
+      {"timestamp": "2023-11-26T15:05:15.000Z", "level": "INFO", "module": "系统", "message": "启动MEV机器人服务，版本v1.2.3【M】"}
+    ],
+    "stats": {
+      "infoCount": 10,
+      "warningCount": 3,
+      "errorCount": 2,
+      "moduleStats": {
+        "系统": 3,
+        "交易": 4,
+        "内存": 1,
+        "代币": 3,
+        "网络": 2,
+        "流动性池": 1,
+        "钱包": 1
+      }
+    },
+    "lastUpdated": "2023-11-26T15:32:45.000Z【M】"
+  }
+} 

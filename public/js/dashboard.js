@@ -3,8 +3,9 @@
  * 用于展示系统内存使用情况和性能指标的数据可视化界面
  */
 
-// 系统状态变量
-let botRunning = false;
+// 全局变量
+let memoryHistoryChart = null;
+let performanceChart = null;
 let systemData = {
     cpu: 0,
     memory: 0,
@@ -20,18 +21,19 @@ let systemData = {
         arrayBuffers: 0,
         rss: 0
     },
-    memoryHistory: []
+    memoryHistory: [],
+    isRealData: true // 添加数据来源标记，true表示真实数据，false表示模拟数据
 };
+
+// 系统状态变量
+let botRunning = false;
 
 // 主题设置 - 默认为暗色主题
 const isDarkTheme = localStorage.getItem('darkTheme') !== 'false';
-localStorage.setItem('darkTheme', 'true'); // 强制设置为暗色
-if (!document.body.classList.contains('dark-theme')) {
-    document.body.classList.add('dark-theme');
-}
+document.body.classList.add(isDarkTheme ? 'dark-theme' : 'light-theme');
 
 // 当前主题
-const currentTheme = 'dark';
+const currentTheme = isDarkTheme ? 'dark' : 'light';
 
 // 添加主题状态追踪变量和防抖计时器
 let themeTogglePending = false;
@@ -39,7 +41,7 @@ let themeToggleTimer = null;
 
 // 获取DOM元素
 const elements = {
-    statusIndicator: document.querySelector('.status-indicator'),
+    statusIndicator: document.getElementById('statusIndicator'),
     statusText: document.getElementById('statusText'),
     startBtn: document.getElementById('startBtn'),
     stopBtn: document.getElementById('stopBtn'),
@@ -57,28 +59,24 @@ const elements = {
     tokensTableBody: document.getElementById('tokensTableBody'),
     clearLogsBtn: document.getElementById('clearLogsBtn'),
     refreshData: document.getElementById('refreshData'),
-    themeToggleBtn: document.getElementById('themeToggleBtn')
+    themeToggleBtn: document.getElementById('themeToggleBtn'),
+    lastUpdated: document.getElementById('lastUpdated')
 };
 
 // 图表实例
 let tokenDiscoveryChart = null;
 let profitTrendChart = null;
-let memoryChart = null;
 
 // 日志数据
 let logEntries = [];
 
-// 初始化函数
+// 页面加载时初始化
 document.addEventListener('DOMContentLoaded', () => {
     try {
         console.log('开始初始化仪表盘...');
         
         // 设置事件监听器
         setupEventListeners();
-        
-        // 初始模拟数据
-        const mockData = generateMockSystemData();
-        updateDashboard(mockData);
         
         // 尝试初始化图表
         initializeCharts();
@@ -131,39 +129,10 @@ function setupEventListeners() {
         });
     }
     
-    // 主题切换按钮 - 仅响应点击事件，并用stopPropagation防止事件冒泡
+    // 主题切换按钮
     if (elements.themeToggleBtn) {
-        elements.themeToggleBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // 阻止事件冒泡
+        elements.themeToggleBtn.addEventListener('click', () => {
             toggleTheme();
-        });
-    }
-    
-    // 代币表格行点击事件
-    if (elements.tokensTableBody) {
-        elements.tokensTableBody.addEventListener('click', (e) => {
-            if (e.target.closest('tr')) {
-                const row = e.target.closest('tr');
-                const tokenAddressElement = row.querySelector('td:nth-child(2) span');
-                if (tokenAddressElement) {
-                    const tokenAddress = tokenAddressElement.title;
-                    showTokenDetails(tokenAddress);
-                }
-            }
-        });
-    }
-    
-    // 交易表格行点击事件
-    if (elements.tradesTableBody) {
-        elements.tradesTableBody.addEventListener('click', (e) => {
-            if (e.target.closest('tr')) {
-                const row = e.target.closest('tr');
-                const txIdElement = row.querySelector('td:nth-child(1)');
-                if (txIdElement) {
-                    const txId = txIdElement.textContent;
-                    showTransactionDetails(txId);
-                }
-            }
         });
     }
 }
@@ -191,7 +160,8 @@ function initializeCharts() {
             }
         };
         
-        const selectedTheme = theme[currentTheme];
+        const isDark = document.body.classList.contains('dark-theme');
+        const selectedTheme = theme[isDark ? 'dark' : 'light'];
         
         // 代币发现趋势图
         const tokenChartCtx = document.getElementById('tokenDiscoveryChart');
@@ -199,14 +169,6 @@ function initializeCharts() {
             console.error('找不到tokenDiscoveryChart元素');
             return;
         }
-        
-        // 为图表画布添加阻止事件冒泡
-        tokenChartCtx.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-        tokenChartCtx.addEventListener('mousemove', (e) => {
-            e.stopPropagation();
-        });
         
         tokenDiscoveryChart = new Chart(tokenChartCtx, {
             type: 'line',
@@ -252,14 +214,6 @@ function initializeCharts() {
             console.error('找不到profitTrendChart元素');
             return;
         }
-        
-        // 为图表画布添加阻止事件冒泡
-        profitChartCtx.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-        profitChartCtx.addEventListener('mousemove', (e) => {
-            e.stopPropagation();
-        });
         
         profitTrendChart = new Chart(profitChartCtx, {
             type: 'bar',
@@ -324,21 +278,32 @@ async function fetchSystemData(showLoading = false) {
             const data = responseData.data;
             console.log('API数据获取成功:', data);
             
+            // 标记为真实数据
+            data.isRealData = true;
+            
             // 更新系统数据
             updateDashboard(data);
             
             if (showLoading) {
                 addLog('系统数据刷新完成', 'info');
             }
+            
+            // 更新最后更新时间
+            updateLastUpdated();
         } catch (apiError) {
             console.warn('API请求失败，使用模拟数据', apiError);
             // 使用模拟数据
             const mockData = generateMockSystemData();
+            // 标记为模拟数据
+            mockData.isRealData = false;
             updateDashboard(mockData);
             
             if (showLoading) {
                 addLog('使用模拟数据更新界面', 'warning');
             }
+            
+            // 更新最后更新时间
+            updateLastUpdated();
         }
     } catch (error) {
         console.error('获取系统数据失败', error);
@@ -349,7 +314,12 @@ async function fetchSystemData(showLoading = false) {
         
         // 使用模拟数据
         const mockData = generateMockSystemData();
+        // 标记为模拟数据
+        mockData.isRealData = false;
         updateDashboard(mockData);
+        
+        // 更新最后更新时间
+        updateLastUpdated();
     }
 }
 
@@ -358,149 +328,53 @@ function updateDashboard(data) {
     // 更新系统数据
     Object.assign(systemData, data);
     
+    // 判断是否为模拟数据
+    const mockPrefix = systemData.isRealData === false ? '【模拟】' : '';
+    
     // 更新状态指标
-    elements.cpuUsage.textContent = `${systemData.cpu.toFixed(1)}%`;
-    elements.cpuBar.style.width = `${systemData.cpu}%`;
+    if (elements.cpuUsage) {
+        elements.cpuUsage.textContent = `${mockPrefix}${systemData.cpu.toFixed(1)}%`;
+    }
+    if (elements.cpuBar) {
+        elements.cpuBar.style.width = `${systemData.cpu}%`;
+    }
     
-    elements.memoryUsage.textContent = `${systemData.memory.toFixed(1)}%`;
-    elements.memoryBar.style.width = `${systemData.memory}%`;
-    
-    // 更新内存图表
-    updateMemoryChart();
+    if (elements.memoryUsage) {
+        elements.memoryUsage.textContent = `${mockPrefix}${systemData.memory.toFixed(1)}%`;
+    }
+    if (elements.memoryBar) {
+        elements.memoryBar.style.width = `${systemData.memory}%`;
+    }
     
     // 更新运行时间
-    elements.uptime.textContent = formatUptime(systemData.uptime);
+    if (elements.uptime) {
+        elements.uptime.textContent = `${mockPrefix}${formatUptime(systemData.uptime)}`;
+    }
     
     // 更新收益
-    elements.totalProfit.textContent = `${systemData.profit.toFixed(4)} SOL`;
+    if (elements.totalProfit) {
+        elements.totalProfit.textContent = `${mockPrefix}${systemData.profit.toFixed(4)} SOL`;
+    }
     
     // 更新统计数据
-    elements.monitoredTokens.textContent = systemData.monitoredTokens;
-    elements.activePools.textContent = systemData.activePools;
-    elements.executedTrades.textContent = systemData.executedTrades;
+    if (elements.monitoredTokens) {
+        elements.monitoredTokens.textContent = `${mockPrefix}${systemData.monitoredTokens}`;
+    }
+    if (elements.activePools) {
+        elements.activePools.textContent = `${mockPrefix}${systemData.activePools}`;
+    }
+    if (elements.executedTrades) {
+        elements.executedTrades.textContent = `${mockPrefix}${systemData.executedTrades}`;
+    }
     
     // 更新图表
     updateCharts();
     
-    // 添加模拟数据到表格
-    populateMockTables();
-}
-
-// 更新内存图表
-function updateMemoryChart() {
-    // 如果没有内存历史记录，则直接返回
-    if (!systemData.memoryHistory || systemData.memoryHistory.length === 0) return;
+    // 添加模拟数据到表格 - 传递模拟状态
+    populateMockTables(systemData.isRealData === false);
     
-    // 从内存历史记录中提取数据
-    const labels = systemData.memoryHistory.map(entry => {
-        const time = new Date(entry.time);
-        return `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
-    });
-    
-    const data = systemData.memoryHistory.map(entry => entry.value);
-    
-    // 获取已存在的canvas元素
-    const existingCanvas = document.getElementById('memoryUsageChart');
-    if (!existingCanvas) {
-        console.error('找不到内存使用图表的canvas元素');
-        return;
-    }
-    
-    // 清晰的主题配置
-    const isDark = document.body.classList.contains('dark-theme');
-    const chartTheme = {
-        fontColor: isDark ? '#e0e0e0' : '#333333',
-        gridColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-        borderColor: '#ff6e4d',
-        backgroundColor: 'rgba(255, 110, 77, 0.1)'
-    };
-    
-    // 如果图表不存在，则使用现有canvas创建新图表
-    if (!memoryChart) {
-        memoryChart = new Chart(existingCanvas, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: '内存使用率 (%)',
-                    data: data,
-                    borderColor: chartTheme.borderColor,
-                    backgroundColor: chartTheme.backgroundColor,
-                    tension: 0.4,
-                    fill: true,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            color: chartTheme.fontColor,
-                            font: {
-                                size: 12
-                            }
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)',
-                        titleColor: isDark ? '#fff' : '#333',
-                        bodyColor: isDark ? '#e0e0e0' : '#666',
-                        borderColor: chartTheme.borderColor,
-                        borderWidth: 1
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        ticks: {
-                            color: chartTheme.fontColor
-                        },
-                        grid: {
-                            color: chartTheme.gridColor
-                        },
-                        title: {
-                            display: true,
-                            text: '使用率百分比',
-                            color: chartTheme.fontColor
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            color: chartTheme.fontColor
-                        },
-                        grid: {
-                            color: chartTheme.gridColor
-                        }
-                    }
-                },
-                animation: {
-                    duration: 1000,
-                    easing: 'easeOutQuart'
-                }
-            }
-        });
-        
-        console.log('内存使用趋势图表初始化完成');
-    } else {
-        // 更新现有图表
-        memoryChart.data.labels = labels;
-        memoryChart.data.datasets[0].data = data;
-        
-        // 更新主题配置 
-        memoryChart.options.plugins.legend.labels.color = chartTheme.fontColor;
-        memoryChart.options.scales.y.ticks.color = chartTheme.fontColor;
-        memoryChart.options.scales.y.grid.color = chartTheme.gridColor;
-        memoryChart.options.scales.x.ticks.color = chartTheme.fontColor;
-        memoryChart.options.scales.x.grid.color = chartTheme.gridColor;
-        
-        memoryChart.update('none'); // 使用'none'参数跳过动画，提高性能
-    }
+    // 更新机器人状态UI
+    updateBotStatus(botRunning);
 }
 
 // 更新图表
@@ -521,12 +395,17 @@ function updateCharts() {
 }
 
 // 添加模拟数据到表格
-function populateMockTables() {
+function populateMockTables(isMockData = false) {
+    // 添加模拟交易数据前检查元素是否存在
+    if (!elements.tradesTableBody || !elements.tokensTableBody) return;
+    
     // 清空现有表格数据
     elements.tradesTableBody.innerHTML = '';
     elements.tokensTableBody.innerHTML = '';
     
     // 添加模拟交易数据
+    const mockPrefix = isMockData ? '【模拟】' : '';
+    
     const mockTrades = [
         { id: 'Tx5g3...e4f2', pair: 'SOL/USDC', amount: '12.5', profit: '0.0082', time: '10:45:32', status: 'success' },
         { id: 'Txc7b...a3d1', pair: 'JUP/SOL', amount: '55.2', profit: '0.0045', time: '10:42:18', status: 'success' },
@@ -538,10 +417,10 @@ function populateMockTables() {
     for (const trade of mockTrades) {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${trade.id}</td>
-            <td>${trade.pair}</td>
-            <td>${trade.amount}</td>
-            <td class="profit">${trade.profit} SOL</td>
+            <td>${mockPrefix}${trade.id}</td>
+            <td>${mockPrefix}${trade.pair}</td>
+            <td>${mockPrefix}${trade.amount}</td>
+            <td class="profit">${mockPrefix}${trade.profit} SOL</td>
             <td>${trade.time}</td>
             <td><span class="status ${trade.status}">${trade.status}</span></td>
         `;
@@ -560,10 +439,10 @@ function populateMockTables() {
     for (const token of mockTokens) {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${token.name}</td>
-            <td><span title="${token.address}">${token.address}</span></td>
+            <td>${mockPrefix}${token.name}</td>
+            <td><span title="${token.address}">${mockPrefix}${token.address}</span></td>
             <td>${token.time}</td>
-            <td>${token.liquidity} USDC</td>
+            <td>${mockPrefix}${token.liquidity} USDC</td>
             <td><span class="risk-level ${token.risk}">${token.risk}</span></td>
         `;
         elements.tokensTableBody.appendChild(row);
@@ -595,7 +474,12 @@ function addLog(message, level = 'info') {
 // 更新日志显示
 function updateLogDisplay() {
     const container = document.getElementById('logContainer');
+    if (!container) return;
+    
     container.innerHTML = '';
+    
+    // 判断是否为模拟数据
+    const mockPrefix = systemData.isRealData === false ? '【模拟】' : '';
     
     for (const entry of logEntries) {
         const logLine = document.createElement('div');
@@ -610,7 +494,7 @@ function updateLogDisplay() {
         levelSpan.textContent = `[${entry.level.toUpperCase()}] `;
         
         const message = document.createElement('span');
-        message.textContent = entry.message;
+        message.textContent = mockPrefix + entry.message;
         
         logLine.appendChild(timestamp);
         logLine.appendChild(levelSpan);
@@ -646,6 +530,22 @@ function formatUptime(seconds) {
     return `${hours}小时 ${minutes}分钟 ${secs}秒`;
 }
 
+// 更新最后更新时间
+function updateLastUpdated() {
+    if (elements.lastUpdated) {
+        const now = new Date();
+        elements.lastUpdated.textContent = now.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+    }
+}
+
 // 生成模拟数据
 function generateMockSystemData() {
     // 随机波动值
@@ -656,22 +556,6 @@ function generateMockSystemData() {
     if (baseMemoryUsage > 85) baseMemoryUsage = 50;
     
     const memoryUsage = Math.min(98, Math.max(10, baseMemoryUsage + fluctuation));
-    const heapUsage = Math.min(95, Math.max(8, memoryUsage - 5 + (Math.random() - 0.5) * 15));
-    
-    // 生成内存历史数据
-    const memHistory = [];
-    const now = Date.now();
-    
-    // 生成过去一小时的数据，每5分钟一个点
-    for (let i = 11; i >= 0; i--) {
-        const time = now - (i * 5 * 60 * 1000);
-        const value = Math.max(10, Math.min(95, baseMemoryUsage + (Math.random() - 0.5) * 15));
-        
-        memHistory.push({
-            time: time,
-            value: value
-        });
-    }
     
     return {
         cpu: 30 + Math.random() * 40,
@@ -683,12 +567,12 @@ function generateMockSystemData() {
         executedTrades: Math.floor(10 + Math.random() * 40),
         memoryDetails: {
             heapTotal: 4 * 1024 * 1024 * 1024, // 4GB
-            heapUsed: (heapUsage / 100) * 4 * 1024 * 1024 * 1024,
+            heapUsed: (memoryUsage / 100) * 4 * 1024 * 1024 * 1024,
             external: 50 + Math.random() * 20,
             arrayBuffers: 30 + Math.random() * 10,
             rss: 1200 + Math.random() * 100
         },
-        memoryHistory: memHistory
+        memoryHistory: []
     };
 }
 
@@ -710,6 +594,7 @@ async function startSystem() {
         }
         
         // 更新UI
+        botRunning = true;
         updateBotStatus(true);
         addLog('系统已启动', 'success');
         
@@ -739,6 +624,7 @@ async function stopSystem() {
         }
         
         // 更新UI
+        botRunning = false;
         updateBotStatus(false);
         addLog('系统已停止', 'warning');
         
@@ -752,21 +638,18 @@ async function stopSystem() {
 
 // 更新机器人状态UI
 function updateBotStatus(isRunning) {
-    const statusIndicator = document.querySelector('.status-indicator');
-    const statusText = document.getElementById('statusText');
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
+    if (!elements.statusIndicator || !elements.statusText || !elements.startBtn || !elements.stopBtn) return;
     
     if (isRunning) {
-        statusIndicator.className = 'status-indicator status-running';
-        statusText.textContent = '系统运行中';
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
+        elements.statusIndicator.className = 'status-indicator status-running';
+        elements.statusText.textContent = '状态: 运行中';
+        elements.startBtn.disabled = true;
+        elements.stopBtn.disabled = false;
     } else {
-        statusIndicator.className = 'status-indicator status-stopped';
-        statusText.textContent = '系统已停止';
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
+        elements.statusIndicator.className = 'status-indicator status-stopped';
+        elements.statusText.textContent = '状态: 已停止';
+        elements.startBtn.disabled = false;
+        elements.stopBtn.disabled = true;
     }
 }
 
@@ -779,99 +662,24 @@ function toggleBotStatus(shouldStart) {
     }
 }
 
-// 显示代币详情
-function showTokenDetails(tokenAddress) {
-    addLog(`查看代币详情: ${tokenAddress}`, 'info');
-    
-    // 可以在这里实现弹窗显示代币详情
-    fetch(`/api/tokens/details?address=${tokenAddress}`)
-        .then(response => response.json())
-        .then(data => {
-            // 创建模态框显示详情
-            createTokenDetailModal(data);
-        })
-        .catch(error => {
-            addLog(`获取代币详情失败: ${error.message}`, 'error');
-        });
-}
-
-// 显示交易详情
-function showTransactionDetails(txId) {
-    addLog(`查看交易详情: ${txId}`, 'info');
-    
-    // 可以在这里实现弹窗显示交易详情
-    fetch(`/api/transactions/${txId}`)
-        .then(response => response.json())
-        .then(data => {
-            // 创建模态框显示详情
-            createTransactionDetailModal(data);
-        })
-        .catch(error => {
-            addLog(`获取交易详情失败: ${error.message}`, 'error');
-        });
-}
-
-// 创建代币详情模态框
-function createTokenDetailModal(tokenData) {
-    // 这里可以根据实际情况创建模态框
-    // 由于当前HTML中没有模态框结构，这里先添加日志
-    addLog(`代币名称: ${tokenData.name || '未知'}`, 'info');
-    addLog(`代币总供应量: ${tokenData.supply || '未知'}`, 'info');
-    addLog(`创建时间: ${tokenData.createTime || '未知'}`, 'info');
-}
-
-// 创建交易详情模态框
-function createTransactionDetailModal(txData) {
-    // 这里可以根据实际情况创建模态框
-    // 由于当前HTML中没有模态框结构，这里先添加日志
-    addLog(`交易哈希: ${txData.hash || txData.id || '未知'}`, 'info');
-    addLog(`交易状态: ${txData.status || '未知'}`, 'info');
-    addLog(`交易金额: ${txData.amount || '未知'}`, 'info');
-}
-
-// 格式化日期时间
-function formatDateTime(date) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${formatTime(date)}`;
-}
-
-// 格式化时间
-function formatTime(date) {
-    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
-}
-
-// 切换主题 - 添加防抖动功能
+// 切换主题
 function toggleTheme() {
-    // 避免短时间内重复切换
-    if (themeTogglePending) {
-        return;
-    }
-    
-    // 设置状态标志并启动防抖计时器
-    themeTogglePending = true;
-    clearTimeout(themeToggleTimer);
-    
-    // 执行主题切换 - 在光/暗主题之间切换
     const isDark = document.body.classList.contains('dark-theme');
     if (isDark) {
         document.body.classList.remove('dark-theme');
         document.body.classList.add('light-theme');
+        localStorage.setItem('darkTheme', 'false');
     } else {
         document.body.classList.remove('light-theme');
         document.body.classList.add('dark-theme');
+        localStorage.setItem('darkTheme', 'true');
     }
-    
-    localStorage.setItem('darkTheme', !isDark);
     
     // 更新图表主题
     updateChartsTheme();
     
     // 添加日志
-    addLog(`已切换到${!isDark ? '暗色' : '亮色'}主题`, 'info');
-    
-    // 500毫秒后重置状态，防止频繁切换
-    themeToggleTimer = setTimeout(() => {
-        themeTogglePending = false;
-    }, 500);
+    addLog(`已切换到${!isDark ? '亮色' : '暗色'}主题`, 'info');
 }
 
 // 更新图表主题
@@ -888,7 +696,8 @@ function updateChartsTheme() {
         }
     };
     
-    const selectedTheme = theme[currentTheme];
+    const isDark = document.body.classList.contains('dark-theme');
+    const selectedTheme = theme[isDark ? 'dark' : 'light'];
     
     // 更新图表主题
     if (tokenDiscoveryChart) {
@@ -905,13 +714,5 @@ function updateChartsTheme() {
         profitTrendChart.options.scales.x.ticks.color = selectedTheme.tickColor;
         profitTrendChart.options.scales.y.ticks.color = selectedTheme.tickColor;
         profitTrendChart.update();
-    }
-    
-    if (memoryChart) {
-        memoryChart.options.scales.x.grid.color = selectedTheme.gridColor;
-        memoryChart.options.scales.y.grid.color = selectedTheme.gridColor;
-        memoryChart.options.scales.x.ticks.color = selectedTheme.tickColor;
-        memoryChart.options.scales.y.ticks.color = selectedTheme.tickColor;
-        memoryChart.update();
     }
 } 

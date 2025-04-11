@@ -1,0 +1,241 @@
+{
+  "success": true,
+  "data": {
+    "stats": {
+      "totalCount": 248,
+      "totalProfit": 1842.56,
+      "successRate": 94.3,
+      "avgExecutionTime": 32.7
+    },
+    "trades": [
+      {
+        "id": "tx123456",
+        "hash": "4xTHbc8NiBbMv7F4HwRnRFiPaCfs8t6JG2Js7hbA44MT",
+        "type": "arbitrage",
+        "status": "successful",
+        "timestamp": "2023-07-01T12:34:56Z",
+        "tokenSymbol": "SOL",
+        "amount": 35.2,
+        "priceChange": 2.3,
+        "profit": 124.82,
+        "gasCost": 0.85,
+        "executionTime": 28,
+        "path": [
+          {
+            "platform": "Raydium",
+            "action": "Buy SOL/USDC"
+          },
+          {
+            "platform": "Orca",
+            "action": "Sell SOL/USDC"
+          }
+        ],
+        "logs": "2023-07-01 12:34:56 [INFO] Transaction started\n2023-07-01 12:34:56 [INFO] Detected price difference: Raydium 23.42 USDC, Orca 23.96 USDC\n2023-07-01 12:34:56 [INFO] Executing arbitrage...\n2023-07-01 12:34:56 [INFO] Transaction successful"
+      },
+      {
+        "id": "tx123457",
+        "hash": "5pK6Ju9qoJbm5LcebcGL3KHYKsUfLLRcZjUNJYVLwFh2",
+        "type": "swap",
+        "status": "successful",
+        "timestamp": "2023-07-01T13:45:12Z",
+        "tokenSymbol": "BONK",
+        "amount": 12500000,
+        "priceChange": -1.2,
+        "profit": 43.25,
+        "gasCost": 0.25,
+        "executionTime": 18,
+        "path": [
+          {
+            "platform": "Jupiter",
+            "action": "Swap BONK/USDC"
+          }
+        ],
+        "logs": "2023-07-01 13:45:12 [INFO] Swap transaction started\n2023-07-01 13:45:12 [INFO] Optimal route found via Jupiter\n2023-07-01 13:45:12 [INFO] Transaction successful"
+      },
+      {
+        "id": "tx123458",
+        "hash": "7KmnEZ97zCLxL8P2Vz4MeqJxzptLDmKbU5BJMexQ2rQN",
+        "type": "liquidation",
+        "status": "successful",
+        "timestamp": "2023-07-01T14:32:45Z",
+        "tokenSymbol": "mSOL",
+        "amount": 12.8,
+        "priceChange": 0.7,
+        "profit": 205.36,
+        "gasCost": 0.42,
+        "executionTime": 35,
+        "path": [
+          {
+            "platform": "Solend",
+            "action": "Liquidate position"
+          }
+        ],
+        "logs": "2023-07-01 14:32:45 [INFO] Liquidation opportunity detected\n2023-07-01 14:32:45 [INFO] Health factor: 0.94\n2023-07-01 14:32:45 [INFO] Executing liquidation...\n2023-07-01 14:32:45 [INFO] Liquidation successful"
+      },
+      {
+        "id": "tx123459",
+        "hash": "9uVth8m5BmgPQ12YJDKrL9EKJhPxCLQVtodvgN7JZxs3",
+        "type": "sandwich",
+        "status": "successful",
+        "timestamp": "2023-07-01T15:21:38Z",
+        "tokenSymbol": "JitoSOL",
+        "amount": 8.5,
+        "priceChange": 3.5,
+        "profit": 76.43,
+        "gasCost": 0.95,
+        "executionTime": 42,
+        "path": [
+          {
+            "platform": "Raydium",
+            "action": "Front-run buy"
+          },
+          {
+            "platform": "Raydium",
+            "action": "Target transaction"
+          },
+          {
+            "platform": "Raydium",
+            "action": "Back-run sell"
+          }
+        ],
+        "logs": "2023-07-01 15:21:38 [INFO] Large pending transaction detected\n2023-07-01 15:21:38 [INFO] Executing front-run transaction...\n2023-07-01 15:21:38 [INFO] Target transaction confirmed\n2023-07-01 15:21:38 [INFO] Executing back-run transaction...\n2023-07-01 15:21:38 [INFO] Sandwich complete"
+      },
+      {
+        "id": "tx123460",
+        "hash": "2vThF9P5z3K2xPLTnqWwYHYXuRqJvqZrr1EtQvKKrNj8",
+        "type": "arbitrage",
+        "status": "failed",
+        "timestamp": "2023-07-01T16:44:21Z",
+        "tokenSymbol": "USDT",
+        "amount": 1200,
+        "priceChange": 0.05,
+        "profit": 0,
+        "gasCost": 0.65,
+        "executionTime": 48,
+        "path": [
+          {
+            "platform": "Orca",
+            "action": "Buy USDT/USDC"
+          },
+          {
+            "platform": "Raydium",
+            "action": "Sell USDT/USDC"
+          }
+        ],
+        "logs": "2023-07-01 16:44:21 [INFO] Transaction started\n2023-07-01 16:44:21 [INFO] Detected price difference: Orca 0.998 USDC, Raydium 1.002 USDC\n2023-07-01 16:44:21 [INFO] Executing arbitrage...\n2023-07-01 16:44:21 [ERROR] Transaction failed: Slippage tolerance exceeded"
+      },
+      {
+        "id": "tx123461",
+        "hash": "8qLnTpw2VBJfDPryQrsPzZ3g9YbBJYkfFpGeJ4FgdLmR",
+        "type": "swap",
+        "status": "successful",
+        "timestamp": "2023-07-01T18:15:33Z",
+        "tokenSymbol": "ORCA",
+        "amount": 156.3,
+        "priceChange": 1.8,
+        "profit": 32.75,
+        "gasCost": 0.38,
+        "executionTime": 25,
+        "path": [
+          {
+            "platform": "Jupiter",
+            "action": "Swap ORCA/SOL"
+          }
+        ],
+        "logs": "2023-07-01 18:15:33 [INFO] Swap transaction started\n2023-07-01 18:15:33 [INFO] Optimal route found via Jupiter\n2023-07-01 18:15:33 [INFO] Transaction successful"
+      },
+      {
+        "id": "tx123462",
+        "hash": "3mFJ7rLB8Z4X2D5KpPxV9SQJ5EZf6YnhGBrEPTfXN5Jt",
+        "type": "arbitrage",
+        "status": "successful",
+        "timestamp": "2023-07-01T19:28:43Z",
+        "tokenSymbol": "RAY",
+        "amount": 88.9,
+        "priceChange": 2.7,
+        "profit": 67.45,
+        "gasCost": 0.52,
+        "executionTime": 32,
+        "path": [
+          {
+            "platform": "Raydium",
+            "action": "Buy RAY/USDC"
+          },
+          {
+            "platform": "Orca",
+            "action": "Sell RAY/USDC"
+          }
+        ],
+        "logs": "2023-07-01 19:28:43 [INFO] Transaction started\n2023-07-01 19:28:43 [INFO] Detected price difference\n2023-07-01 19:28:43 [INFO] Executing arbitrage...\n2023-07-01 19:28:43 [INFO] Transaction successful"
+      },
+      {
+        "id": "tx123463",
+        "hash": "5sQHMffJxV1ZARnyDq1EoEh3i6Uz54UrKkCvBo8JbMj7",
+        "type": "liquidation",
+        "status": "pending",
+        "timestamp": "2023-07-01T20:36:15Z",
+        "tokenSymbol": "stSOL",
+        "amount": 15.3,
+        "priceChange": 0.4,
+        "profit": 0,
+        "gasCost": 0,
+        "executionTime": 0,
+        "path": [
+          {
+            "platform": "Solend",
+            "action": "Liquidate position"
+          }
+        ],
+        "logs": "2023-07-01 20:36:15 [INFO] Liquidation opportunity detected\n2023-07-01 20:36:15 [INFO] Health factor: 0.97\n2023-07-01 20:36:15 [INFO] Pending confirmation..."
+      },
+      {
+        "id": "tx123464",
+        "hash": "6vJHrKhwBdL2K5PwGV1XqZ4RzDQ9XEbUjYP1tKKgvyHJ",
+        "type": "swap",
+        "status": "successful",
+        "timestamp": "2023-07-01T21:47:26Z",
+        "tokenSymbol": "MNGO",
+        "amount": 560.2,
+        "priceChange": -2.3,
+        "profit": 28.65,
+        "gasCost": 0.33,
+        "executionTime": 27,
+        "path": [
+          {
+            "platform": "Jupiter",
+            "action": "Swap MNGO/USDC"
+          }
+        ],
+        "logs": "2023-07-01 21:47:26 [INFO] Swap transaction started\n2023-07-01 21:47:26 [INFO] Optimal route found via Jupiter\n2023-07-01 21:47:26 [INFO] Transaction successful"
+      },
+      {
+        "id": "tx123465",
+        "hash": "4rTh8c9NiybMv7F4HnRnUFcPawfs8t6Jh2Js7hbK57MP",
+        "type": "sandwich",
+        "status": "successful",
+        "timestamp": "2023-07-01T22:55:18Z",
+        "tokenSymbol": "STEP",
+        "amount": 1250.6,
+        "priceChange": 4.2,
+        "profit": 105.82,
+        "gasCost": 0.78,
+        "executionTime": 38,
+        "path": [
+          {
+            "platform": "Raydium",
+            "action": "Front-run buy"
+          },
+          {
+            "platform": "Raydium",
+            "action": "Target transaction"
+          },
+          {
+            "platform": "Raydium",
+            "action": "Back-run sell"
+          }
+        ],
+        "logs": "2023-07-01 22:55:18 [INFO] Large pending transaction detected\n2023-07-01 22:55:18 [INFO] Executing front-run transaction...\n2023-07-01 22:55:18 [INFO] Target transaction confirmed\n2023-07-01 22:55:18 [INFO] Executing back-run transaction...\n2023-07-01 22:55:18 [INFO] Sandwich complete"
+      }
+    ]
+  }
+} 

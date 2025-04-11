@@ -1,0 +1,48 @@
+{
+  "success": true,
+  "data": {
+    "tokens": [
+      {
+        "name": "新发现代币678【M】",
+        "symbol": "NEW678",
+        "address": "New678901234567890123456789012345678901234【M】",
+        "discoveredAt": "2023-11-26T12:48:33.000Z",
+        "liquidity": 75000,
+        "riskScore": 6.2
+      },
+      {
+        "name": "ScamToken123【M】",
+        "symbol": "SCAM",
+        "address": "Scam123456789abcdef0123456789abcdef0123456【M】",
+        "discoveredAt": "2023-11-26T10:15:22.000Z",
+        "liquidity": 250000,
+        "riskScore": 9.8
+      },
+      {
+        "name": "SolDeFi Token【M】",
+        "symbol": "SOLDEFI",
+        "address": "SolDefi9876543210abcdef0123456789abcdef01【M】",
+        "discoveredAt": "2023-11-26T09:23:15.000Z",
+        "liquidity": 450000,
+        "riskScore": 3.5
+      },
+      {
+        "name": "MoonShot【M】",
+        "symbol": "MOON",
+        "address": "MoonShot1234567890abcdef0123456789abcdef01【M】",
+        "discoveredAt": "2023-11-26T08:42:55.000Z",
+        "liquidity": 180000,
+        "riskScore": 7.2
+      },
+      {
+        "name": "SolanaPulse【M】",
+        "symbol": "PULSE",
+        "address": "SolPulse9876543210abcdef0123456789abcdef01【M】",
+        "discoveredAt": "2023-11-26T07:15:40.000Z",
+        "liquidity": 320000,
+        "riskScore": 4.8
+      }
+    ],
+    "lastUpdated": "2023-11-26T15:32:45.000Z【M】"
+  }
+} 

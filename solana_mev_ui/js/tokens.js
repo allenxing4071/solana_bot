@@ -1,0 +1,589 @@
+/**
+ * Solana MEV机器人 - 代币监控页面JavaScript
+ */
+
+document.addEventListener('DOMContentLoaded', async function() {
+  // 初始化变量
+  let currentPage = 1;
+  let allTokens = [];
+  let filteredTokens = [];
+  let itemsPerPage = 10;
+  let currentViewMode = 'list';
+  
+  // 加载代币数据
+  async function loadTokensData() {
+    const data = await fetchData('tokens_data.json');
+    if (!data || !data.success) return;
+    
+    const tokensData = data.data;
+    
+    // 更新统计数据
+    document.getElementById('whitelistCount').textContent = tokensData.stats.whitelistCount;
+    document.getElementById('blacklistCount').textContent = tokensData.stats.blacklistCount;
+    document.getElementById('detectedToday').textContent = tokensData.stats.detectedToday;
+    document.getElementById('avgRiskScore').textContent = tokensData.stats.avgRiskScore.toFixed(1);
+    
+    // 存储所有代币数据
+    allTokens = tokensData.tokens;
+    
+    // 显示第一页数据
+    filterAndDisplayTokens();
+  }
+  
+  // 筛选并显示代币数据
+  function filterAndDisplayTokens() {
+    const searchQuery = document.getElementById('searchTokenInput').value.toLowerCase();
+    const tokenTypeFilter = document.getElementById('tokenTypeFilter').value;
+    const riskFilter = document.getElementById('riskFilter').value;
+    const sortBy = document.getElementById('sortTokensBy').value;
+    
+    // 筛选代币
+    filteredTokens = allTokens.filter(token => {
+      const matchSearch = token.name.toLowerCase().includes(searchQuery) || 
+                         token.symbol.toLowerCase().includes(searchQuery) ||
+                         token.address.toLowerCase().includes(searchQuery);
+      
+      let matchType = true;
+      if (tokenTypeFilter !== 'all') {
+        // 转换为中文类型名称进行匹配
+        const typeMap = {
+          'whitelist': '白名单',
+          'blacklist': '黑名单',
+          'unknown': '未分类'
+        };
+        matchType = token.type === typeMap[tokenTypeFilter];
+      }
+      
+      let matchRisk = true;
+      if (riskFilter !== 'all') {
+        if (riskFilter === 'low') {
+          matchRisk = token.riskScore >= 1 && token.riskScore <= 3;
+        } else if (riskFilter === 'medium') {
+          matchRisk = token.riskScore > 3 && token.riskScore <= 7;
+        } else if (riskFilter === 'high') {
+          matchRisk = token.riskScore > 7 && token.riskScore <= 10;
+        }
+      }
+      
+      return matchSearch && matchType && matchRisk;
+    });
+    
+    // 对代币排序
+    filteredTokens.sort((a, b) => {
+      const [field, direction] = sortBy.split('_');
+      const multiplier = direction === 'desc' ? -1 : 1;
+      
+      if (field === 'name') {
+        return a.name.localeCompare(b.name) * multiplier;
+      } else if (field === 'price') {
+        return (a.price - b.price) * multiplier;
+      } else if (field === 'risk') {
+        return (a.riskScore - b.riskScore) * multiplier;
+      } else if (field === 'date') {
+        return (new Date(a.createdAt) - new Date(b.createdAt)) * multiplier;
+      }
+      
+      return 0;
+    });
+    
+    // 显示当前视图模式的代币
+    if (currentViewMode === 'list') {
+      displayTokensTable(filteredTokens);
+    } else {
+      displayTokensGrid(filteredTokens);
+    }
+    
+    // 更新分页
+    updatePagination();
+  }
+  
+  // 表格视图显示代币
+  function displayTokensTable(tokens) {
+    const tableBody = document.getElementById('tokensTableBody');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = '';
+    
+    // 计算分页
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, tokens.length);
+    const displayedTokens = tokens.slice(startIndex, endIndex);
+    
+    if (displayedTokens.length === 0) {
+      const emptyRow = document.createElement('tr');
+      emptyRow.innerHTML = '<td colspan="8" class="text-center">没有找到匹配的代币</td>';
+      tableBody.appendChild(emptyRow);
+      return;
+    }
+    
+    // 添加代币行
+    for (const token of displayedTokens) {
+      const row = document.createElement('tr');
+      
+      // 确定代币类型样式
+      let typeBadgeClass = '';
+      if (token.type === '白名单') {
+        typeBadgeClass = 'token-whitelist-badge';
+      } else if (token.type === '黑名单') {
+        typeBadgeClass = 'token-blacklist-badge';
+      } else {
+        typeBadgeClass = 'token-unknown-badge';
+      }
+      
+      // 确定风险等级
+      let riskClass = '';
+      let riskWidth = token.riskScore * 10 + '%'; // 风险评分的百分比宽度
+      
+      if (token.riskScore <= 3) {
+        riskClass = 'risk-low';
+      } else if (token.riskScore <= 7) {
+        riskClass = 'risk-medium';
+      } else {
+        riskClass = 'risk-high';
+      }
+      
+      // 构造价格变化显示
+      const priceChangeClass = token.priceChange24h >= 0 ? 'positive' : 'negative';
+      const priceChangeSymbol = token.priceChange24h >= 0 ? '↑' : '↓';
+      const priceChangeAbs = Math.abs(token.priceChange24h).toFixed(2);
+      
+      row.innerHTML = `
+        <td>
+          <div class="font-medium">${token.symbol}</div>
+          <div class="text-secondary text-xs">${token.name}</div>
+          <div class="text-secondary text-xs truncate">${formatAddress(token.address)}</div>
+        </td>
+        <td><span class="token-type-badge ${typeBadgeClass}">${token.type}</span></td>
+        <td>$${typeof token.price === 'number' && token.price < 0.001 ? token.price.toExponential(2) : formatNumber(token.price)}</td>
+        <td>
+          <span class="price-change ${priceChangeClass}">
+            ${priceChangeSymbol} ${priceChangeAbs}%
+          </span>
+        </td>
+        <td>$${formatNumber(token.marketCap)}</td>
+        <td>$${formatNumber(token.volume24h)}</td>
+        <td>
+          <div class="risk-indicator">
+            <div class="risk-meter">
+              <div class="risk-fill ${riskClass}" style="width: ${riskWidth}"></div>
+            </div>
+            <div>${token.riskScore.toFixed(1)}</div>
+          </div>
+        </td>
+        <td>
+          <button class="btn btn-outline btn-sm btn-icon view-token-details-btn" data-token-address="${token.address}" title="查看详情">
+            <i class="ri-eye-line"></i>
+          </button>
+        </td>
+      `;
+      
+      tableBody.appendChild(row);
+    }
+    
+    // 添加事件监听器到详情按钮
+    const detailButtons = document.querySelectorAll('.view-token-details-btn');
+    for (const button of detailButtons) {
+      button.addEventListener('click', function() {
+        const tokenAddress = this.getAttribute('data-token-address');
+        showTokenDetails(tokenAddress);
+      });
+    }
+  }
+  
+  // 网格视图显示代币
+  function displayTokensGrid(tokens) {
+    const gridContainer = document.getElementById('tokensGridContainer');
+    if (!gridContainer) return;
+    
+    gridContainer.innerHTML = '';
+    
+    // 计算分页
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, tokens.length);
+    const displayedTokens = tokens.slice(startIndex, endIndex);
+    
+    if (displayedTokens.length === 0) {
+      gridContainer.innerHTML = '<div class="text-center p-4">没有找到匹配的代币</div>';
+      return;
+    }
+    
+    // 添加代币卡片
+    for (const token of displayedTokens) {
+      const card = document.createElement('div');
+      card.className = 'token-card';
+      
+      // 确定代币类型样式
+      let typeBadgeClass = '';
+      if (token.type === '白名单') {
+        typeBadgeClass = 'token-whitelist-badge';
+      } else if (token.type === '黑名单') {
+        typeBadgeClass = 'token-blacklist-badge';
+      } else {
+        typeBadgeClass = 'token-unknown-badge';
+      }
+      
+      // 确定风险等级
+      let riskClass = '';
+      let riskWidth = token.riskScore * 10 + '%'; // 风险评分的百分比宽度
+      
+      if (token.riskScore <= 3) {
+        riskClass = 'risk-low';
+      } else if (token.riskScore <= 7) {
+        riskClass = 'risk-medium';
+      } else {
+        riskClass = 'risk-high';
+      }
+      
+      // 构造价格变化显示
+      const priceChangeClass = token.priceChange24h >= 0 ? 'positive' : 'negative';
+      const priceChangeSymbol = token.priceChange24h >= 0 ? '↑' : '↓';
+      const priceChangeAbs = Math.abs(token.priceChange24h).toFixed(2);
+      
+      card.innerHTML = `
+        <div class="token-card-header">
+          <div class="token-info">
+            <div class="token-name">${token.symbol}</div>
+            <div class="text-secondary">${token.name}</div>
+            <div class="token-address">${formatAddress(token.address)}</div>
+          </div>
+          <span class="token-type-badge ${typeBadgeClass}">${token.type}</span>
+        </div>
+        
+        <div class="token-metrics">
+          <div class="metric-item">
+            <div class="metric-title">价格</div>
+            <div class="metric-value">
+              $${typeof token.price === 'number' && token.price < 0.001 ? token.price.toExponential(2) : formatNumber(token.price)}
+            </div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-title">24h变化</div>
+            <div class="metric-value ${priceChangeClass}">
+              ${priceChangeSymbol} ${priceChangeAbs}%
+            </div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-title">市值</div>
+            <div class="metric-value">$${formatNumber(token.marketCap)}</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-title">24h交易量</div>
+            <div class="metric-value">$${formatNumber(token.volume24h)}</div>
+          </div>
+        </div>
+        
+        <div class="risk-indicator mb-4">
+          <div class="metric-title">风险评分:</div>
+          <div class="risk-meter">
+            <div class="risk-fill ${riskClass}" style="width: ${riskWidth}"></div>
+          </div>
+          <div>${token.riskScore.toFixed(1)}</div>
+        </div>
+        
+        <div class="token-actions">
+          <div class="text-secondary text-xs">
+            创建于: ${formatDateTime(token.createdAt, false)}
+          </div>
+          <button class="btn btn-outline btn-sm btn-icon view-token-details-btn" data-token-address="${token.address}" title="查看详情">
+            <i class="ri-eye-line"></i>
+          </button>
+        </div>
+      `;
+      
+      gridContainer.appendChild(card);
+    }
+    
+    // 添加事件监听器到详情按钮
+    const detailButtons = gridContainer.querySelectorAll('.view-token-details-btn');
+    for (const button of detailButtons) {
+      button.addEventListener('click', function() {
+        const tokenAddress = this.getAttribute('data-token-address');
+        showTokenDetails(tokenAddress);
+      });
+    }
+  }
+  
+  // 更新分页控件
+  function updatePagination() {
+    const paginationContainer = document.getElementById('tokensPagination');
+    if (!paginationContainer) return;
+    
+    // 计算总页数
+    const totalPages = Math.ceil(filteredTokens.length / itemsPerPage);
+    if (totalPages <= 1) {
+      paginationContainer.innerHTML = '';
+      return;
+    }
+    
+    paginationContainer.innerHTML = '';
+    
+    // 上一页按钮
+    const prevBtn = document.createElement('button');
+    prevBtn.className = `page-btn ${currentPage === 1 ? 'disabled' : ''}`;
+    prevBtn.innerHTML = '&lt;';
+    prevBtn.title = '上一页';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        if (currentViewMode === 'list') {
+          displayTokensTable(filteredTokens);
+        } else {
+          displayTokensGrid(filteredTokens);
+        }
+        updatePagination();
+      }
+    });
+    paginationContainer.appendChild(prevBtn);
+    
+    // 页码信息
+    const pageInfo = document.createElement('div');
+    pageInfo.className = 'page-info';
+    pageInfo.textContent = `第 ${currentPage} 页，共 ${totalPages} 页`;
+    paginationContainer.appendChild(pageInfo);
+    
+    // 下一页按钮
+    const nextBtn = document.createElement('button');
+    nextBtn.className = `page-btn ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextBtn.innerHTML = '&gt;';
+    nextBtn.title = '下一页';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.addEventListener('click', () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        if (currentViewMode === 'list') {
+          displayTokensTable(filteredTokens);
+        } else {
+          displayTokensGrid(filteredTokens);
+        }
+        updatePagination();
+      }
+    });
+    paginationContainer.appendChild(nextBtn);
+  }
+  
+  // 显示代币详情
+  function showTokenDetails(tokenAddress) {
+    const token = allTokens.find(t => t.address === tokenAddress);
+    if (!token) return;
+    
+    const modalTitle = document.getElementById('modalTokenName');
+    const modalContent = document.getElementById('tokenDetailContent');
+    
+    if (modalTitle && modalContent) {
+      modalTitle.textContent = `${token.name} (${token.symbol})`;
+      
+      // 确定代币类型样式
+      let typeBadgeClass = '';
+      if (token.type === '白名单') {
+        typeBadgeClass = 'token-whitelist-badge';
+      } else if (token.type === '黑名单') {
+        typeBadgeClass = 'token-blacklist-badge';
+      } else {
+        typeBadgeClass = 'token-unknown-badge';
+      }
+      
+      // 确定风险等级
+      let riskClass = '';
+      let riskWidth = token.riskScore * 10 + '%'; // 风险评分的百分比宽度
+      
+      if (token.riskScore <= 3) {
+        riskClass = 'risk-low';
+      } else if (token.riskScore <= 7) {
+        riskClass = 'risk-medium';
+      } else {
+        riskClass = 'risk-high';
+      }
+      
+      modalContent.innerHTML = `
+        <div class="mb-4">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <span class="token-type-badge ${typeBadgeClass}">${token.type}</span>
+              <span class="text-secondary text-sm">创建于: ${formatDateTime(token.createdAt)}</span>
+            </div>
+            <div class="text-secondary text-sm">更新时间: ${formatDateTime(token.lastUpdated)}</div>
+          </div>
+          
+          <div class="card mb-4">
+            <div class="card-header">
+              <div class="card-title">基本信息</div>
+            </div>
+            <div class="p-4">
+              <div class="mb-2">
+                <div class="text-secondary text-sm">代币地址</div>
+                <div class="truncate">${token.address}</div>
+              </div>
+              <div class="flex gap-4 mt-4">
+                <div class="flex-1">
+                  <div class="text-secondary text-sm">当前价格</div>
+                  <div class="text-lg font-semibold">
+                    $${typeof token.price === 'number' && token.price < 0.001 ? token.price.toExponential(4) : formatNumber(token.price)}
+                    <span class="text-sm ${token.priceChange24h >= 0 ? 'text-success' : 'text-error'}">
+                      ${token.priceChange24h >= 0 ? '↑' : '↓'} ${Math.abs(token.priceChange24h).toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+                <div class="flex-1">
+                  <div class="text-secondary text-sm">市值</div>
+                  <div class="text-lg font-semibold">$${formatNumber(token.marketCap)}</div>
+                </div>
+                <div class="flex-1">
+                  <div class="text-secondary text-sm">24小时交易量</div>
+                  <div class="text-lg font-semibold">$${formatNumber(token.volume24h)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card mb-4">
+            <div class="card-header">
+              <div class="card-title">风险评估</div>
+            </div>
+            <div class="p-4">
+              <div class="mb-4">
+                <div class="text-secondary text-sm mb-2">风险评分</div>
+                <div class="risk-indicator">
+                  <div class="risk-meter" style="width: 100%;">
+                    <div class="risk-fill ${riskClass}" style="width: ${riskWidth}"></div>
+                  </div>
+                  <div class="font-semibold">${token.riskScore.toFixed(1)} / 10</div>
+                </div>
+              </div>
+              <div class="mt-4">
+                <div class="text-secondary text-sm mb-2">风险因素</div>
+                <ul class="ml-4">
+                  <li class="mb-1">代币合约${token.riskScore > 5 ? '未' : '已'}开源</li>
+                  <li class="mb-1">流动性评级: ${token.riskScore > 7 ? '低' : token.riskScore > 4 ? '中' : '高'}</li>
+                  <li class="mb-1">持有者分布: ${token.riskScore > 7 ? '高度集中' : token.riskScore > 4 ? '部分集中' : '均匀分布'}</li>
+                  <li class="mb-1">团队${token.riskScore > 6 ? '未' : '已'}验证</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card p-4">
+            <div class="font-medium mb-2">操作</div>
+            <div class="flex gap-2">
+              <button class="btn btn-outline btn-sm" title="查看交易历史">
+                <i class="ri-history-line"></i> 交易历史
+              </button>
+              <button class="btn btn-outline btn-sm" title="在区块浏览器中查看">
+                <i class="ri-external-link-line"></i> 浏览器
+              </button>
+              <button class="btn btn-outline btn-sm" title="设置价格提醒">
+                <i class="ri-notification-line"></i> 价格提醒
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // 显示模态框
+      toggleModal('tokenDetailModal', true);
+    }
+  }
+  
+  // 切换视图模式
+  function toggleViewMode(mode) {
+    currentViewMode = mode;
+    const tableContainer = document.getElementById('tokensTableContainer');
+    const gridContainer = document.getElementById('tokensGridContainer');
+    
+    if (mode === 'list') {
+      if (tableContainer) tableContainer.style.display = 'block';
+      if (gridContainer) gridContainer.style.display = 'none';
+      displayTokensTable(filteredTokens);
+    } else {
+      if (tableContainer) tableContainer.style.display = 'none';
+      if (gridContainer) gridContainer.style.display = 'grid';
+      displayTokensGrid(filteredTokens);
+    }
+  }
+  
+  // 初始化事件监听
+  function initEventListeners() {
+    // 关闭模态框按钮
+    const closeTokenModalBtn = document.getElementById('closeTokenModalBtn');
+    const closeTokenDetailBtn = document.getElementById('closeTokenDetailBtn');
+    if (closeTokenModalBtn && closeTokenDetailBtn) {
+      closeTokenModalBtn.addEventListener('click', () => toggleModal('tokenDetailModal', false));
+      closeTokenDetailBtn.addEventListener('click', () => toggleModal('tokenDetailModal', false));
+    }
+    
+    // 添加代币按钮
+    const addTokenBtn = document.getElementById('addTokenBtn');
+    if (addTokenBtn) {
+      addTokenBtn.addEventListener('click', function() {
+        showNotification('提示', '添加代币功能尚未实现', 'info');
+      });
+    }
+    
+    // 添加到白名单按钮
+    const addToWhitelistBtn = document.getElementById('addToWhitelistBtn');
+    if (addToWhitelistBtn) {
+      addToWhitelistBtn.addEventListener('click', function() {
+        showNotification('成功', '代币已添加到白名单', 'success');
+        toggleModal('tokenDetailModal', false);
+      });
+    }
+    
+    // 添加到黑名单按钮
+    const addToBlacklistBtn = document.getElementById('addToBlacklistBtn');
+    if (addToBlacklistBtn) {
+      addToBlacklistBtn.addEventListener('click', function() {
+        showNotification('警告', '代币已添加到黑名单', 'warning');
+        toggleModal('tokenDetailModal', false);
+      });
+    }
+    
+    // 搜索输入框
+    const searchTokenInput = document.getElementById('searchTokenInput');
+    if (searchTokenInput) {
+      searchTokenInput.addEventListener('input', function() {
+        currentPage = 1;
+        filterAndDisplayTokens();
+      });
+    }
+    
+    // 代币类型筛选器
+    const tokenTypeFilter = document.getElementById('tokenTypeFilter');
+    if (tokenTypeFilter) {
+      tokenTypeFilter.addEventListener('change', function() {
+        currentPage = 1;
+        filterAndDisplayTokens();
+      });
+    }
+    
+    // 风险等级筛选器
+    const riskFilter = document.getElementById('riskFilter');
+    if (riskFilter) {
+      riskFilter.addEventListener('change', function() {
+        currentPage = 1;
+        filterAndDisplayTokens();
+      });
+    }
+    
+    // 排序选项
+    const sortTokensBy = document.getElementById('sortTokensBy');
+    if (sortTokensBy) {
+      sortTokensBy.addEventListener('change', function() {
+        filterAndDisplayTokens();
+      });
+    }
+    
+    // 视图模式切换
+    const viewMode = document.getElementById('viewMode');
+    if (viewMode) {
+      viewMode.addEventListener('change', function() {
+        toggleViewMode(this.value);
+      });
+    }
+  }
+  
+  // 加载数据
+  await loadTokensData();
+  
+  // 初始化事件监听
+  initEventListeners();
+}); 

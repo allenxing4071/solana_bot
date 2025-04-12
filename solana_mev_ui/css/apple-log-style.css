@@ -1,0 +1,95 @@
+/* 苹果风格的日志样式 */
+.log-entry {
+    font-family: 'SF Mono', 'Monaco', 'Menlo', 'Courier New', Courier, monospace;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background-color: rgba(30, 30, 30, 0.8);
+    backdrop-filter: blur(10px);
+    color: #eee;
+    font-size: 13px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    border-left: 3px solid transparent;
+    display: flex;
+    align-items: flex-start;
+    overflow-wrap: break-word;
+}
+
+.log-entry-icon {
+    margin-right: 8px;
+    font-size: 16px;
+    margin-top: 1px;
+    flex-shrink: 0;
+}
+
+.log-entry-content {
+    flex-grow: 1;
+}
+
+.log-entry-timestamp {
+    font-size: 11px;
+    color: #999;
+    margin-top: 3px;
+}
+
+.log-entry.info {
+    border-left-color: #0074e4;
+}
+
+.log-entry.info .log-entry-icon {
+    color: #0074e4;
+}
+
+.log-entry.warning {
+    border-left-color: #f5a623;
+}
+
+.log-entry.warning .log-entry-icon {
+    color: #f5a623;
+}
+
+.log-entry.error {
+    border-left-color: #ff3b30;
+}
+
+.log-entry.error .log-entry-icon {
+    color: #ff3b30;
+}
+
+.log-entry.success {
+    border-left-color: #30d158;
+}
+
+.log-entry.success .log-entry-icon {
+    color: #30d158;
+}
+
+/* 暗色主题调整 */
+.dark-theme .log-entry {
+    background-color: rgba(40, 40, 40, 0.8);
+    color: #eee;
+}
+
+/* 滚动条美化 */
+.log-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.log-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.log-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.dark-theme .log-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.dark-theme .log-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+}

@@ -7,6 +7,19 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.min.css">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+  <!-- 环境变量注入 -->
+  <script>
+    // 全局环境变量对象
+    window.ENV = {
+      API_URL: '/api',
+      API_PORT: '3000'
+    };
+    
+    // 如果在开发环境，使用mock数据
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      window.ENV.API_URL = './mock_data';
+    }
+  </script>
   <style>
     /* 内存监控页面特定样式 */
     .memory-card {

@@ -6,7 +6,25 @@
   <title>Solana MEV机器人 - 仪表盘</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.min.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/log-style.css">
+  <link rel="stylesheet" href="css/apple-log-style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+  <!-- 环境变量注入 -->
+  <script>
+    // 全局环境变量对象
+    window.ENV = {
+      API_URL: 'https://sol.deeptv.tv/api',
+      API_PORT: '3000'
+    };
+    
+    // 如果在开发环境，使用生产环境API或本地mock数据
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      // 使用生产环境API
+      window.ENV.API_URL = 'https://sol.deeptv.tv/api';
+      // 或者使用本地mock数据
+      // window.ENV.API_URL = './mock_data';
+    }
+  </script>
 </head>
 <body>
   <!-- 侧边栏 -->
@@ -79,15 +97,6 @@
     </div>
     
     <div class="content-area">
-      <!-- 筛选和搜索工具栏 -->
-      <div class="toolbar">
-        <div class="search-wrapper">
-          <i class="ri-search-line"></i>
-          <input type="text" id="searchInput" placeholder="搜索..." class="search-input">
-        </div>
-        <!-- 其他工具栏内容 -->
-      </div>
-      
       <!-- 修改统计卡片区域，确保铺满整行 -->
       <div class="stats-grid index-stats-grid">
         <div class="stat-card">
@@ -150,7 +159,9 @@
               <button class="btn btn-outline btn-sm" title="显示7天数据">7天</button>
             </div>
           </div>
-          <div class="chart-container" id="tokenDiscoveryChart"></div>
+          <div class="chart-container" id="tokenDiscoveryChart" style="height: 300px; position: relative;">
+            <canvas></canvas>
+          </div>
         </div>
         
         <div class="card" style="flex: 1; min-width: 300px;">
@@ -162,7 +173,9 @@
               <button class="btn btn-outline btn-sm" title="显示30天数据">30天</button>
             </div>
           </div>
-          <div class="chart-container" id="profitTrendChart"></div>
+          <div class="chart-container" id="profitTrendChart" style="height: 300px; position: relative;">
+            <canvas></canvas>
+          </div>
         </div>
       </div>
       
@@ -234,270 +247,7 @@
     </div>
   </div>
 
-  <script src="js/utils.js"></script>
-  <script>
-    // 当文档加载完成时执行
-    document.addEventListener('DOMContentLoaded', async function() {
-      // 加载系统日志
-      async function loadLogs() {
-        const data = await fetchData('logs_data.json');
-        if (!data || !data.success) return;
-        
-        const logContainer = document.getElementById('logContainer');
-        if (!logContainer) return;
-        
-        logContainer.innerHTML = '';
-        
-        for (const log of data.data.logs) {
-          const logEntry = document.createElement('div');
-          logEntry.className = 'log-entry';
-          
-          const levelClass = log.level === 'INFO' 
-            ? 'text-info' 
-            : log.level === 'WARNING' 
-              ? 'text-warning' 
-              : 'text-error';
-          
-          logEntry.innerHTML = `
-            <span class="log-time">${formatDateTime(log.timestamp)}</span>
-            <span class="log-level ${levelClass}">[${log.level}]</span>
-            <span class="log-module">[${log.module}]</span>
-            <span class="log-message">${log.message}</span>
-          `;
-          
-          logContainer.appendChild(logEntry);
-        }
-      }
-      
-      // 加载最近交易
-      async function loadRecentTrades() {
-        const data = await fetchData('recent_trades.json');
-        if (!data || !data.success) return;
-        
-        const trades = data.data.trades;
-        const tableBody = document.getElementById('tradesTableBody');
-        if (!tableBody) return;
-        
-        tableBody.innerHTML = '';
-        
-        for (const trade of trades) {
-          const row = document.createElement('tr');
-          
-          const statusClass = trade.status === '成功' 
-            ? 'badge-success' 
-            : 'badge-error';
-          
-          row.innerHTML = `
-            <td>${trade.id}</td>
-            <td>${trade.tokenPair}</td>
-            <td>${formatNumber(trade.amount)}</td>
-            <td class="text-success">$${trade.profit.toFixed(2)}</td>
-            <td>${formatDateTime(trade.timestamp)}</td>
-            <td><span class="badge ${statusClass}">${trade.status}</span></td>
-          `;
-          
-          tableBody.appendChild(row);
-        }
-      }
-      
-      // 加载最近发现的代币
-      async function loadRecentTokens() {
-        const data = await fetchData('tokens_discovered.json');
-        if (!data || !data.success) return;
-        
-        const tokens = data.data.tokens;
-        const tableBody = document.getElementById('tokensTableBody');
-        if (!tableBody) return;
-        
-        tableBody.innerHTML = '';
-        
-        for (const token of tokens) {
-          const row = document.createElement('tr');
-          
-          let riskClass = 'badge-success';
-          let riskText = '低风险';
-          
-          if (token.riskScore > 7) {
-            riskClass = 'badge-error';
-            riskText = '高风险';
-          } else if (token.riskScore > 3) {
-            riskClass = 'badge-warning';
-            riskText = '中风险';
-          }
-          
-          row.innerHTML = `
-            <td>${token.name}</td>
-            <td>${formatAddress(token.address)}</td>
-            <td>${formatDateTime(token.discoveredAt)}</td>
-            <td>$${formatNumber(token.liquidity)}</td>
-            <td><span class="badge ${riskClass}">${riskText} (${token.riskScore.toFixed(1)})</span></td>
-          `;
-          
-          tableBody.appendChild(row);
-        }
-      }
-      
-      // 初始化图表
-      function initCharts() {
-        // 因为这是静态页面，使用模拟的图表数据
-        const tokenDiscoveryCtx = document.getElementById('tokenDiscoveryChart');
-        if (tokenDiscoveryCtx) {
-          new Chart(tokenDiscoveryCtx, {
-            type: 'bar',
-            data: {
-              labels: ['0时', '1时', '2时', '3时', '4时', '5时', '6时', '7时', '8时', '9时', '10时', '11时'],
-              datasets: [{
-                label: '发现的代币数',
-                data: [2, 1, 0, 1, 0, 0, 2, 3, 4, 5, 3, 2],
-                backgroundColor: '#9945FF',
-                borderColor: '#9945FF',
-                borderWidth: 1,
-                borderRadius: 4
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  display: false
-                }
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  grid: {
-                    color: 'rgba(255, 255, 255, 0.1)'
-                  },
-                  ticks: {
-                    color: '#A0AEC0'
-                  }
-                },
-                x: {
-                  grid: {
-                    display: false
-                  },
-                  ticks: {
-                    color: '#A0AEC0'
-                  }
-                }
-              }
-            }
-          });
-        }
-        
-        const profitTrendCtx = document.getElementById('profitTrendChart');
-        if (profitTrendCtx) {
-          new Chart(profitTrendCtx, {
-            type: 'line',
-            data: {
-              labels: ['11-20', '11-21', '11-22', '11-23', '11-24', '11-25', '11-26'],
-              datasets: [{
-                label: '日收益 ($)',
-                data: [10.23, 12.56, 9.87, 15.42, 14.78, 15.91, 12.34],
-                backgroundColor: 'rgba(20, 241, 149, 0.2)',
-                borderColor: '#14F195',
-                tension: 0.4,
-                fill: true
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  display: false
-                }
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  grid: {
-                    color: 'rgba(255, 255, 255, 0.1)'
-                  },
-                  ticks: {
-                    color: '#A0AEC0',
-                    callback: function(value) {
-                      return '$' + value;
-                    }
-                  }
-                },
-                x: {
-                  grid: {
-                    display: false
-                  },
-                  ticks: {
-                    color: '#A0AEC0'
-                  }
-                }
-              }
-            }
-          });
-        }
-      }
-      
-      // 初始化事件监听
-      function initEventListeners() {
-        // 清除日志按钮
-        const clearLogsBtn = document.getElementById('clearLogsBtn');
-        if (clearLogsBtn) {
-          clearLogsBtn.addEventListener('click', function() {
-            const logContainer = document.getElementById('logContainer');
-            if (logContainer) {
-              logContainer.innerHTML = '';
-            }
-            showNotification('成功', '日志已清除', 'success');
-          });
-        }
-        
-        // 启动按钮
-        const startBtn = document.getElementById('startBtn');
-        if (startBtn) {
-          startBtn.addEventListener('click', function() {
-            showNotification('成功', 'MEV机器人已启动', 'success');
-            
-            // 更新状态指示器
-            const statusDot = document.querySelector('.status-dot');
-            const statusText = document.querySelector('.status-text');
-            
-            if (statusDot && statusText) {
-              statusDot.className = 'status-dot running';
-              statusText.textContent = '运行中';
-              statusText.className = 'status-text text-success';
-            }
-          });
-        }
-        
-        // 停止按钮
-        const stopBtn = document.getElementById('stopBtn');
-        if (stopBtn) {
-          stopBtn.addEventListener('click', function() {
-            showNotification('提示', 'MEV机器人已停止', 'warning');
-            
-            // 更新状态指示器
-            const statusDot = document.querySelector('.status-dot');
-            const statusText = document.querySelector('.status-text');
-            
-            if (statusDot && statusText) {
-              statusDot.className = 'status-dot stopped';
-              statusText.textContent = '已停止';
-              statusText.className = 'status-text text-error';
-            }
-          });
-        }
-      }
-      
-      // 加载数据
-      await Promise.all([
-        loadLogs(),
-        loadRecentTrades(),
-        loadRecentTokens()
-      ]);
-      
-      // 初始化图表和事件监听
-      initCharts();
-      initEventListeners();
-    });
-  </script>
+  <!-- 引入JavaScript文件 -->
+  <script src="js/dashboard.js"></script>
 </body>
 </html> 

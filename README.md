@@ -1,122 +1,112 @@
-# Solana MEV机器人
+# Solana MEV Bot
 
-Solana MEV (最大可提取价值) 机器人是一个用于在Solana区块链上监控和执行套利交易的系统。它通过监控流动性池、代币价格和套利机会，自动执行有利可图的交易。
+## 项目概述
 
-## 功能特点
+Solana MEV Bot 是一个基于 Solana 区块链的套利交易机器人，通过监控和分析 Solana 生态系统中的交易，发现并利用价格差异进行自动化交易，获取最大可提取价值 (MEV)。
 
-- **仪表盘监控**: 实时显示系统状态、CPU和内存使用率、收益统计等
-- **代币监控**: 追踪最新发现的代币及其风险评估
-- **流动性池分析**: 监控Solana上的流动性池
-- **交易执行**: 自动执行有利可图的交易
-- **内存优化**: 提供内存使用监控和优化工具
-- **风险管理**: 具有黑白名单系统，安全控制交易
+## 系统架构
 
-## 技术架构
+系统由两部分组成：
 
-- **前端**: 原生JavaScript、HTML、CSS
-- **后端**: Node.js、Express
-- **区块链接口**: Solana Web3.js
-- **数据可视化**: Chart.js
+### 1. 后端服务 (src/)
 
-## 系统要求
+后端服务是基于 Node.js 和 TypeScript 的 API 服务器，提供核心功能：
 
-- Node.js 16+
-- npm 或 yarn
-- 现代浏览器（Chrome, Firefox, Safari, Edge）
+- **API 服务**：提供 RESTful API 接口，用于管理代币黑白名单、系统状态监控等
+- **交易监控**：监控 Solana 区块链上的交易
+- **代币分析**：分析代币的风险和价值
+- **套利策略**：执行各种套利策略，最大化收益
 
-## 安装步骤
+### 2. 前端界面 (solana_mev_ui/)
 
-1. 克隆仓库
-   ```bash
-   git clone https://github.com/yourusername/solana-mev-bot.git
-   cd solana-mev-bot
-   ```
+前端是一个基于 HTML/CSS/JavaScript 的 Web 应用，提供直观的用户界面：
 
-2. 安装依赖
-   ```bash
-   npm install
-   ```
+- **控制面板**：显示系统状态、盈利情况、活跃池等实时数据
+- **代币管理**：管理白名单和黑名单代币
+- **交易记录**：查看历史交易和收益
+- **系统设置**：调整系统参数和策略
 
-3. 编译TypeScript代码
-   ```bash
-   npm run build
-   ```
+## API 接口文档
 
-4. 启动应用
-   ```bash
-   ./start-app.sh
-   ```
+系统提供以下 API 接口：
 
-## 快速使用指南
+### 系统相关 API
 
-1. 访问仪表盘
-   打开浏览器，输入 http://localhost:3000
+- `GET /api/system/status`：获取系统状态
+- `POST /api/system/start`：启动系统
+- `POST /api/system/stop`：停止系统
+- `POST /api/system/optimize-memory`：优化内存使用
+- `GET /api/system/memory-stats`：获取内存统计数据
 
-2. 配置系统
-   - 进入设置页面进行系统配置
-   - 配置RPC节点、钱包、交易策略等
+### 代币相关 API
 
-3. 启动机器人
-   - 在仪表盘上点击"启动"按钮开始监控
-   - 机器人将自动监控和执行交易
+- `GET /api/tokens/blacklist`：获取所有黑名单代币
+- `POST /api/tokens/blacklist`：添加代币到黑名单
+- `DELETE /api/tokens/blacklist/:mint`：从黑名单中移除代币
+- `GET /api/tokens/whitelist`：获取所有白名单代币
+- `POST /api/tokens/whitelist`：添加代币到白名单
+- `DELETE /api/tokens/whitelist/:mint`：从白名单中移除代币
+- `GET /api/tokens/validate/:mint`：验证代币状态
+- `GET /api/tokens/all`：获取所有代币
+- `GET /api/tokens/details`：获取代币详情
+- `GET /api/tokens`：获取代币列表
 
-4. 监控系统
-   - 通过仪表盘实时监控系统状态
-   - 通过日志查看详细操作记录
+### 交易相关 API
 
-## 项目结构
+- `GET /api/transactions`：获取交易列表
+- `GET /api/transactions/recent`：获取最近交易
+- `GET /api/transactions/:id`：获取交易详情
 
-```
-solana-mev-bot/
-├── public/             # 前端文件
-│   ├── css/            # 样式文件
-│   ├── js/             # JavaScript文件
-│   ├── img/            # 图片资源
-│   └── *.html          # HTML页面
-├── src/                # 后端源代码
-│   ├── api/            # API服务
-│   ├── core/           # 核心功能
-│   ├── modules/        # 功能模块
-│   └── services/       # 服务
-├── dist/               # 编译后的代码
-├── start-app.sh        # 启动脚本
-└── package.json        # 项目配置
+### 池相关 API
+
+- `GET /api/pools`：获取池列表
+- `GET /api/pools/active`：获取活跃池
+- `GET /api/pools/:address`：获取池详情
+
+### 设置相关 API
+
+- `GET /api/settings`：获取系统设置
+- `PUT /api/settings`：更新系统设置
+- `GET /api/settings/strategy`：获取策略设置
+- `PUT /api/settings/strategy`：更新策略设置
+
+## 本地开发环境
+
+### 启动后端
+
+```bash
+cd src
+npm install
+npm run dev
 ```
 
-## API文档
+### 启动前端
 
-### 系统API
+```bash
+cd solana_mev_ui
+# 如果需要解决 CORS 问题，可以使用开发代理
+./start-dev-proxy.sh
+# 使用浏览器访问 index.html
+```
 
-- `GET /api/system/status` - 获取系统状态
-- `POST /api/system/start` - 启动系统
-- `POST /api/system/stop` - 停止系统
-- `POST /api/system/optimize-memory` - 优化内存
+## 部署
 
-### 交易API
+系统可以部署在任何支持 Node.js 的服务器上。前端可以托管在 Nginx 或其他静态资源服务器。
 
-- `GET /api/transactions` - 获取交易列表
-- `GET /api/transactions/:id` - 获取交易详情
-- `GET /api/transactions/recent` - 获取最近交易
+### 生产环境部署
 
-### 代币API
+```bash
+# 设置环境变量
+cp .env.example .env
+# 修改 .env 文件配置
 
-- `GET /api/tokens` - 获取代币列表
-- `GET /api/tokens/details` - 获取代币详情
+# 启动服务
+npm run build
+npm run start
+```
 
-## 常见问题
+## 注意事项
 
-**问题**: 系统无法启动怎么办？  
-**回答**: 检查Node.js版本是否符合要求，并确保所有依赖已正确安装。
-
-**问题**: 如何更改API端口？  
-**回答**: 在环境变量中设置API_PORT，或修改src/api/server.ts中的默认端口。
-
-## 联系方式
-
-如有问题，请通过以下方式联系我们：
-- 邮箱: support@example.com
-- GitHub: [项目问题](https://github.com/yourusername/solana-mev-bot/issues)
-
-## 许可证
-
-MIT 
+1. 使用前请确保了解 Solana 区块链和 MEV 的基本原理
+2. 生产环境中需要设置适当的监控和报警机制
+3. 请根据实际情况调整黑白名单配置和风险参数 

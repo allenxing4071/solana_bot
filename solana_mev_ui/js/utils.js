@@ -2,8 +2,29 @@
  * Solana MEV机器人 - 通用JavaScript工具函数
  */
 
-// API基础URL
-const API_BASE_URL = './mock_data';
+// 通过环境变量读取API配置
+// 注意：在浏览器中无法直接访问Node.js的process对象和env变量
+// 因此我们需要从window对象中获取环境变量，这些变量应该在服务端渲染时注入
+
+// 从全局变量或环境变量中获取API基础URL
+const getApiBaseUrl = () => {
+  // 首先尝试从window对象获取
+  if (window.ENV && window.ENV.API_URL) {
+    return window.ENV.API_URL;
+  }
+  
+  // 开发环境下使用mock数据
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return './mock_data';
+  }
+  
+  // 默认返回服务器API地址
+  const apiPort = window.ENV?.API_PORT || '3000';
+  return `/api`;
+};
+
+// 设置API基础URL
+const API_BASE_URL = getApiBaseUrl();
 
 /**
  * 格式化日期时间字符串
@@ -105,12 +126,24 @@ function formatChange(change, showSymbol = true) {
  */
 async function fetchData(endpoint) {
   try {
-    const response = await fetch(`${API_BASE_URL}/${endpoint}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+    // 检查是否处于开发模式，使用mock数据
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      // 开发环境使用mock数据
+      const response = await fetch(`./mock_data/${endpoint}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } else {
+      // 生产环境使用真实API
+      const response = await fetch(`${API_BASE_URL}/${endpoint.replace('.json', '')}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
     }
-    const data = await response.json();
-    return data;
   } catch (error) {
     console.error(`获取数据错误：${error.message}`);
     showNotification('错误', `获取数据失败: ${error.message}`, 'error');

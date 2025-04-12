@@ -1,0 +1,69 @@
+/* 日志容器样式 */
+.log-container {
+    background-color: #1e2029;
+    border-radius: 6px;
+    padding: 0.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    line-height: 1.5;
+}
+
+/* 日志条目样式 */
+.log-entry {
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.5rem;
+}
+
+/* Markdown日志样式 */
+.markdown-log {
+    margin: 0;
+}
+
+.markdown-log pre {
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    overflow-x: auto;
+}
+
+.markdown-log code {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* 彩色日志 */
+.log-info {
+    color: #3498db; /* 蓝色 */
+}
+
+.log-warning {
+    color: #f39c12; /* 橙色 */
+}
+
+.log-error {
+    color: #e74c3c; /* 红色 */
+}
+
+.log-success {
+    color: #2ecc71; /* 绿色 */
+}
+
+/* 清除日志按钮样式 */
+#clearLogsBtn {
+    font-size: 0.8rem;
+}
+
+/* 暗色主题调整 */
+@media (prefers-color-scheme: dark) {
+    .log-container {
+        background-color: #151820;
+    }
+    
+    .markdown-log code {
+        color: #ddd;
+    }
+} 

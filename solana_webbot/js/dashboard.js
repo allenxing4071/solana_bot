@@ -477,8 +477,8 @@ async function fetchSystemData(showLoading = false) {
         console.log('开始获取系统数据...');
         // 尝试从API获取数据
         try {
-            // 使用本地API服务
-            const apiUrl = 'http://localhost:3000';
+            // 使用配置的API URL
+            const apiUrl = window.ENV.API_URL;
             const response = await fetch(`${apiUrl}/system/status`, { timeout: 3000 });
             const responseData = await response.json();
             
@@ -540,8 +540,8 @@ async function fetchSystemData(showLoading = false) {
  */
 async function fetchRecentTrades() {
     try {
-        // 使用本地API服务
-        const apiUrl = 'http://localhost:3000';
+        // 使用配置的API URL
+        const apiUrl = window.ENV.API_URL;
         const response = await fetch(`${apiUrl}/transactions`);
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -567,8 +567,8 @@ async function fetchRecentTrades() {
  */
 async function fetchRecentTokens() {
     try {
-        // 使用本地API服务
-        const apiUrl = 'http://localhost:3000';
+        // 使用配置的API URL
+        const apiUrl = window.ENV.API_URL;
         const response = await fetch(`${apiUrl}/tokens`);
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);

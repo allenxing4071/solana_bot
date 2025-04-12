@@ -19,6 +19,15 @@ let profitTotal = 0; // 累计收益
 let executedTradesCount = 0; // 已执行交易数量
 let memoryHistoryData: any[] = []; // 内存历史数据
 
+// 声明全局gc函数（Node.js在使用--expose-gc启动时提供）
+declare global {
+  namespace NodeJS {
+    interface Global {
+      gc?: () => void;
+    }
+  }
+}
+
 // 定期收集内存数据
 setInterval(() => {
   // 添加当前内存数据点
@@ -54,8 +63,9 @@ export const getSystemStatus = async (_req: Request, res: Response): Promise<voi
     // 获取系统运行时间
     const uptime = systemRunning ? (Date.now() - systemStartTime) / 1000 : 0;
     
-    // 获取池状态
-    const activePools = poolMonitor ? poolMonitor.getKnownPools().length : 0;
+    // 获取池状态 - 检查poolMonitor是否存在及其方法
+    const activePools = poolMonitor ? (typeof poolMonitor.getKnownPools === 'function' ? 
+                         poolMonitor.getKnownPools().length : 0) : 0;
     const monitoredTokens = Math.floor(Math.random() * 100) + 50; // 暂时使用模拟数据
     
     // 使用实际收集的内存历史数据，如果没有则生成模拟数据

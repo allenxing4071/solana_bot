@@ -8,7 +8,7 @@
     "start": "node dist/index.js",
     "start:listen-only": "node dist/index.js --listen-only",
     "api": "node dist/api-server.js",
-    "api:only": "node start_api_server.js",
+    "api:dev": "ts-node src/api-server.ts",
     "dev": "ts-node src/index.ts",
     "dev:listen-only": "ts-node src/index.ts --listen-only",
     "dev:api": "ts-node src/api-server.ts",
@@ -19,7 +19,8 @@
     "lint:fix": "eslint . --ext .ts --fix",
     "api-docs": "apidoc -i src/api/ -o docs/api",
     "memory-report": "ts-node --expose-gc src/tools/memory_report.ts",
-    "memory-monitor": "ts-node src/tools/memory_monitor.ts"
+    "memory-monitor": "ts-node src/tools/memory_monitor.ts",
+    "ui": "cd solana_webbot && http-server -p 8080"
   },
   "keywords": [
     "solana",

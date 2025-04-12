@@ -13,16 +13,20 @@
   <script>
     // 全局环境变量对象
     window.ENV = {
-      API_URL: 'https://sol.deeptv.tv/api',
+      API_URL: 'http://localhost:3000/api',
       API_PORT: '3000'
     };
     
-    // 如果在开发环境，使用生产环境API或本地mock数据
+    // 如果在开发环境，使用本地API或本地mock数据
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      // 使用生产环境API
-      window.ENV.API_URL = 'https://sol.deeptv.tv/api';
-      // 或者使用本地mock数据
+      // 使用本地API服务
+      window.ENV.API_URL = 'http://localhost:3000/api';
+      
+      // 如果无法连接API服务，可以启用以下模拟数据
       // window.ENV.API_URL = './mock_data';
+    } else {
+      // 生产环境使用线上API
+      window.ENV.API_URL = 'https://sol.deeptv.tv/api';
     }
   </script>
 </head>

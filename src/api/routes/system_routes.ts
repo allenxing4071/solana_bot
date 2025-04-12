@@ -4,23 +4,19 @@
  */
 
 import express from 'express';
+import * as os from 'node:os';
+import * as v8 from 'node:v8';
+import logger from '../../core/logger';
 import * as systemController from '../controllers/system_controller';
 
 const router = express.Router();
+const MODULE_NAME = 'SystemApi';
 
-// 获取系统状态数据
+// 使用控制器方法处理请求
 router.get('/status', systemController.getSystemStatus);
-
-// 启动系统
 router.post('/start', systemController.startSystem);
-
-// 停止系统
 router.post('/stop', systemController.stopSystem);
-
-// 优化内存
 router.post('/optimize-memory', systemController.optimizeMemory);
-
-// 获取内存统计数据
 router.get('/memory-stats', systemController.getMemoryStats);
 
 export default router; 

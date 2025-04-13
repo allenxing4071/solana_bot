@@ -371,6 +371,7 @@ th.action, td.action {
   cursor: pointer;
   border: none;
   font-size: 0.875rem;
+  text-decoration: none;
 }
 
 .btn-primary {

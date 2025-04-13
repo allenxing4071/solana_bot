@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solana MEV机器人 API接口列表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1, h2 {
+            color: #4caf50;
+        }
+        .api-card {
+            margin-bottom: 30px;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #222;
+        }
+        .api-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .api-method {
+            background-color: #2196f3;
+            padding: 4px 8px;
+            border-radius: 3px;
+            margin-right: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .api-path {
+            color: #2196f3;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .api-description {
+            margin: 10px 0;
+            color: #aaa;
+            font-style: italic;
+        }
+        .api-details {
+            margin-top: 15px;
+        }
+        .tab-container {
+            border-bottom: 1px solid #444;
+            margin-bottom: 15px;
+        }
+        .tab {
+            display: inline-block;
+            padding: 8px 15px;
+            cursor: pointer;
+            margin-right: 5px;
+            border-top-left-radius: 3px;
+            border-top-right-radius: 3px;
+            background-color: #333;
+        }
+        .tab.active {
+            background-color: #4caf50;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        pre {
+            background-color: #272727;
+            padding: 10px;
+            border-radius: 3px;
+            overflow: auto;
+            max-height: 500px;
+            margin: 0;
+        }
+        .json-key {
+            color: #f8c555;
+        }
+        .json-value {
+            color: #7ec699;
+        }
+        .json-string {
+            color: #ce9178;
+        }
+        .json-number {
+            color: #b5cea8;
+        }
+        .json-boolean {
+            color: #569cd6;
+        }
+        .json-null {
+            color: #569cd6;
+        }
+        .test-button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .test-button:hover {
+            background-color: #388e3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Solana MEV机器人 API接口列表</h1>
+        <p>以下是系统提供的所有API接口及其示例数据，点击"测试"按钮可以查看实时数据。</p>
+        
+        <div id="api-list"></div>
+    </div>
+
+    <script>
+        // 格式化JSON并高亮显示
+        function formatJSON(json) {
+            if (typeof json !== 'string') {
+                json = JSON.stringify(json, null, 2);
+            }
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+        
+        // 切换标签页
+        function openTab(event, apiId, tabName) {
+            const tabContents = document.querySelectorAll(`#api-${apiId} .tab-content`);
+            for (const content of tabContents) {
+                content.classList.remove('active');
+            }
+            
+            const tabs = document.querySelectorAll(`#api-${apiId} .tab`);
+            for (const tab of tabs) {
+                tab.classList.remove('active');
+            }
+            
+            document.getElementById(`${tabName}-${apiId}`).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+        
+        // 获取并显示API列表
+        async function loadApiList() {
+            try {
+                const response = await fetch('http://localhost:8080/api/list');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error('获取API列表失败');
+                }
+                
+                const apiListElement = document.getElementById('api-list');
+                
+                data.data.forEach((api, index) => {
+                    const apiCard = document.createElement('div');
+                    apiCard.className = 'api-card';
+                    apiCard.id = `api-${index}`;
+                    
+                    apiCard.innerHTML = `
+                        <div class="api-header">
+                            <div>
+                                <span class="api-method">${api.method}</span>
+                                <span class="api-path">${api.path}</span>
+                            </div>
+                            <button class="test-button" onclick="testApi('${api.path}', ${index})">测试</button>
+                        </div>
+                        <div class="api-description">${api.description}</div>
+                        <div class="api-details">
+                            <div class="tab-container">
+                                <div class="tab active" onclick="openTab(event, ${index}, 'response')">响应示例</div>
+                                <div class="tab" onclick="openTab(event, ${index}, 'test')">测试结果</div>
+                            </div>
+                            <div id="response-${index}" class="tab-content active">
+                                <pre>${formatJSON(api.response)}</pre>
+                            </div>
+                            <div id="test-${index}" class="tab-content">
+                                <pre>点击"测试"按钮查看实时数据</pre>
+                            </div>
+                        </div>
+                    `;
+                    
+                    apiListElement.appendChild(apiCard);
+                });
+            } catch (error) {
+                console.error('加载API列表失败:', error);
+                document.getElementById('api-list').innerHTML = `
+                    <div class="api-card">
+                        <div class="api-header">
+                            <span class="api-path">错误</span>
+                        </div>
+                        <div class="api-description">加载API列表失败: ${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        // 测试API接口
+        async function testApi(path, apiId) {
+            const testContent = document.getElementById(`test-${apiId}`);
+            testContent.innerHTML = '<pre>正在获取数据...</pre>';
+            
+            // 自动切换到测试结果标签
+            const testTab = document.querySelector(`#api-${apiId} .tab:nth-child(2)`);
+            openTab({ currentTarget: testTab }, apiId, 'test');
+            
+            try {
+                const response = await fetch(`http://localhost:8080${path}`);
+                const data = await response.json();
+                testContent.innerHTML = `<pre>${formatJSON(data)}</pre>`;
+            } catch (error) {
+                testContent.innerHTML = `<pre class="error">请求失败: ${error.message}</pre>`;
+            }
+        }
+        
+        // 页面加载时获取API列表
+        window.onload = loadApiList;
+    </script>
+</body>
+</html> 

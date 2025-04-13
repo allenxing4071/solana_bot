@@ -3,7 +3,7 @@
  * 处理与代币黑名单/白名单相关的所有请求
  */
 
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import fs from 'fs-extra';
 import { PublicKey } from '@solana/web3.js';
 import path from 'node:path';
@@ -18,6 +18,46 @@ const MODULE_NAME = 'TokenController';
 // 黑名单和白名单文件路径
 const blacklistPath = appConfig.security.tokenValidation.blacklistPath;
 const whitelistPath = appConfig.security.tokenValidation.whitelistPath;
+
+/**
+ * 读取代币文件内容
+ * @param filePath 文件路径
+ * @returns 文件内容
+ */
+async function readTokenFile(filePath: string): Promise<string> {
+  try {
+    if (!fs.existsSync(filePath)) {
+      await fs.ensureFile(filePath);
+      await fs.writeJson(filePath, [], { spaces: 2 });
+      return '[]';
+    }
+    
+    const data = await fs.readFile(filePath, 'utf-8');
+    return data;
+  } catch (error) {
+    logger.error(`读取代币文件失败: ${filePath}`, MODULE_NAME, {
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return '[]';
+  }
+}
+
+/**
+ * 解析代币列表
+ * @param data 代币列表JSON字符串
+ * @returns 解析后的代币数组
+ */
+function parseTokenList(data: string): Record<string, unknown>[] {
+  try {
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    logger.error('解析代币列表失败', MODULE_NAME, {
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return [];
+  }
+}
 
 /**
  * 黑名单代币条目接口
@@ -610,24 +650,41 @@ export const getAllTokens = async (req: Request, res: Response): Promise<void> =
     const type = (req.query.type as string) || 'all';
     
     // 获取白名单和黑名单
-    const whitelistRaw = await readTokenFile(appConfig.whitelistPath);
-    const blacklistRaw = await readTokenFile(appConfig.blacklistPath);
+    const whitelistRaw = await readTokenFile(whitelistPath);
+    const blacklistRaw = await readTokenFile(blacklistPath);
     
     // 转换为TokenInfo数组
     const whitelist = parseTokenList(whitelistRaw);
     const blacklist = parseTokenList(blacklistRaw);
     
+    // 自定义类型
+    type TokenWithType = {
+      mint: string;
+      symbol?: string;
+      name?: string;
+      type: 'whitelist' | 'blacklist';
+      [key: string]: unknown;
+    };
+    
     // 将所有代币合并到一个数组中
-    let allTokens = [
-      ...whitelist.map(token => ({ ...token, type: 'whitelist' as const })),
-      ...blacklist.map(token => ({ ...token, type: 'blacklist' as const }))
+    let allTokens: TokenWithType[] = [
+      ...whitelist.map(token => ({ 
+        ...token as Record<string, unknown>, 
+        type: 'whitelist' as const,
+        mint: (token as { mint?: string })?.mint || ''
+      })),
+      ...blacklist.map(token => ({ 
+        ...token as Record<string, unknown>, 
+        type: 'blacklist' as const,
+        mint: (token as { mint?: string })?.mint || ''
+      }))
     ];
     
     // 应用搜索过滤
     if (search) {
       allTokens = allTokens.filter(token => 
-        (token.symbol && token.symbol.toLowerCase().includes(search.toLowerCase())) ||
-        (token.name && token.name.toLowerCase().includes(search.toLowerCase())) ||
+        (token.symbol?.toLowerCase().includes(search.toLowerCase())) ||
+        (token.name?.toLowerCase().includes(search.toLowerCase())) ||
         token.mint.toString().includes(search)
       );
     }

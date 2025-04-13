@@ -1,0 +1,23 @@
+{
+  "name": "solana-mev-webbot",
+  "version": "1.0.0",
+  "description": "Solana MEV机器人监控界面",
+  "main": "simple-api-server.js",
+  "scripts": {
+    "start": "node simple-api-server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "solana",
+    "mev",
+    "bot",
+    "dashboard"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@solana/web3.js": "^1.78.5",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+} 

@@ -12,13 +12,27 @@
     // 全局环境变量对象
     window.ENV = {
       API_URL: '/api',
-      API_PORT: '3000'
+      API_PORT: '8080',
+      USE_MOCK_DATA: false // 强制禁用模拟数据
     };
     
-    // 如果在开发环境，使用mock数据
+    // 始终使用真实API数据
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      window.ENV.API_URL = './mock_data';
+      window.ENV.API_URL = 'http://localhost:8080/api';
+      
+      // 添加调试信息
+      console.log('本地开发环境，连接真实API');
+      console.log('API请求将使用路径:', window.ENV.API_URL);
     }
+    
+    // 输出环境信息到控制台
+    console.log('当前环境配置:', window.ENV);
+    
+    // 添加全局函数验证API地址
+    window.getApiBaseUrl = function() {
+      console.log('获取API基础URL:', window.ENV.API_URL);
+      return window.ENV.API_URL;
+    };
   </script>
   <style>
     /* 内存监控页面特定样式 */
@@ -348,328 +362,8 @@
   </div>
 
   <script src="js/utils.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async function() {
-      // 加载内存统计数据
-      async function loadMemoryStats() {
-        const data = await fetchData('memory_stats.json');
-        if (!data || !data.success) return;
-        
-        const memoryStats = data.data;
-        
-        // 更新总内存使用
-        document.getElementById('usedMemory').textContent = memoryStats.totalMemory.used;
-        document.getElementById('totalMemory').textContent = `总计: ${memoryStats.totalMemory.total} MB`;
-        document.getElementById('usedPercentage').textContent = `${memoryStats.totalMemory.usedPercentage}%`;
-        document.getElementById('memoryBar').style.width = `${memoryStats.totalMemory.usedPercentage}%`;
-        
-        // 更新堆内存
-        document.getElementById('heapUsed').textContent = memoryStats.heapMemory.used;
-        document.getElementById('heapTotal').textContent = `总计: ${memoryStats.heapMemory.total} MB`;
-        document.getElementById('heapPercentage').textContent = `${memoryStats.heapMemory.usedPercentage}%`;
-        document.getElementById('heapBar').style.width = `${memoryStats.heapMemory.usedPercentage}%`;
-        
-        // 更新峰值内存
-        document.getElementById('peakMemory').textContent = memoryStats.peakMemory;
-        
-        // 更新外部内存
-        document.getElementById('externalMemory').textContent = memoryStats.externalMemory;
-        
-        // 加载内存优化建议
-        loadOptimizationSuggestions(memoryStats.optimizationSuggestions);
-        
-        // 加载内存消耗点
-        loadConsumptionPoints(memoryStats.consumptionPoints);
-        
-        // 加载内存日志
-        loadMemoryLogs(memoryStats.memoryLogs);
-        
-        // 加载内存泄漏
-        loadMemoryLeaks(memoryStats.memoryLeaks);
-        
-        // 初始化内存趋势图表
-        initMemoryTrendChart(memoryStats.memoryTrend);
-      }
-      
-      // 加载内存优化建议
-      function loadOptimizationSuggestions(suggestions) {
-        const container = document.getElementById('suggestionsContainer');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        
-        if (!suggestions || suggestions.length === 0) {
-          container.innerHTML = '<div class="text-secondary">没有优化建议</div>';
-          return;
-        }
-        
-        for (const suggestion of suggestions) {
-          const item = document.createElement('div');
-          item.className = 'suggestion-item';
-          item.innerHTML = suggestion;
-          container.appendChild(item);
-        }
-      }
-      
-      // 加载内存消耗点
-      function loadConsumptionPoints(points) {
-        const container = document.getElementById('consumptionPoints');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        
-        if (!points || points.length === 0) {
-          container.innerHTML = '<div class="text-secondary">没有内存消耗点数据</div>';
-          return;
-        }
-        
-        for (const point of points) {
-          const item = document.createElement('div');
-          item.className = 'memory-consumption-row';
-          
-          const statusClass = point.status === '正常' 
-            ? 'text-success' 
-            : point.status === '注意' 
-              ? 'text-warning' 
-              : 'text-error';
-          
-          item.innerHTML = `
-            <div class="consumption-module">${point.module}</div>
-            <div class="consumption-usage">${point.memoryUsage} MB</div>
-            <div class="consumption-status ${statusClass}">${point.status}</div>
-            <div class="consumption-updated">${formatDateTime(point.lastUpdated)}</div>
-          `;
-          
-          container.appendChild(item);
-        }
-      }
-      
-      // 加载内存日志
-      function loadMemoryLogs(logs) {
-        const container = document.getElementById('logsContainer');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        
-        if (!logs || logs.length === 0) {
-          container.innerHTML = '<div class="text-secondary">没有内存日志数据</div>';
-          return;
-        }
-        
-        for (const log of logs) {
-          const item = document.createElement('div');
-          item.className = 'memory-log-entry';
-          
-          const levelClass = log.level === '信息' 
-            ? 'info' 
-            : log.level === '警告' 
-              ? 'warning' 
-              : 'error';
-          
-          const levelText = log.level === '信息' 
-            ? 'I' 
-            : log.level === '警告' 
-              ? 'W' 
-              : 'E';
-          
-          item.innerHTML = `
-            <div class="log-level-badge ${levelClass}">${levelText}</div>
-            <div class="log-time text-secondary text-xs">${formatDateTime(log.timestamp)}</div>
-            <div class="log-message flex-1 ml-4">${log.message}</div>
-          `;
-          
-          container.appendChild(item);
-        }
-      }
-      
-      // 加载内存泄漏
-      function loadMemoryLeaks(leaks) {
-        const container = document.getElementById('leaksContainer');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        
-        if (!leaks || leaks.length === 0) {
-          container.innerHTML = '<div class="text-secondary">未检测到内存泄漏</div>';
-          return;
-        }
-        
-        for (const leak of leaks) {
-          const item = document.createElement('div');
-          item.className = 'leak-item';
-          
-          item.innerHTML = `
-            <div class="leak-header">
-              <div>${leak.source}</div>
-              <div class="text-error">${leak.leakRate}</div>
-            </div>
-            <div class="leak-details">
-              <div>开始于: ${formatDateTime(leak.startTime)}</div>
-            </div>
-            <div class="leak-suggestion">${leak.suggested}</div>
-          `;
-          
-          container.appendChild(item);
-        }
-      }
-      
-      // 初始化内存趋势图表
-      function initMemoryTrendChart(memoryTrend) {
-        const ctx = document.getElementById('memoryTrendChart');
-        if (!ctx || !memoryTrend) return;
-        
-        const labels = memoryTrend.map(point => {
-          const date = new Date(point.timestamp);
-          return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
-        });
-        
-        const usedData = memoryTrend.map(point => point.used);
-        const heapData = memoryTrend.map(point => point.heap);
-        
-        new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [
-              {
-                label: '总内存 (MB)',
-                data: usedData,
-                borderColor: '#63B3ED',
-                backgroundColor: 'rgba(99, 179, 237, 0.2)',
-                tension: 0.4,
-                fill: true
-              },
-              {
-                label: '堆内存 (MB)',
-                data: heapData,
-                borderColor: '#9945FF',
-                backgroundColor: 'rgba(153, 69, 255, 0.2)',
-                tension: 0.4,
-                fill: true
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-              mode: 'index',
-              intersect: false,
-            },
-            plugins: {
-              legend: {
-                position: 'top',
-                labels: {
-                  color: '#A0AEC0'
-                }
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: false,
-                grid: {
-                  color: 'rgba(255, 255, 255, 0.1)'
-                },
-                ticks: {
-                  color: '#A0AEC0'
-                }
-              },
-              x: {
-                grid: {
-                  display: false
-                },
-                ticks: {
-                  color: '#A0AEC0'
-                }
-              }
-            }
-          }
-        });
-      }
-      
-      // 初始化事件监听
-      function initEventListeners() {
-        // 优化内存按钮
-        const optimizeMemoryBtn = document.getElementById('optimizeMemory');
-        if (optimizeMemoryBtn) {
-          optimizeMemoryBtn.addEventListener('click', function() {
-            showNotification('处理中', '正在优化内存...', 'info');
-            setTimeout(() => {
-              showNotification('成功', '内存优化完成，释放了 245MB 内存', 'success');
-              // 实际项目中这里应该重新加载内存数据
-            }, 1500);
-          });
-        }
-        
-        // 刷新建议按钮
-        const generateSuggestionsBtn = document.getElementById('generateSuggestions');
-        if (generateSuggestionsBtn) {
-          generateSuggestionsBtn.addEventListener('click', function() {
-            showNotification('处理中', '正在分析内存使用并生成建议...', 'info');
-            setTimeout(() => {
-              showNotification('成功', '已更新内存优化建议', 'success');
-              // 实际项目中这里应该重新加载建议数据
-            }, 1000);
-          });
-        }
-        
-        // 检测泄漏按钮
-        const checkLeaksBtn = document.getElementById('checkLeaks');
-        if (checkLeaksBtn) {
-          checkLeaksBtn.addEventListener('click', function() {
-            showNotification('处理中', '正在检测内存泄漏...', 'info');
-            setTimeout(() => {
-              showNotification('完成', '内存泄漏检测完成', 'info');
-              // 实际项目中这里应该重新加载泄漏数据
-            }, 2000);
-          });
-        }
-        
-        // 清空日志按钮
-        const clearLogsBtn = document.getElementById('clearLogs');
-        if (clearLogsBtn) {
-          clearLogsBtn.addEventListener('click', function() {
-            const logsContainer = document.getElementById('logsContainer');
-            if (logsContainer) {
-              logsContainer.innerHTML = '<div class="text-secondary">没有内存日志数据</div>';
-            }
-            showNotification('成功', '内存日志已清空', 'success');
-          });
-        }
-        
-        // 状态筛选
-        const statusFilter = document.getElementById('statusFilter');
-        if (statusFilter) {
-          statusFilter.addEventListener('change', function() {
-            // 实际项目中这里应该根据选择的状态筛选内存消耗点
-            showNotification('筛选', `已选择筛选条件: ${this.value}`, 'info');
-          });
-        }
-        
-        // 搜索输入框
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-          searchInput.addEventListener('input', function() {
-            // 实际项目中这里应该根据输入内容搜索内存消耗点
-            if (this.value.length > 2) {
-              showNotification('搜索', `正在搜索: ${this.value}`, 'info');
-            }
-          });
-        }
-      }
-      
-      // 加载内存统计数据
-      await loadMemoryStats();
-      
-      // 初始化事件监听
-      initEventListeners();
-      
-      // 设置最后更新时间
-      const lastUpdated = document.querySelector('.last-updated');
-      if (lastUpdated) {
-        lastUpdated.textContent = `最后更新: ${formatDateTime(new Date())}`;
-      }
-    });
-  </script>
+  <script src="js/memory.js"></script>
+  
+  <!-- 旧的内联脚本已移至memory.js -->
 </body>
 </html> 

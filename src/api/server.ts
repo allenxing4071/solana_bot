@@ -11,6 +11,7 @@ import systemRoutes from './routes/system_routes';
 import poolRoutes from './routes/pool_routes';
 import transactionRoutes from './routes/transaction_routes';
 import settingsRoutes from './routes/settings_routes';
+import setupAPIMonitorRoute from './api-monitor'; // 使用TypeScript版本的API监控模块
 
 // 模块名称
 const MODULE_NAME = 'ApiServer';
@@ -93,6 +94,9 @@ class ApiServer {
     
     // 使用设置路由模块处理设置相关请求
     this.app.use('/api/settings', settingsRoutes);
+    
+    // 设置API监控页面路由
+    setupAPIMonitorRoute(this.app);
     
     // 增加根路由，提供前端页面
     this.app.get('/', (_req, res) => {

@@ -4,6 +4,19 @@
 
 Solana MEV Bot 是一个基于 Solana 区块链的套利交易机器人，通过监控和分析 Solana 生态系统中的交易，发现并利用价格差异进行自动化交易，获取最大可提取价值 (MEV)。
 
+## 项目更新
+
+### 目录合并说明
+
+为了简化项目结构，我们已经将原来的 `public` 目录中的API服务器功能整合到了 `solana_webbot` 目录中。这一更新使得所有前端界面和API服务都统一在一个目录下管理，更便于维护和部署。
+
+**合并内容**：
+- API服务器 (simple-api-server.js)
+- API监控页面 (api-monitor.html, api-list.html)
+- 相关静态资源
+
+现在，您可以在 `solana_webbot` 目录中使用 `start-server.sh` 脚本一键启动服务。
+
 ## 系统架构
 
 系统由两部分组成：
@@ -17,7 +30,7 @@ Solana MEV Bot 是一个基于 Solana 区块链的套利交易机器人，通过
 - **代币分析**：分析代币的风险和价值
 - **套利策略**：执行各种套利策略，最大化收益
 
-### 2. 前端界面 (solana_mev_ui/)
+### 2. 前端界面 (solana_webbot/)
 
 前端是一个基于 HTML/CSS/JavaScript 的 Web 应用，提供直观的用户界面：
 
@@ -25,6 +38,8 @@ Solana MEV Bot 是一个基于 Solana 区块链的套利交易机器人，通过
 - **代币管理**：管理白名单和黑名单代币
 - **交易记录**：查看历史交易和收益
 - **系统设置**：调整系统参数和策略
+- **API监控页面**：监控API服务状态和响应
+- **API测试界面**：测试各API接口的功能
 
 ## API 接口文档
 
@@ -36,7 +51,9 @@ Solana MEV Bot 是一个基于 Solana 区块链的套利交易机器人，通过
 - `POST /api/system/start`：启动系统
 - `POST /api/system/stop`：停止系统
 - `POST /api/system/optimize-memory`：优化内存使用
-- `GET /api/system/memory-stats`：获取内存统计数据
+- `GET /api/memory_stats.json`：获取内存统计数据
+- `GET /api/status`：获取API服务器状态
+- `GET /api/list`：获取所有API列表
 
 ### 代币相关 API
 
@@ -80,13 +97,19 @@ npm install
 npm run dev
 ```
 
-### 启动前端
+### 启动前端和API服务器
 
 ```bash
-cd solana_mev_ui
-# 如果需要解决 CORS 问题，可以使用开发代理
-./start-dev-proxy.sh
-# 使用浏览器访问 index.html
+cd solana_webbot
+# 使脚本可执行
+chmod +x start-server.sh
+# 启动API服务器
+./start-server.sh
+
+# 然后访问以下地址:
+# - 仪表盘: http://localhost:8080/index.html
+# - API监控页面: http://localhost:8080/api-monitor.html
+# - API列表页面: http://localhost:8080/api-list.html
 ```
 
 ## 部署
@@ -100,9 +123,14 @@ cd solana_mev_ui
 cp .env.example .env
 # 修改 .env 文件配置
 
-# 启动服务
+# 启动后端服务
+cd src
 npm run build
 npm run start
+
+# 启动前端和API服务
+cd solana_webbot
+./start-server.sh
 ```
 
 ## 注意事项
@@ -110,3 +138,4 @@ npm run start
 1. 使用前请确保了解 Solana 区块链和 MEV 的基本原理
 2. 生产环境中需要设置适当的监控和报警机制
 3. 请根据实际情况调整黑白名单配置和风险参数 
+4. API服务器默认在8080端口运行，请确保该端口未被其他程序占用 

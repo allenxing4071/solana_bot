@@ -6,22 +6,23 @@
 // 注意：在浏览器中无法直接访问Node.js的process对象和env变量
 // 因此我们需要从window对象中获取环境变量，这些变量应该在服务端渲染时注入
 
-// 从全局变量或环境变量中获取API基础URL
-const getApiBaseUrl = () => {
-  // 首先尝试从window对象获取
-  if (window.ENV && window.ENV.API_URL) {
-    return window.ENV.API_URL;
-  }
-  
-  // 开发环境下使用mock数据
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return './mock_data';
-  }
-  
-  // 默认返回服务器API地址
-  const apiPort = window.ENV?.API_PORT || '3000';
-  return `/api`;
-};
+/**
+ * 获取API基础URL
+ * @returns {string} API基础URL
+ */
+function getApiBaseUrl() {
+    // 确保环境变量对象存在
+    if (!window.ENV) {
+        console.warn('[getApiBaseUrl] 环境变量未定义，使用默认API URL');
+        window.ENV = {
+            API_URL: 'http://localhost:3000/api',
+            ENVIRONMENT: 'development',
+            USE_MOCK_DATA: true
+        };
+    }
+    
+    return window.ENV.API_URL || 'http://localhost:3000/api';
+}
 
 // 设置API基础URL
 const API_BASE_URL = getApiBaseUrl();
@@ -54,7 +55,7 @@ function formatDateTime(dateStr, showTime = true) {
  * @returns {string} 格式化后的数字字符串
  */
 function formatNumber(num, decimals = 2) {
-  if (isNaN(num)) return '0';
+  if (Number.isNaN(num)) return '0';
   return num.toLocaleString('zh-CN', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
@@ -69,7 +70,7 @@ function formatNumber(num, decimals = 2) {
  * @returns {string} 格式化后的货币字符串
  */
 function formatCurrency(num, currency = '$', decimals = 2) {
-  if (isNaN(num)) return `${currency}0`;
+  if (Number.isNaN(num)) return `${currency}0`;
   return `${currency}${formatNumber(num, decimals)}`;
 }
 
@@ -120,35 +121,78 @@ function formatChange(change, showSymbol = true) {
 }
 
 /**
- * 从API获取数据
+ * 获取API数据
  * @param {string} endpoint - API端点
- * @returns {Promise<Object>} 返回API响应数据
+ * @param {Object} options - 请求选项
+ * @returns {Promise<Object>} 响应数据
  */
-async function fetchData(endpoint) {
-  try {
-    // 检查是否处于开发模式，使用mock数据
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      // 开发环境使用mock数据
-      const response = await fetch(`./mock_data/${endpoint}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      const data = await response.json();
-      return data;
-    } else {
-      // 生产环境使用真实API
-      const response = await fetch(`${API_BASE_URL}/${endpoint.replace('.json', '')}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      const data = await response.json();
-      return data;
+async function fetchData(endpoint, options = {}) {
+    try {
+        // 确保环境变量对象存在
+        if (!window.ENV) {
+            console.warn('[fetchData] 环境变量未定义，初始化默认值');
+            window.ENV = {
+                API_URL: 'http://localhost:8080/api',
+                ENVIRONMENT: 'development',
+                USE_MOCK_DATA: false // 确保不使用模拟数据
+            };
+        }
+        
+        // 获取API基础URL
+        const apiBaseUrl = getApiBaseUrl();
+        
+        console.log('[fetchData] 请求API: ' + apiBaseUrl + endpoint);
+        
+        // 设置默认选项
+        const defaultOptions = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            timeout: 5000 // 5秒超时
+        };
+        
+        // 合并选项
+        const requestOptions = { ...defaultOptions, ...options };
+        
+        // 发起请求
+        const response = await fetch(`${apiBaseUrl}${endpoint}`, requestOptions);
+        
+        // 检查HTTP状态
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        // 解析JSON响应
+        const data = await response.json();
+        
+        // 检查API响应状态
+        if (data && data.success === false) {
+            throw new Error(data.error || '请求失败');
+        }
+        
+        console.log('[fetchData] 响应数据:', data);
+        
+        // 确保响应始终是统一格式
+        // 如果API返回的不是标准格式，进行适配
+        if (!Object.prototype.hasOwnProperty.call(data, 'success')) {
+            return {
+                success: true,
+                data: data
+            };
+        }
+        
+        return data;
+    } catch (error) {
+        console.error(`[fetchData] 请求失败 ${endpoint}:`, error);
+        
+        // 返回错误信息
+        return {
+            success: false,
+            error: error.message,
+            data: null
+        };
     }
-  } catch (error) {
-    console.error(`获取数据错误：${error.message}`);
-    showNotification('错误', `获取数据失败: ${error.message}`, 'error');
-    return null;
-  }
 }
 
 /**
@@ -156,54 +200,64 @@ async function fetchData(endpoint) {
  * @returns {Promise<void>}
  */
 async function initSystemStatus() {
-  const data = await fetchData('system_status.json');
-  if (!data || !data.success) return;
-  
-  const systemStatus = data.data;
-  
-  // 更新系统状态指示器
-  const statusDot = document.querySelector('.status-dot');
-  const statusText = document.querySelector('.status-text');
-  
-  if (statusDot && statusText) {
-    if (systemStatus.status === 'running【M】') {
-      statusDot.className = 'status-dot running';
-      statusText.textContent = '运行中';
-      statusText.className = 'status-text text-success';
-    } else {
-      statusDot.className = 'status-dot stopped';
-      statusText.textContent = '已停止';
-      statusText.className = 'status-text text-error';
+  try {
+    const data = await fetchData('system_status.json');
+    if (!data || !data.success || !data.data) {
+      console.error('[initSystemStatus] 无法获取系统状态数据');
+      return;
     }
+    
+    const systemStatus = data.data;
+    
+    // 更新系统状态指示器
+    const statusDot = document.querySelector('.status-dot');
+    const statusText = document.querySelector('.status-text');
+    
+    if (statusDot && statusText) {
+      if (systemStatus.status === 'running【M】') {
+        statusDot.className = 'status-dot running';
+        statusText.textContent = '运行中';
+        statusText.className = 'status-text text-success';
+      } else {
+        statusDot.className = 'status-dot stopped';
+        statusText.textContent = '已停止';
+        statusText.className = 'status-text text-error';
+      }
+    }
+    
+    // 更新运行时间
+    const uptimeEl = document.querySelector('.uptime');
+    if (uptimeEl && systemStatus.uptime !== undefined) {
+      uptimeEl.textContent = systemStatus.uptime;
+    }
+    
+    // 更新CPU进度条
+    const cpuBar = document.querySelector('.cpu-bar');
+    const cpuUsage = document.querySelector('.cpu-usage');
+    if (cpuBar && cpuUsage && systemStatus.cpu && systemStatus.cpu.usage !== undefined) {
+      cpuBar.style.width = `${systemStatus.cpu.usage}%`;
+      cpuUsage.textContent = `${systemStatus.cpu.usage.toFixed(1)}%`;
+    }
+    
+    // 更新内存进度条
+    const memoryBar = document.querySelector('.memory-bar');
+    const memoryUsage = document.querySelector('.memory-usage');
+    if (memoryBar && memoryUsage && systemStatus.memory && systemStatus.memory.usagePercent !== undefined) {
+      memoryBar.style.width = `${systemStatus.memory.usagePercent}%`;
+      memoryUsage.textContent = `${systemStatus.memory.usagePercent.toFixed(1)}%`;
+    }
+    
+    // 更新最后更新时间
+    if (systemStatus.lastUpdated) {
+      const lastUpdatedElements = document.querySelectorAll('.last-updated');
+      for (const el of lastUpdatedElements) {
+        el.textContent = `最后更新: ${formatDateTime(systemStatus.lastUpdated)}`;
+      }
+    }
+  } catch (error) {
+    console.error('[initSystemStatus] 初始化系统状态失败:', error);
+    showNotification('系统状态', '无法加载系统状态数据', 'error');
   }
-  
-  // 更新运行时间
-  const uptimeEl = document.querySelector('.uptime');
-  if (uptimeEl) {
-    uptimeEl.textContent = systemStatus.uptime;
-  }
-  
-  // 更新CPU进度条
-  const cpuBar = document.querySelector('.cpu-bar');
-  const cpuUsage = document.querySelector('.cpu-usage');
-  if (cpuBar && cpuUsage) {
-    cpuBar.style.width = `${systemStatus.cpu.usage}%`;
-    cpuUsage.textContent = `${systemStatus.cpu.usage.toFixed(1)}%`;
-  }
-  
-  // 更新内存进度条
-  const memoryBar = document.querySelector('.memory-bar');
-  const memoryUsage = document.querySelector('.memory-usage');
-  if (memoryBar && memoryUsage) {
-    memoryBar.style.width = `${systemStatus.memory.usagePercent}%`;
-    memoryUsage.textContent = `${systemStatus.memory.usagePercent.toFixed(1)}%`;
-  }
-  
-  // 更新最后更新时间
-  const lastUpdatedElements = document.querySelectorAll('.last-updated');
-  lastUpdatedElements.forEach(el => {
-    el.textContent = `最后更新: ${formatDateTime(systemStatus.lastUpdated)}`;
-  });
 }
 
 /**
@@ -240,12 +294,14 @@ function showNotification(title, message, type = 'info', duration = 3000) {
   
   // 关闭按钮事件
   const closeBtn = notification.querySelector('.notification-close');
-  closeBtn.addEventListener('click', () => {
-    notification.classList.add('notification-hide');
-    setTimeout(() => {
-      notification.remove();
-    }, 300);
-  });
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      notification.classList.add('notification-hide');
+      setTimeout(() => {
+        notification.remove();
+      }, 300);
+    });
+  }
   
   // 自动关闭
   setTimeout(() => {
@@ -270,7 +326,7 @@ function initChart(elementId, options) {
   return {
     element: chartElement,
     options: options,
-    updateData: function(data) {
+    updateData: (data) => {
       console.log(`更新图表 ${elementId} 数据:`, data);
       // 实际项目中这里应该调用图表库的更新方法
     }
@@ -295,12 +351,12 @@ function initTable(tableId, data, columns, options = {}) {
   const thead = document.createElement('thead');
   const headerRow = document.createElement('tr');
   
-  columns.forEach(column => {
+  for (const column of columns) {
     const th = document.createElement('th');
     th.textContent = column.title;
     if (column.width) th.style.width = column.width;
     headerRow.appendChild(th);
-  });
+  }
   
   thead.appendChild(headerRow);
   table.appendChild(thead);
@@ -308,10 +364,10 @@ function initTable(tableId, data, columns, options = {}) {
   // 创建表体
   const tbody = document.createElement('tbody');
   
-  data.forEach(item => {
+  for (const item of data) {
     const row = document.createElement('tr');
     
-    columns.forEach(column => {
+    for (const column of columns) {
       const td = document.createElement('td');
       
       if (column.render) {
@@ -324,10 +380,10 @@ function initTable(tableId, data, columns, options = {}) {
       
       if (column.align) td.style.textAlign = column.align;
       row.appendChild(td);
-    });
+    }
     
     tbody.appendChild(row);
-  });
+  }
   
   table.appendChild(tbody);
 }
@@ -422,24 +478,31 @@ function initModal(modalId) {
  * 全局初始化函数
  */
 function initApp() {
-  // 初始化系统状态
-  initSystemStatus();
-  
-  // 初始化主题切换
-  initThemeToggle();
-  
-  // 初始化移动端菜单
-  initMobileMenu();
-  
-  // 初始化表格滚动效果
-  initTableScroll();
-  
-  // 其他初始化
-  const refreshBtn = document.getElementById('refreshBtn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => {
-      location.reload();
-    });
+  try {
+    // 初始化系统状态
+    initSystemStatus();
+    
+    // 初始化主题切换
+    initThemeToggle();
+    
+    // 初始化移动端菜单
+    initMobileMenu();
+    
+    // 初始化表格滚动效果
+    initTableScroll();
+    
+    // 其他初始化
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        location.reload();
+      });
+    }
+    
+    console.log('[initApp] 应用初始化完成');
+  } catch (error) {
+    console.error('[initApp] 应用初始化失败:', error);
+    showNotification('初始化失败', '应用加载过程中出现错误，请刷新页面重试', 'error');
   }
 }
 
@@ -451,14 +514,26 @@ function initMobileMenu() {
   const sidebar = document.querySelector('.sidebar');
   
   if (menuToggle && sidebar) {
-    menuToggle.addEventListener('click', () => {
+    // 移除旧事件监听器，防止重复绑定
+    const newMenuToggle = menuToggle.cloneNode(true);
+    if (menuToggle.parentNode) {
+      menuToggle.parentNode.replaceChild(newMenuToggle, menuToggle);
+    }
+    
+    newMenuToggle.addEventListener('click', () => {
       sidebar.classList.toggle('open');
     });
     
     // 点击主内容区域时关闭菜单
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
-      mainContent.addEventListener('click', (e) => {
+      // 移除旧事件监听器
+      const newMainContent = mainContent.cloneNode(true);
+      if (mainContent.parentNode) {
+        mainContent.parentNode.replaceChild(newMainContent, mainContent);
+      }
+      
+      newMainContent.addEventListener('click', (e) => {
         if (sidebar.classList.contains('open') && !e.target.closest('.menu-toggle')) {
           sidebar.classList.remove('open');
         }
@@ -473,16 +548,35 @@ function initMobileMenu() {
 function initThemeToggle() {
   const themeToggleBtn = document.getElementById('themeToggleBtn');
   if (themeToggleBtn) {
-    themeToggleBtn.addEventListener('click', () => {
+    // 移除旧事件监听器
+    const newThemeToggleBtn = themeToggleBtn.cloneNode(true);
+    if (themeToggleBtn.parentNode) {
+      themeToggleBtn.parentNode.replaceChild(newThemeToggleBtn, themeToggleBtn);
+    }
+    
+    newThemeToggleBtn.addEventListener('click', () => {
       document.body.classList.toggle('light-theme');
       
       const isDarkTheme = !document.body.classList.contains('light-theme');
-      const icon = themeToggleBtn.querySelector('i');
+      const icon = newThemeToggleBtn.querySelector('i');
       
       if (icon) {
         icon.className = isDarkTheme ? 'ri-moon-line' : 'ri-sun-line';
       }
+      
+      // 保存主题偏好到本地存储
+      localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light');
     });
+    
+    // 从本地存储中恢复主题设置
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      document.body.classList.toggle('light-theme', savedTheme === 'light');
+      const icon = newThemeToggleBtn.querySelector('i');
+      if (icon) {
+        icon.className = savedTheme === 'dark' ? 'ri-moon-line' : 'ri-sun-line';
+      }
+    }
   }
 }
 
@@ -496,8 +590,14 @@ function initTableScroll() {
     // 检查是否需要显示阴影
     checkScrollShadow(container);
     
+    // 移除旧事件监听器
+    const newContainer = container.cloneNode(true);
+    if (container.parentNode) {
+      container.parentNode.replaceChild(newContainer, container);
+    }
+    
     // 添加滚动监听
-    container.addEventListener('scroll', function() {
+    newContainer.addEventListener('scroll', function() {
       checkScrollShadow(this);
     });
   }
@@ -508,6 +608,8 @@ function initTableScroll() {
  * @param {HTMLElement} container - 表格容器元素
  */
 function checkScrollShadow(container) {
+  if (!container) return;
+  
   if (container.scrollHeight > container.clientHeight) {
     container.classList.add('scrollable');
     
@@ -521,4 +623,9 @@ function checkScrollShadow(container) {
 }
 
 // 当文档加载完成时初始化应用
-document.addEventListener('DOMContentLoaded', initApp); 
+document.addEventListener('DOMContentLoaded', initApp);
+
+// 添加窗口大小变化监听，刷新表格阴影
+window.addEventListener('resize', () => {
+  initTableScroll();
+}); 

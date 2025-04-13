@@ -17,238 +17,78 @@
 - GET /api/status (额外保证)
 - GET /api/memory_stats.json (额外保证)
 服务器正在运行中...
-2025-04-13T17:32:39.912Z - GET /index.html
-2025-04-13T17:32:39.931Z - GET /css/style.css
-2025-04-13T17:32:39.932Z - GET /css/log-style.css
-2025-04-13T17:32:39.939Z - GET /css/apple-log-style.css
-2025-04-13T17:32:39.943Z - GET /img/logo.svg
-2025-04-13T17:32:39.944Z - GET /js/dashboard.js
-2025-04-13T17:32:40.055Z - GET /favicon.ico
-2025-04-13T17:32:40.546Z - GET /api/status
-处理请求: /api/status
-2025-04-13T17:32:41.055Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:32:41.058Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:32:41.059Z - GET /api/transactions
-处理请求: /api/transactions
-2025-04-13T17:32:41.078Z - GET /api/tokens
-处理请求: /api/tokens
-收到请求: /api/profit/summary
-2025-04-13T17:32:41.081Z - GET /api/profit-trends
-处理请求: /api/profit-trends
-2025-04-13T17:32:41.085Z - GET /api/token-trends
-处理请求: /api/token-trends
-2025-04-13T17:32:41.087Z - GET /api/pools
+2025-04-13T18:05:25.050Z - GET /index.html
+2025-04-13T18:05:25.071Z - GET /css/style.css
+2025-04-13T18:05:25.074Z - GET /css/log-style.css
+2025-04-13T18:05:25.079Z - GET /css/apple-log-style.css
+2025-04-13T18:05:25.090Z - GET /img/logo.svg
+2025-04-13T18:05:25.092Z - GET /js/dashboard.js
+2025-04-13T18:05:25.256Z - GET /api/pools
 处理请求: /api/pools
-2025-04-13T17:32:41.585Z - GET /index.html
-2025-04-13T17:32:41.598Z - GET /css/style.css
-2025-04-13T17:32:41.599Z - GET /css/log-style.css
-2025-04-13T17:32:41.599Z - GET /css/apple-log-style.css
-2025-04-13T17:32:41.599Z - GET /img/logo.svg
-2025-04-13T17:32:41.600Z - GET /js/dashboard.js
-2025-04-13T17:32:41.715Z - GET /favicon.ico
-2025-04-13T17:32:41.772Z - GET /index.html
-2025-04-13T17:32:41.780Z - GET /css/style.css
-2025-04-13T17:32:41.780Z - GET /css/log-style.css
-2025-04-13T17:32:41.780Z - GET /css/apple-log-style.css
-2025-04-13T17:32:41.780Z - GET /img/logo.svg
-2025-04-13T17:32:41.781Z - GET /js/dashboard.js
-2025-04-13T17:32:41.894Z - GET /favicon.ico
-2025-04-13T17:32:41.974Z - GET /index.html
-2025-04-13T17:32:41.983Z - GET /css/style.css
-2025-04-13T17:32:41.987Z - GET /css/log-style.css
-2025-04-13T17:32:41.987Z - GET /css/apple-log-style.css
-2025-04-13T17:32:41.987Z - GET /img/logo.svg
-2025-04-13T17:32:41.988Z - GET /js/dashboard.js
-2025-04-13T17:32:42.094Z - GET /favicon.ico
-2025-04-13T17:32:42.585Z - GET /api/status
-处理请求: /api/status
-2025-04-13T17:32:43.093Z - GET /api/system/status
+2025-04-13T18:05:25.259Z - GET /api/system/status
 处理请求: /api/system/status
-2025-04-13T17:32:43.095Z - GET /api/system/info
+2025-04-13T18:05:25.262Z - GET /api/system/info
 处理CPU和系统信息请求
-2025-04-13T17:32:43.097Z - GET /api/transactions
+2025-04-13T18:05:25.265Z - GET /api/transactions
 处理请求: /api/transactions
-2025-04-13T17:32:43.099Z - GET /api/tokens
+2025-04-13T18:05:25.283Z - GET /api/tokens
 处理请求: /api/tokens
+2025-04-13T18:05:25.286Z - GET /favicon.ico
 收到请求: /api/profit/summary
-2025-04-13T17:32:43.105Z - GET /api/pools
-处理请求: /api/pools
-2025-04-13T17:32:43.108Z - GET /api/profit-trends
-处理请求: /api/profit-trends
-2025-04-13T17:32:43.111Z - GET /api/token-trends
+2025-04-13T18:05:25.340Z - GET /api/token-trends
 处理请求: /api/token-trends
-2025-04-13T17:33:13.168Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:33:13.170Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:33:31.160Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:33:31.160Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:33:31.161Z - GET /api/transactions
-处理请求: /api/transactions
-2025-04-13T17:33:31.161Z - GET /api/tokens
-处理请求: /api/tokens
-服务器心跳检测 - 保持活跃
-2025-04-13T17:33:43.162Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:33:43.163Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:33:43.164Z - GET /api/transactions
-处理请求: /api/transactions
-2025-04-13T17:34:13.155Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:34:13.156Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:34:31.154Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:34:31.155Z - GET /api/system/info
-处理CPU和系统信息请求
-服务器心跳检测 - 保持活跃
-2025-04-13T17:34:43.157Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:34:43.158Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:34:43.159Z - GET /api/transactions
-处理请求: /api/transactions
-2025-04-13T17:34:43.161Z - GET /api/tokens
-处理请求: /api/tokens
-收到请求: /api/profit/summary
-2025-04-13T17:34:50.081Z - GET /index.html
-2025-04-13T17:34:50.098Z - GET /css/style.css
-2025-04-13T17:34:50.098Z - GET /css/log-style.css
-2025-04-13T17:34:50.098Z - GET /css/apple-log-style.css
-2025-04-13T17:34:50.099Z - GET /img/logo.svg
-2025-04-13T17:34:50.101Z - GET /js/dashboard.js
-2025-04-13T17:34:50.217Z - GET /favicon.ico
-2025-04-13T17:34:50.706Z - GET /api/status
-处理请求: /api/status
-2025-04-13T17:34:51.217Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:34:51.220Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:34:51.221Z - GET /api/transactions
-处理请求: /api/transactions
-2025-04-13T17:34:51.224Z - GET /api/tokens
-处理请求: /api/tokens
-收到请求: /api/profit/summary
-2025-04-13T17:34:51.227Z - GET /api/profit-trends
+2025-04-13T18:05:25.344Z - GET /api/profit-trends
 处理请求: /api/profit-trends
-2025-04-13T17:34:51.231Z - GET /api/token-trends
-处理请求: /api/token-trends
-2025-04-13T17:34:51.233Z - GET /api/pools
+2025-04-13T18:05:25.757Z - GET /api/status
+处理请求: /api/status
+2025-04-13T18:05:28.257Z - GET /api/pools
 处理请求: /api/pools
-2025-04-13T17:35:22.155Z - GET /api/system/status
+2025-04-13T18:05:31.176Z - GET /api/system/status
 处理请求: /api/system/status
-2025-04-13T17:35:22.157Z - GET /api/system/info
+2025-04-13T18:05:31.180Z - GET /api/system/info
 处理CPU和系统信息请求
-2025-04-13T17:35:31.156Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:35:31.158Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:35:31.160Z - GET /api/transactions
+2025-04-13T18:05:31.182Z - GET /api/transactions
 处理请求: /api/transactions
-2025-04-13T17:35:31.161Z - GET /api/tokens
+2025-04-13T18:05:31.184Z - GET /api/tokens
 处理请求: /api/tokens
-服务器心跳检测 - 保持活跃
-2025-04-13T17:35:52.155Z - GET /api/system/status
+2025-04-13T18:05:39.559Z - GET /api/system/status
 处理请求: /api/system/status
-2025-04-13T17:35:52.156Z - GET /api/system/info
+2025-04-13T18:05:39.561Z - GET /api/system/info
 处理CPU和系统信息请求
-2025-04-13T17:35:52.157Z - GET /api/transactions
-处理请求: /api/transactions
-2025-04-13T17:36:22.156Z - GET /api/system/status
+2025-04-13T18:05:39.562Z - GET /api/pools
+处理请求: /api/pools
+2025-04-13T18:05:39.808Z - GET /api/system/status
 处理请求: /api/system/status
-2025-04-13T17:36:22.157Z - GET /api/system/info
+2025-04-13T18:05:39.809Z - GET /api/system/info
 处理CPU和系统信息请求
-2025-04-13T17:36:31.156Z - GET /api/system/status
+2025-04-13T18:05:39.810Z - GET /api/pools
+处理请求: /api/pools
+2025-04-13T18:05:41.956Z - GET /css/style.css
+2025-04-13T18:05:41.956Z - GET /css/log-style.css
+2025-04-13T18:05:41.956Z - GET /css/apple-log-style.css
+2025-04-13T18:05:44.011Z - GET /index.html
+2025-04-13T18:05:44.028Z - GET /css/style.css
+2025-04-13T18:05:44.028Z - GET /css/log-style.css
+2025-04-13T18:05:44.029Z - GET /css/apple-log-style.css
+2025-04-13T18:05:44.031Z - GET /img/logo.svg
+2025-04-13T18:05:44.032Z - GET /js/dashboard.js
+2025-04-13T18:05:44.483Z - GET /api/pools
+处理请求: /api/pools
+2025-04-13T18:05:44.485Z - GET /api/system/status
 处理请求: /api/system/status
-2025-04-13T17:36:31.158Z - GET /api/system/info
+2025-04-13T18:05:44.486Z - GET /api/system/info
 处理CPU和系统信息请求
-服务器心跳检测 - 保持活跃
-2025-04-13T17:36:51.583Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:36:51.584Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:36:51.592Z - GET /api/transactions
-处理请求: /api/transactions
-2025-04-13T17:36:51.594Z - GET /api/tokens
-处理请求: /api/tokens
-收到请求: /api/profit/summary
-2025-04-13T17:37:22.156Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:37:22.158Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:37:31.155Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:37:31.156Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:37:31.157Z - GET /api/transactions
-处理请求: /api/transactions
-2025-04-13T17:37:31.158Z - GET /api/tokens
-处理请求: /api/tokens
-服务器心跳检测 - 保持活跃
-2025-04-13T17:37:52.157Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:37:52.158Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:37:52.159Z - GET /api/transactions
-处理请求: /api/transactions
-2025-04-13T17:38:31.155Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:38:31.156Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:38:31.158Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:38:31.158Z - GET /api/system/info
-处理CPU和系统信息请求
-服务器心跳检测 - 保持活跃
-2025-04-13T17:38:52.156Z - GET /api/tokens
+2025-04-13T18:05:44.486Z - GET /api/tokens
 处理请求: /api/tokens
 收到请求: /api/profit/summary
-2025-04-13T17:39:31.156Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:39:31.158Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:39:31.160Z - GET /api/transactions
+2025-04-13T18:05:44.489Z - GET /api/transactions
 处理请求: /api/transactions
-2025-04-13T17:39:31.160Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:39:31.161Z - GET /api/tokens
-处理请求: /api/tokens
-2025-04-13T17:39:31.161Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:39:31.162Z - GET /api/transactions
-处理请求: /api/transactions
-服务器心跳检测 - 保持活跃
-2025-04-13T17:40:31.154Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:40:31.156Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:40:31.156Z - GET /api/transactions
-处理请求: /api/transactions
-2025-04-13T17:40:31.157Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:40:31.158Z - GET /api/system/info
-处理CPU和系统信息请求
-服务器心跳检测 - 保持活跃
-2025-04-13T17:40:52.156Z - GET /api/tokens
-处理请求: /api/tokens
-收到请求: /api/profit/summary
-2025-04-13T17:41:31.156Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:41:31.158Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:41:31.158Z - GET /api/transactions
-处理请求: /api/transactions
-2025-04-13T17:41:31.158Z - GET /api/tokens
-处理请求: /api/tokens
-2025-04-13T17:41:31.160Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-13T17:41:31.160Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-13T17:41:31.161Z - GET /api/transactions
-处理请求: /api/transactions
-服务器心跳检测 - 保持活跃
+2025-04-13T18:05:44.544Z - GET /api/token-trends
+处理请求: /api/token-trends
+2025-04-13T18:05:44.549Z - GET /api/profit-trends
+处理请求: /api/profit-trends
+2025-04-13T18:05:44.975Z - GET /api/status
+处理请求: /api/status
+2025-04-13T18:05:45.311Z - GET /favicon.ico
+2025-04-13T18:05:47.477Z - GET /api/pools
+处理请求: /api/pools

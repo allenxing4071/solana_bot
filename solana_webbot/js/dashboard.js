@@ -119,6 +119,7 @@ const elements = {
     totalProfit: document.getElementById('totalProfit'),
     monitoredTokens: document.getElementById('monitoredTokens'),
     activePools: document.getElementById('activePools'),
+    totalPools: document.getElementById('totalPools'),
     executedTrades: document.getElementById('executedTrades'),
     tradesTableBody: document.getElementById('tradesTableBody'),
     tokensTableBody: document.getElementById('tokensTableBody'),
@@ -156,10 +157,48 @@ const systemData = {
 };
 
 /**
+ * 防抖函数 - 限制函数在一定时间内只执行一次
+ * @param {Function} func - 需要执行的函数
+ * @param {number} wait - 等待时间（毫秒）
+ * @returns {Function} - 包装后的函数
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+/**
  * 页面初始化
  */
 document.addEventListener('DOMContentLoaded', () => {
     console.log('页面加载完成，开始初始化...');
+    
+    // 首先立即检查DOM元素
+    console.log('检查关键DOM元素:');
+    console.log('activePools元素:', document.getElementById('activePools'));
+    console.log('totalPools元素:', document.getElementById('totalPools'));
+    
+    // 添加测试函数，手动设置池数据，确认DOM更新是否正常
+    window.testPoolStats = function(active, total) {
+        console.log(`[测试] 手动设置池数据: 活跃=${active}, 总数=${total}`);
+        const activeEl = document.getElementById('activePools');
+        const totalEl = document.getElementById('totalPools');
+        
+        if (activeEl) activeEl.textContent = active;
+        if (totalEl) totalEl.textContent = total;
+        
+        console.log('DOM设置后的值:');
+        console.log('activePools.textContent =', activeEl ? activeEl.textContent : 'null');
+        console.log('totalPools.textContent =', totalEl ? totalEl.textContent : 'null');
+        
+        addLog(`测试设置池数据: 活跃=${active}, 总数=${total}`, 'info');
+    };
+    
+    // 在浏览器控制台显示测试指南
+    console.log('%c调试说明: 在控制台输入 testPoolStats(32, 45) 手动测试池数显示', 'color: green; font-weight: bold;');
     
     // 绑定刷新数据按钮事件
     const refreshBtn = document.getElementById('refreshBtn');
@@ -170,12 +209,14 @@ document.addEventListener('DOMContentLoaded', () => {
         refreshBtn.addEventListener('click', () => {
             console.log('刷新按钮被点击');
             fetchSystemData(true);
+            fetchPoolsData(); // 同时刷新池数据
         });
         console.log('成功绑定refreshBtn按钮事件');
     } else if (refreshDataBtn) {
         refreshDataBtn.addEventListener('click', () => {
             console.log('刷新按钮被点击');
             fetchSystemData(true);
+            fetchPoolsData(); // 同时刷新池数据
         });
         console.log('成功绑定refreshData按钮事件');
     } else {
@@ -228,22 +269,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 取消观察该元素，避免重复初始化
                 observer.unobserve(chartElement);
                 
-                // 根据图表类型初始化相应的图表
-                if (chartType === 'token-discovery') {
-                    // 延迟50ms初始化，避免页面渲染阻塞
-                    setTimeout(() => {
-                        initTokenDiscoveryChart();
+                // 使用统一的图表初始化函数
+                setTimeout(() => {
+                    initCharts();
+                    
+                    // 获取相应的趋势数据
+                    if (chartType === 'token-discovery') {
                         fetchTokenTrends();
-                    }, 50);
-                } else if (chartType === 'profit-trend') {
-                    setTimeout(() => {
-                        initProfitTrendChart();
+                    } else if (chartType === 'profit-trend') {
                         fetchProfitTrends();
-                    }, 50);
-                }
+                    }
+                }, 50);
             }
         });
     }, observerOptions);
+    
+    // 绑定图表时间周期按钮 - 确保在页面加载完成后绑定
+    bindChartPeriodButtons();
+    
+    // 最优先获取池数据
+    console.log('开始获取池数据 - 优先级高');
+    fetchPoolsData();
     
     // 初始化关键数据
     fetchSystemData();
@@ -270,6 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 设置自动刷新（每30秒刷新一次数据）
     setInterval(() => {
         fetchSystemData();
+        fetchPoolsData(); // 同时刷新池数据
     }, 30000);
     
     // 添加屏幕尺寸变化监听，以便响应式调整UI
@@ -281,6 +328,21 @@ document.addEventListener('DOMContentLoaded', () => {
             charts.profitTrendChart.resize();
         }
     }, 250));
+    
+    // 最后再次确认池数据已更新
+    setTimeout(() => {
+        console.log('最终检查池数据:');
+        console.log('systemData.activePools =', systemData.activePools);
+        console.log('activePools.textContent =', document.getElementById('activePools')?.textContent);
+        console.log('totalPools.textContent =', document.getElementById('totalPools')?.textContent);
+        
+        // 如果数据没有正确显示，再次尝试获取
+        if (document.getElementById('activePools')?.textContent === '0' || 
+            document.getElementById('activePools')?.textContent === '--') {
+            console.log('%c检测到池数据未正确显示，重新获取', 'color: red; font-weight: bold');
+            fetchPoolsData();
+        }
+    }, 3000);
 });
 
 /**
@@ -482,6 +544,12 @@ function initCharts() {
         } catch (chartError) {
             console.error('利润趋势图初始化失败:', chartError);
         }
+        
+        // 图表初始化完成后再次绑定时间周期按钮
+        setTimeout(() => {
+            bindChartPeriodButtons();
+            console.log('图表初始化后重新绑定时间周期按钮');
+        }, 100);
     } catch (error) {
         console.error('初始化图表失败:', error);
         addLog(`初始化图表失败: ${error.message}`, 'error');
@@ -1616,6 +1684,7 @@ async function fetchSystemLogs() {
 async function fetchPoolsData() {
     try {
         console.log('[fetchPoolsData] 开始获取池子数据');
+        addLog('开始获取池子数据...', 'info');
         
         const apiUrl = `${getApiBaseUrl()}/pools`;
         console.log(`[fetchPoolsData] 请求API: ${apiUrl}`);
@@ -1626,27 +1695,44 @@ async function fetchPoolsData() {
         }
         
         const data = await response.json();
-        console.log('[fetchPoolsData] 收到API响应:', data);
+        console.log('[fetchPoolsData] 收到API响应:', JSON.stringify(data, null, 2));
         
         // 更宽容的数据检查
         let poolsData = [];
+        let activePoolsCount = 0;
+        let totalPoolsCount = 0;
+        
+        // 检查是否有统计数据
+        if (data && data.stats) {
+            console.log('[fetchPoolsData] 使用API返回的统计数据:', JSON.stringify(data.stats, null, 2));
+            activePoolsCount = data.stats.active || 0;
+            totalPoolsCount = data.stats.total || 0;
+            
+            // 更新全局systemData对象中的activePools字段
+            systemData.activePools = activePoolsCount;
+            console.log('[fetchPoolsData] 全局systemData.activePools已更新为:', activePoolsCount);
+            addLog(`从API获取到活跃池数: ${activePoolsCount}，总池数: ${totalPoolsCount}`, 'info');
+        }
         
         // 尝试从不同格式中获取池子数据
         if (data && data.success && Array.isArray(data.data)) {
             // 标准格式 {success: true, data: [...]}
             poolsData = data.data;
+            // 如果没有统计数据，从数组计算
+            if (!data.stats) {
+                totalPoolsCount = data.count || poolsData.length;
+            }
         } else if (data && Array.isArray(data)) {
             // 直接返回数组 [...]
             poolsData = data;
+            totalPoolsCount = poolsData.length;
         } else if (data && data.pools && Array.isArray(data.pools)) {
             // 嵌套格式 {pools: [...]}
             poolsData = data.pools;
+            totalPoolsCount = poolsData.length;
         } else {
             console.log('[fetchPoolsData] 未能识别的数据格式，使用空数组');
         }
-        
-        const poolsCount = poolsData.length;
-        let activePools = 0;
         
         // 清空池子列表
         const poolsList = document.getElementById('poolsList');
@@ -1655,7 +1741,7 @@ async function fetchPoolsData() {
         }
         
         // 检查是否有数据
-        if (poolsCount === 0) {
+        if (poolsData.length === 0) {
             console.log('[fetchPoolsData] 没有找到池子数据');
             
             // 显示无数据消息
@@ -1665,21 +1751,27 @@ async function fetchPoolsData() {
                 noDataItem.innerHTML = '<span>暂无池子数据</span>';
                 poolsList.appendChild(noDataItem);
             }
-            
-            // 更新统计数据
-            updatePoolStats(0, 0);
         } else {
-            console.log(`[fetchPoolsData] 找到 ${poolsCount} 个池子`);
+            console.log(`[fetchPoolsData] 找到 ${poolsData.length} 个池子`);
             
-            // 计算活跃池子数量并更新界面
-            for (const pool of poolsData) {
-                // 检查池子是否活跃
-                if (pool && pool.isActive) {
-                    activePools++;
+            // 如果没有从API获取统计数据，则从池子数组计算
+            if (activePoolsCount === 0) {
+                // 计算活跃池子数量
+                for (const pool of poolsData) {
+                    // 检查池子是否活跃
+                    if (pool && pool.isActive) {
+                        activePoolsCount++;
+                    }
                 }
-                
-                // 创建池子显示项
-                if (poolsList) {
+                // 更新全局systemData对象中的activePools字段
+                systemData.activePools = activePoolsCount;
+                console.log('[fetchPoolsData] 计算得到的活跃池子数:', activePoolsCount);
+            }
+            
+            // 更新池子列表UI
+            if (poolsList) {
+                for (const pool of poolsData) {
+                    // 创建池子显示项
                     const poolItem = document.createElement('div');
                     poolItem.className = 'pool-item';
                     
@@ -1711,13 +1803,13 @@ async function fetchPoolsData() {
                     poolsList.appendChild(poolItem);
                 }
             }
-            
-            // 更新统计数据
-            updatePoolStats(activePools, poolsCount);
         }
         
+        // 更新统计数据
+        updatePoolStats(activePoolsCount, totalPoolsCount);
+        
         console.log('[fetchPoolsData] 池子数据已更新');
-        addLog('已加载最新池子数据', 'success');
+        addLog(`已加载最新池子数据: 活跃池数=${activePoolsCount}, 总池数=${totalPoolsCount}`, 'success');
     } catch (error) {
         console.error('[fetchPoolsData] 错误:', error);
         addLog(`池子数据加载失败: ${error.message}`, 'warning');
@@ -1739,14 +1831,87 @@ async function fetchPoolsData() {
  * @param {number} totalPools - 总池子数量 
  */
 function updatePoolStats(activePools, totalPools) {
+    console.log(`[updatePoolStats] 开始更新池子统计数据: 活跃=${activePools}, 总数=${totalPools}`);
+    
+    // 直接通过ID获取元素，避免使用缓存的引用
     const activePoolsElement = document.getElementById('activePools');
     const totalPoolsElement = document.getElementById('totalPools');
     
+    console.log(`[updatePoolStats] 获取到DOM元素: activePoolsElement=${!!activePoolsElement}, totalPoolsElement=${!!totalPoolsElement}`);
+    
+    // 更新全局systemData对象
+    systemData.activePools = activePools;
+    console.log(`[updatePoolStats] 已更新systemData.activePools=${systemData.activePools}`);
+    
+    // 更新UI显示 - 直接设置textContent
     if (activePoolsElement) {
-        activePoolsElement.textContent = activePools;
+        // 强制转换为字符串
+        const displayValue = String(activePools);
+        activePoolsElement.textContent = displayValue;
+        console.log(`[updatePoolStats] 已设置activePoolsElement.textContent="${displayValue}"`);
+        
+        // 额外调试 - 检查DOM是否更新
+        setTimeout(() => {
+            console.log(`[updatePoolStats] 检查DOM更新: activePoolsElement.textContent="${activePoolsElement.textContent}"`);
+        }, 100);
+    } else {
+        console.error('[updatePoolStats] 找不到activePools元素!');
     }
     
     if (totalPoolsElement) {
-        totalPoolsElement.textContent = totalPools;
+        // 强制转换为字符串
+        const displayValue = String(totalPools);
+        totalPoolsElement.textContent = displayValue;
+        console.log(`[updatePoolStats] 已设置totalPoolsElement.textContent="${displayValue}"`);
+        
+        // 额外调试 - 检查DOM是否更新
+        setTimeout(() => {
+            console.log(`[updatePoolStats] 检查DOM更新: totalPoolsElement.textContent="${totalPoolsElement.textContent}"`);
+        }, 100);
+    } else {
+        console.error('[updatePoolStats] 找不到totalPools元素!');
+    }
+    
+    // 同时也更新elements缓存中的引用
+    if (elements.activePools) {
+        elements.activePools.textContent = String(activePools);
+    }
+    if (elements.totalPools) {
+        elements.totalPools.textContent = String(totalPools);
+    }
+    
+    console.log(`[updatePoolStats] 更新完成: 活跃池数=${activePools}, 总池数=${totalPools}`);
+    addLog(`更新池子统计: 活跃池数=${activePools}, 总池数=${totalPools}`, 'info');
+}
+
+/**
+ * 获取代币趋势数据
+ */
+function fetchTokenTrends() {
+    // 获取默认选中的时间周期，确保使用API支持的周期值
+    const tokenChartContainer = document.getElementById('tokenDiscoveryChart');
+    if (tokenChartContainer) {
+        const activeBtn = tokenChartContainer.parentElement.querySelector('.btn-outline.active');
+        // 使用API中实际存在的时间周期
+        const period = activeBtn ? activeBtn.textContent.trim() : '24小时';
+        
+        console.log(`[fetchTokenTrends] 获取${period}代币趋势`);
+        fetchTokenDiscoveryTrend(period);
+    }
+}
+
+/**
+ * 获取利润趋势数据
+ */
+function fetchProfitTrends() {
+    // 获取默认选中的时间周期，确保使用API支持的周期值
+    const profitChartContainer = document.getElementById('profitTrendChart');
+    if (profitChartContainer) {
+        const activeBtn = profitChartContainer.parentElement.querySelector('.btn-outline.active');
+        // 使用API中实际存在的时间周期
+        const period = activeBtn ? activeBtn.textContent.trim() : '7天';
+        
+        console.log(`[fetchProfitTrends] 获取${period}利润趋势`);
+        fetchProfitTrend(period);
     }
 }

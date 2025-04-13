@@ -103,12 +103,62 @@
         
         <div class="api-section">
             <div class="api-title">
+                <h2>收益汇总</h2>
+                <span class="api-url">/api/profit/summary</span>
+                <button class="refresh-btn" onclick="fetchData('profit-summary', '/api/profit/summary')">刷新</button>
+            </div>
+            <div class="status" id="profit-summary-status"></div>
+            <pre id="profit-summary"></pre>
+        </div>
+        
+        <div class="api-section">
+            <div class="api-title">
+                <h2>代币发现趋势</h2>
+                <span class="api-url">/api/token-trends</span>
+                <button class="refresh-btn" onclick="fetchData('token-trends', '/api/token-trends')">刷新</button>
+            </div>
+            <div class="status" id="token-trends-status"></div>
+            <pre id="token-trends"></pre>
+        </div>
+        
+        <div class="api-section">
+            <div class="api-title">
+                <h2>利润趋势</h2>
+                <span class="api-url">/api/profit-trends</span>
+                <button class="refresh-btn" onclick="fetchData('profit-trends', '/api/profit-trends')">刷新</button>
+            </div>
+            <div class="status" id="profit-trends-status"></div>
+            <pre id="profit-trends"></pre>
+        </div>
+        
+        <div class="api-section">
+            <div class="api-title">
                 <h2>监控中的代币</h2>
                 <span class="api-url">/api/tokens</span>
                 <button class="refresh-btn" onclick="fetchData('tokens', '/api/tokens')">刷新</button>
             </div>
             <div class="status" id="tokens-status"></div>
             <pre id="tokens"></pre>
+        </div>
+        
+        <div class="api-section">
+            <div class="api-title">
+                <h2>代币黑名单</h2>
+                <span class="api-url">/api/tokens/blacklist</span>
+                <button class="refresh-btn" onclick="fetchData('tokens-blacklist', '/api/tokens/blacklist')">刷新</button>
+            </div>
+            <div class="status" id="tokens-blacklist-status"></div>
+            <pre id="tokens-blacklist"></pre>
+        </div>
+        
+        <div class="api-section">
+            <div class="api-title">
+                <h2>代币白名单</h2>
+                <span class="api-url">/api/tokens/whitelist</span>
+                <button class="refresh-btn" onclick="fetchData('tokens-whitelist', '/api/tokens/whitelist')">刷新</button>
+            </div>
+            <div class="status" id="tokens-whitelist-status"></div>
+            <pre id="tokens-whitelist"></pre>
         </div>
         
         <div class="api-section">
@@ -129,6 +179,16 @@
             </div>
             <div class="status" id="pools-status"></div>
             <pre id="pools"></pre>
+        </div>
+        
+        <div class="api-section">
+            <div class="api-title">
+                <h2>系统日志</h2>
+                <span class="api-url">/api/logs</span>
+                <button class="refresh-btn" onclick="fetchData('logs', '/api/logs')">刷新</button>
+            </div>
+            <div class="status" id="logs-status"></div>
+            <pre id="logs"></pre>
         </div>
         
         <div class="api-section">
@@ -219,9 +279,15 @@
         // 页面加载时获取所有数据
         window.onload = function() {
             fetchData('system-status', '/api/system/status');
+            fetchData('profit-summary', '/api/profit/summary');
+            fetchData('token-trends', '/api/token-trends');
+            fetchData('profit-trends', '/api/profit-trends');
             fetchData('tokens', '/api/tokens');
+            fetchData('tokens-blacklist', '/api/tokens/blacklist');
+            fetchData('tokens-whitelist', '/api/tokens/whitelist');
             fetchData('transactions', '/api/transactions');
             fetchData('pools', '/api/pools');
+            fetchData('logs', '/api/logs');
             fetchData('memory', '/api/memory_stats.json');
             fetchData('api-status', '/api/status');
         };

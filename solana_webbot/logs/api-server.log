@@ -223,3 +223,32 @@
 2025-04-13T17:39:31.162Z - GET /api/transactions
 处理请求: /api/transactions
 服务器心跳检测 - 保持活跃
+2025-04-13T17:40:31.154Z - GET /api/system/status
+处理请求: /api/system/status
+2025-04-13T17:40:31.156Z - GET /api/system/info
+处理CPU和系统信息请求
+2025-04-13T17:40:31.156Z - GET /api/transactions
+处理请求: /api/transactions
+2025-04-13T17:40:31.157Z - GET /api/system/status
+处理请求: /api/system/status
+2025-04-13T17:40:31.158Z - GET /api/system/info
+处理CPU和系统信息请求
+服务器心跳检测 - 保持活跃
+2025-04-13T17:40:52.156Z - GET /api/tokens
+处理请求: /api/tokens
+收到请求: /api/profit/summary
+2025-04-13T17:41:31.156Z - GET /api/system/status
+处理请求: /api/system/status
+2025-04-13T17:41:31.158Z - GET /api/system/info
+处理CPU和系统信息请求
+2025-04-13T17:41:31.158Z - GET /api/transactions
+处理请求: /api/transactions
+2025-04-13T17:41:31.158Z - GET /api/tokens
+处理请求: /api/tokens
+2025-04-13T17:41:31.160Z - GET /api/system/status
+处理请求: /api/system/status
+2025-04-13T17:41:31.160Z - GET /api/system/info
+处理CPU和系统信息请求
+2025-04-13T17:41:31.161Z - GET /api/transactions
+处理请求: /api/transactions
+服务器心跳检测 - 保持活跃

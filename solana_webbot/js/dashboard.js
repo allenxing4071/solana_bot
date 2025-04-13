@@ -198,91 +198,89 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn('未找到停止按钮元素');
     }
     
-    // 绑定清除日志按钮
+    // 初始清除按钮
     const clearLogsBtn = document.getElementById('clearLogsBtn');
     if (clearLogsBtn) {
         clearLogsBtn.addEventListener('click', () => {
             const logContainer = document.getElementById('logContainer');
             if (logContainer) {
                 logContainer.innerHTML = '';
-                addLog('日志已清除', 'success');
+                addLog('日志已清除', 'info');
             }
         });
-        console.log('成功绑定clearLogsBtn按钮事件');
-    } else {
-        console.warn('未找到清除日志按钮元素');
     }
     
-    // 绑定时间周期按钮点击事件
-    bindChartPeriodButtons();
+    // 使用IntersectionObserver实现懒加载图表
+    const observerOptions = {
+        root: null, // 使用视口作为参考
+        rootMargin: '0px',
+        threshold: 0.1 // 当元素有10%进入视口时触发
+    };
     
-    // 先初始化图表，确保图表准备就绪后再加载数据
-    console.log('开始初始化图表组件...');
-    initCharts();
-    console.log('图表初始化完成');
-    
-    // 图表准备就绪后加载初始数据
-    setTimeout(() => {
-        console.log('图表已初始化，开始加载数据...');
-        
-        // 加载初始数据
-        fetchSystemData(true);
-        fetchRecentTrades();
-        fetchRecentTokens();
-        fetchProfitSummary();
-        fetchPoolsData();
-        fetchSystemLogs();
-        
-        // 主动触发默认时间周期的图表数据加载
-        console.log('触发默认时间周期的图表数据加载');
-        fetchTokenDiscoveryTrend('12小时');
-        fetchProfitTrend('24小时');
-        
-        // 激活默认选中的时间周期按钮
-        setTimeout(() => {
-            // 为代币发现趋势图选择默认时间周期
-            const tokenChartContainer = document.getElementById('tokenDiscoveryChart');
-            if (tokenChartContainer) {
-                const tokenPeriodBtns = tokenChartContainer.parentElement.querySelectorAll('.btn-outline');
-                if (tokenPeriodBtns && tokenPeriodBtns.length > 0) {
-                    // 移除所有按钮的active类
-                    for (const btn of tokenPeriodBtns) {
-                        btn.classList.remove('active');
-                    }
-                    // 默认选中12小时按钮（通常是第一个）
-                    tokenPeriodBtns[0].classList.add('active');
+    const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const chartElement = entry.target;
+                const chartType = chartElement.getAttribute('data-chart-type');
+                
+                console.log(`[懒加载] 图表 ${chartType} 进入视口，开始初始化`);
+                
+                // 取消观察该元素，避免重复初始化
+                observer.unobserve(chartElement);
+                
+                // 根据图表类型初始化相应的图表
+                if (chartType === 'token-discovery') {
+                    // 延迟50ms初始化，避免页面渲染阻塞
+                    setTimeout(() => {
+                        initTokenDiscoveryChart();
+                        fetchTokenTrends();
+                    }, 50);
+                } else if (chartType === 'profit-trend') {
+                    setTimeout(() => {
+                        initProfitTrendChart();
+                        fetchProfitTrends();
+                    }, 50);
                 }
             }
-            
-            // 为利润趋势图选择默认时间周期
-            const profitChartContainer = document.getElementById('profitTrendChart');
-            if (profitChartContainer) {
-                const profitPeriodBtns = profitChartContainer.parentElement.querySelectorAll('.btn-outline');
-                if (profitPeriodBtns && profitPeriodBtns.length > 0) {
-                    // 移除所有按钮的active类
-                    for (const btn of profitPeriodBtns) {
-                        btn.classList.remove('active');
-                    }
-                    // 默认选中24小时按钮（通常是第一个）
-                    profitPeriodBtns[0].classList.add('active');
-                }
-            }
-        }, 500);
-        
-        // 设置定时刷新
-        setInterval(() => {
-            fetchSystemData(false);
-        }, 30000); // 30秒刷新一次
-        
-        setInterval(() => {
-            fetchRecentTrades();
-        }, 60000); // 1分钟刷新一次交易记录
-        
-        setInterval(() => {
-            fetchRecentTokens();
-            fetchProfitSummary();
-        }, 120000); // 2分钟刷新一次代币数据和收益
-    }, 1000); // 延迟1秒确保图表已完全初始化
+        });
+    }, observerOptions);
+    
+    // 初始化关键数据
+    fetchSystemData();
+    
+    // 获取并观察图表容器
+    const tokenChartContainer = document.getElementById('tokenDiscoveryChart');
+    const profitChartContainer = document.getElementById('profitTrendChart');
+    
+    if (tokenChartContainer) {
+        tokenChartContainer.setAttribute('data-chart-type', 'token-discovery');
+        lazyLoadObserver.observe(tokenChartContainer);
+    }
+    
+    if (profitChartContainer) {
+        profitChartContainer.setAttribute('data-chart-type', 'profit-trend');
+        lazyLoadObserver.observe(profitChartContainer);
+    }
+    
+    // 初始化非图表数据
+    fetchRecentTrades();
+    fetchRecentTokens();
+    fetchProfitSummary();
+    
+    // 设置自动刷新（每30秒刷新一次数据）
+    setInterval(() => {
+        fetchSystemData();
+    }, 30000);
+    
+    // 添加屏幕尺寸变化监听，以便响应式调整UI
+    window.addEventListener('resize', debounce(() => {
+        if (charts.tokenDiscoveryChart) {
+            charts.tokenDiscoveryChart.resize();
+        }
+        if (charts.profitTrendChart) {
+            charts.profitTrendChart.resize();
+        }
+    }, 250));
 });
 
 /**

@@ -80,7 +80,7 @@
         <div class="status-dot running"></div>
         <div class="status-text text-success">运行中</div>
       </div>
-      <div class="text-secondary text-sm">运行时间: <span class="uptime">3小时15分钟</span></div>
+      <div class="text-secondary text-sm">运行时间: <span class="uptime">--</span></div>
       <div class="control-buttons">
         <button class="btn btn-error btn-sm" id="stopBtn" title="停止系统">
           <i class="ri-stop-circle-line"></i> 停止
@@ -100,7 +100,7 @@
       </button>
       <h1 class="page-title">流动性池</h1>
       <div class="top-bar-right flex items-center gap-4">
-        <div class="current-date-time text-secondary text-sm">2023-11-26 15:32:45</div>
+        <div class="current-date-time text-secondary text-sm">--</div>
         <button class="btn btn-outline btn-icon" id="themeToggleBtn" title="切换主题">
           <i class="ri-moon-line"></i>
         </button>
@@ -142,29 +142,29 @@
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-title">监控池子总数</div>
-          <div class="stat-value" id="totalPools">143</div>
+          <div class="stat-value" id="totalPools">--</div>
           <div class="stat-indicator">流动性池总数</div>
         </div>
         
         <div class="stat-card">
           <div class="stat-title">总锁定价值</div>
-          <div class="stat-value" id="totalValue">$15,728,900</div>
+          <div class="stat-value" id="totalValue">--</div>
           <div class="stat-indicator positive">
-            <i class="ri-arrow-up-line"></i> 上周增长 5.3%
+            <i class="ri-arrow-up-line"></i> 上周增长 --
           </div>
         </div>
         
         <div class="stat-card">
           <div class="stat-title">平均日交易量</div>
-          <div class="stat-value" id="avgVolume">$230,450</div>
+          <div class="stat-value" id="avgVolume">--</div>
           <div class="stat-indicator">过去30天平均</div>
         </div>
         
         <div class="stat-card">
           <div class="stat-title">最活跃DEX</div>
-          <div class="stat-value" id="mostActiveDex">Raydium</div>
+          <div class="stat-value" id="mostActiveDex">--</div>
           <div class="stat-indicator">
-            占总交易量 42%
+            占总交易量 --
           </div>
         </div>
       </div>
@@ -173,7 +173,7 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title">流动性池列表</div>
-          <div class="text-secondary text-sm last-updated">最后更新: 2023-11-26 15:32:45</div>
+          <div class="text-secondary text-sm last-updated">最后更新: --</div>
         </div>
         <div class="table-container">
           <table id="poolsTable">
@@ -231,29 +231,83 @@
       
       // 加载流动性池数据
       async function loadPoolsData() {
-        const data = await fetchData('pools_data.json');
-        if (!data || !data.success) return;
-        
-        const poolsData = data.data;
-        
-        // 更新统计数据
-        document.getElementById('totalPools').textContent = poolsData.stats.totalPools;
-        document.getElementById('totalValue').textContent = '$' + formatNumber(poolsData.stats.totalValue);
-        document.getElementById('avgVolume').textContent = '$' + formatNumber(poolsData.stats.avgVolume);
-        document.getElementById('mostActiveDex').textContent = poolsData.stats.mostActiveDex.replace('【M】', '');
-        
-        // 存储所有池子和交易所数据
-        allPools = poolsData.pools;
-        exchanges = poolsData.exchanges.map(exchange => exchange.replace('【M】', ''));
-        
-        // 初始化交易所筛选器
-        initExchangeFilter(exchanges);
-        
-        // 显示第一页数据
-        filterAndDisplayPools();
-        
-        // 初始化分页
-        initPagination(poolsData.pagination);
+        try {
+          const data = await fetchData('/api/pools');
+          if (!data || !data.success) {
+            showNotification('错误', '无法加载流动性池数据', 'error');
+            return;
+          }
+          
+          // 存储所有池子数据
+          allPools = data.data;
+          
+          // 计算统计数据
+          // 总锁定价值
+          const totalValue = allPools.reduce((sum, pool) => sum + pool.liquidity, 0);
+          
+          // 平均交易量
+          const avgVolume = allPools.reduce((sum, pool) => sum + pool.volume24h, 0) / allPools.length;
+          
+          // 找出最活跃的DEX
+          const dexVolumes = {};
+          for (const pool of allPools) {
+            if (!dexVolumes[pool.dex]) {
+              dexVolumes[pool.dex] = 0;
+            }
+            dexVolumes[pool.dex] += pool.volume24h;
+          }
+          
+          let mostActiveDex = '';
+          let maxVolume = 0;
+          for (const [dex, volume] of Object.entries(dexVolumes)) {
+            if (volume > maxVolume) {
+              maxVolume = volume;
+              mostActiveDex = dex;
+            }
+          }
+          
+          // 收集所有交易所名称
+          exchanges = [...new Set(allPools.map(pool => pool.dex))];
+          
+          // 更新统计数据
+          document.getElementById('totalPools').textContent = data.stats.total || allPools.length;
+          document.getElementById('totalValue').textContent = '$' + formatNumber(totalValue);
+          document.getElementById('avgVolume').textContent = '$' + formatNumber(avgVolume);
+          document.getElementById('mostActiveDex').textContent = mostActiveDex;
+          
+          // 计算出活跃池的数量并更新流动性池总数
+          const activePools = allPools.filter(pool => pool.isActive).length;
+          const totalPools = allPools.length;
+          const statIndicator = document.querySelector('.stat-indicator:first-of-type');
+          if (statIndicator) {
+            statIndicator.textContent = `流动性池总数 ${activePools}/${totalPools}`;
+          }
+          
+          // 更新最后更新时间
+          const lastUpdated = allPools.length > 0 ? allPools[0].lastUpdated : new Date().toISOString();
+          const lastUpdatedElement = document.querySelector('.last-updated');
+          if (lastUpdatedElement) {
+            lastUpdatedElement.textContent = `最后更新: ${formatDateTime(lastUpdated)}`;
+          }
+          
+          // 初始化交易所筛选器
+          initExchangeFilter(exchanges);
+          
+          // 显示第一页数据
+          filterAndDisplayPools();
+          
+          // 初始化分页
+          const pagination = {
+            currentPage: 1,
+            totalPages: Math.ceil(allPools.length / 5),
+            totalItems: allPools.length,
+            itemsPerPage: 5
+          };
+          initPagination(pagination);
+        } catch (error) {
+          console.error('加载流动性池数据失败:', error);
+          showNotification('错误', '加载流动性池数据时发生错误', 'error');
+        }
       }
       
       // 初始化交易所筛选器
@@ -342,12 +396,18 @@
           const priceChangeSymbol = pool.priceChange24h >= 0 ? '↑' : '↓';
           const priceChangeAbs = Math.abs(pool.priceChange24h).toFixed(2);
           
+          // 处理池子名称，如果没有的话，使用token0/token1的符号组合
+          const poolName = pool.name || `${pool.token0.symbol}/${pool.token1.symbol}`;
+          
+          // 处理池子ID，优先使用id，如果没有则使用address
+          const poolId = pool.id || pool.address;
+          
           row.innerHTML = `
             <td>
-              <div class="font-medium">${pool.name.replace('【M】', '')}</div>
-              <div class="text-secondary text-xs">${formatAddress(pool.id)}</div>
+              <div class="font-medium">${poolName}</div>
+              <div class="text-secondary text-xs">${formatAddress(poolId)}</div>
             </td>
-            <td><span class="pool-info-badge pool-dex-badge">${pool.dex.replace('【M】', '')}</span></td>
+            <td><span class="pool-info-badge pool-dex-badge">${pool.dex}</span></td>
             <td>$${formatNumber(pool.liquidity)}</td>
             <td>$${formatNumber(pool.volume24h)}</td>
             <td>${pool.apy.toFixed(2)}%</td>
@@ -358,7 +418,7 @@
               </span>
             </td>
             <td>
-              <button class="btn btn-outline btn-sm btn-icon view-details-btn" data-pool-id="${pool.id}" title="查看详情">
+              <button class="btn btn-outline btn-sm btn-icon view-details-btn" data-pool-id="${poolId}" title="查看详情">
                 <i class="ri-eye-line"></i>
               </button>
             </td>
@@ -436,21 +496,24 @@
       
       // 显示池子详情
       function showPoolDetails(poolId) {
-        const pool = allPools.find(p => p.id === poolId);
+        const pool = allPools.find(p => (p.id === poolId || p.address === poolId));
         if (!pool) return;
         
         const modalTitle = document.querySelector('.modal-title');
         const modalContent = document.getElementById('poolDetailContent');
         
         if (modalTitle && modalContent) {
-          modalTitle.textContent = pool.name.replace('【M】', '');
+          // 处理池子名称，如果没有的话，使用token0/token1的符号组合
+          const poolName = pool.name || `${pool.token0.symbol}/${pool.token1.symbol}`;
+          
+          modalTitle.textContent = poolName;
           
           modalContent.innerHTML = `
             <div class="mb-4">
               <div class="flex justify-between items-center mb-4">
                 <div>
-                  <span class="pool-info-badge pool-dex-badge">${pool.dex.replace('【M】', '')}</span>
-                  <span class="text-secondary text-sm">ID: ${formatAddress(pool.id)}</span>
+                  <span class="pool-info-badge pool-dex-badge">${pool.dex}</span>
+                  <span class="text-secondary text-sm">ID: ${formatAddress(pool.id || pool.address)}</span>
                 </div>
                 <div class="text-secondary text-sm">更新时间: ${formatDateTime(pool.lastUpdated)}</div>
               </div>
@@ -505,9 +568,9 @@
                   <button class="btn btn-outline btn-sm" title="查看交易历史">
                     <i class="ri-history-line"></i> 交易历史
                   </button>
-                  <button class="btn btn-outline btn-sm" title="在区块浏览器中查看">
+                  <a href="https://solscan.io/address/${pool.id || pool.address}" target="_blank" class="btn btn-outline btn-sm" title="在区块浏览器中查看">
                     <i class="ri-external-link-line"></i> 浏览器
-                  </button>
+                  </a>
                   <button class="btn btn-outline btn-sm" title="设置价格提醒">
                     <i class="ri-notification-line"></i> 价格提醒
                   </button>

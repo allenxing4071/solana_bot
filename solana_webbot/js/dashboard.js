@@ -1625,9 +1625,9 @@ function formatStatus(status) {
 }
 
 /**
- * 格式化数字（添加千位分隔符）
- * @param {number} number - 需要格式化的数字
- * @param {number} decimals - 小数位数
+ * 格式化数字为中文单位（万、亿）
+ * @param {number} number 数字
+ * @param {number} decimals 小数位数
  * @returns {string} 格式化后的数字
  */
 function formatNumber(number, decimals = 0) {
@@ -1637,6 +1637,21 @@ function formatNumber(number, decimals = 0) {
         return '0'; // 返回默认值
     }
     
+    // 使用中文的万、亿单位
+    if (number >= 100000000) { // 亿
+        return `${(number / 100000000).toFixed(2)}亿`;
+    } 
+    
+    if (number >= 10000) { // 万
+        return `${(number / 10000).toFixed(2)}万`;
+    }
+    
+    // 如果数字很小，使用科学计数法
+    if (number < 0.001 && number !== 0) {
+        return number.toExponential(2);
+    }
+    
+    // 其他情况使用标准千位分隔符
     return number.toLocaleString('zh-CN', {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals

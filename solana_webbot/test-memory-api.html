@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>测试内存API</title>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 测试函数
+      async function testAPI() {
+        try {
+          console.log('开始测试API...');
+          const response = await fetch('http://localhost:8080/api/memory_stats.json');
+          
+          if (!response.ok) {
+            throw new Error(`API响应错误: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          console.log('API响应成功:', data);
+          
+          // 显示结果
+          document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+          document.getElementById('status').textContent = '成功';
+          document.getElementById('status').style.color = 'green';
+        } catch (error) {
+          console.error('API测试失败:', error);
+          document.getElementById('result').textContent = error.toString();
+          document.getElementById('status').textContent = '失败';
+          document.getElementById('status').style.color = 'red';
+        }
+      }
+      
+      // 添加按钮点击事件
+      document.getElementById('testButton').addEventListener('click', testAPI);
+    });
+  </script>
+</head>
+<body>
+  <h1>内存统计API测试</h1>
+  <button id="testButton">测试API</button>
+  <p>状态: <span id="status">未测试</span></p>
+  <pre id="result" style="background-color: #f0f0f0; padding: 10px; border-radius: 5px;"></pre>
+</body>
+</html> 

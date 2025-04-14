@@ -5,8 +5,18 @@
  * 版本: v1.0.0 - 2025年4月13日创建
  */
 
-// DOM元素缓存
-const elements = {
+// 全局变量
+let memoryData = null;
+let memoryChart = null;
+let currentConsumptionPoints = [];
+let updateInterval = null;
+let elements = {}; // 移至此处，作为全局变量声明，但稍后初始化
+
+/**
+ * 初始化DOM元素
+ */
+function initElements() {
+  elements = {
   // 内存统计卡片元素
   usedMemory: document.getElementById('usedMemory'),
   totalMemory: document.getElementById('totalMemory'),
@@ -17,6 +27,7 @@ const elements = {
   heapPercentage: document.getElementById('heapPercentage'),
   heapBar: document.getElementById('heapBar'),
   peakMemory: document.getElementById('peakMemory'),
+    peakTime: document.getElementById('peakTime'),
   externalMemory: document.getElementById('externalMemory'),
   
   // 容器元素
@@ -40,11 +51,18 @@ const elements = {
   searchInput: document.getElementById('searchInput')
 };
 
-// 全局变量
-let memoryData = null;
-let memoryChart = null;
-let currentConsumptionPoints = [];
-let updateInterval = null;
+  // 输出DOM元素检查结果
+  console.log('DOM元素初始化结果:');
+  console.log('usedMemory:', !!elements.usedMemory);
+  console.log('totalMemory:', !!elements.totalMemory);
+  console.log('usedPercentage:', !!elements.usedPercentage);
+  console.log('memoryBar:', !!elements.memoryBar);
+  console.log('heapUsed:', !!elements.heapUsed);
+  console.log('heapTotal:', !!elements.heapTotal);
+  console.log('peakMemory:', !!elements.peakMemory);
+  console.log('peakTime:', !!elements.peakTime);
+  console.log('memoryTrendChart:', !!elements.memoryTrendChart);
+}
 
 /**
  * 健康检查API服务是否正常运行
@@ -55,12 +73,6 @@ async function checkApiStatus() {
     console.log('[checkApiStatus] 开始检查API状态...');
     const apiUrl = getApiBaseUrl();
     
-    // 如果使用模拟数据模式，直接返回成功
-    if (window.ENV.USE_MOCK_DATA) {
-      console.log('[checkApiStatus] 使用模拟数据模式，跳过API健康检查');
-      return { available: true, message: '使用模拟数据模式' };
-    }
-    
     // 尝试调用健康检查接口
     const healthEndpoint = `${apiUrl}/health`;
     console.log(`[checkApiStatus] 请求健康检查: ${healthEndpoint}`);
@@ -70,15 +82,10 @@ async function checkApiStatus() {
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
     
     try {
-      // 简化请求，不添加自定义头，避免CORS预检请求
+      // 简化请求
       const response = await fetch(healthEndpoint, {
         signal: controller.signal,
-        method: 'GET',
-        // 移除自定义头，避免触发CORS预检请求
-        // headers: {
-        //   'Content-Type': 'application/json', 
-        //   'Cache-Control': 'no-cache'
-        // }
+        method: 'GET'
       });
       
       clearTimeout(timeoutId);
@@ -147,7 +154,7 @@ async function isServerAlive(apiUrl) {
     }
   }
   
-  const baseUrl = `${url.protocol}//${url.hostname}${url.port ? ':' + url.port : ''}`;
+  const baseUrl = `${url.protocol}//${url.hostname}${url.port ? `:${url.port}` : ''}`;
   console.log('[isServerAlive] 检测服务器存活性:', baseUrl);
   
   return new Promise((resolve) => {
@@ -187,19 +194,23 @@ async function loadMemoryStats() {
   console.log('开始加载内存统计数据...');
   
   try {
-    // 使用API获取内存数据
-    const url = `${getApiBaseUrl()}/memory_stats.json?t=${Date.now()}`;
+    // 从API获取内存数据
+    const url = `${getApiBaseUrl()}/api/memory_stats.json?t=${Date.now()}`;
     console.log(`从API获取内存数据: ${url}`);
     
     try {
       // 发送API请求获取数据
+      console.log('开始发送fetch请求...');
       const response = await fetch(url);
+      console.log('API响应状态:', response.status, response.statusText);
+      
       if (!response.ok) {
         throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
       }
       
+      console.log('开始解析JSON响应...');
       const jsonResponse = await response.json();
-      console.log('已获取内存数据:', jsonResponse);
+      console.log('JSON响应解析完成:', jsonResponse);
       
       // 提取真正的数据对象(处理可能的嵌套结构)
       let actualData;
@@ -212,148 +223,381 @@ async function loadMemoryStats() {
         actualData = jsonResponse;
       }
       
-      console.log('处理后的内存数据:', actualData);
-      
-      // 验证数据结构
-      if (!actualData || typeof actualData !== 'object' || !actualData.total_memory) {
-        console.error('数据结构验证失败，缺少total_memory字段:', actualData);
-        showNotification('错误', '数据格式不正确', 'error');
-        return false;
-      }
-      
       // 保存到全局变量
       memoryData = actualData;
       console.log('最终使用的内存数据:', memoryData);
       
+      // 检查数据完整性
+      if (!memoryData.totalMemory || !memoryData.heapMemory) {
+        console.error('数据不完整，缺少totalMemory或heapMemory');
+        console.log('数据结构:', JSON.stringify(memoryData).slice(0, 200) + '...');
+      }
+      
       // 更新UI
+      console.log('开始更新UI...');
       updateMemoryUI(memoryData);
+      
+      // 同时更新系统状态信息
+      loadSystemStatus();
+      
       return true;
     } catch (apiError) {
       console.error('API请求或解析失败:', apiError);
+      console.error('错误详情:', apiError.stack || '无堆栈信息');
       showNotification('错误', `内存数据加载失败: ${apiError.message}`, 'error');
       return false;
     }
   } catch (error) {
     console.error('加载内存统计数据失败:', error);
+    console.error('错误详情:', error.stack || '无堆栈信息');
     showNotification('错误', '内存数据加载过程中发生未知错误', 'error');
     return false;
   }
 }
 
 /**
- * 创建备用内存数据
- * @returns {Object} 备用内存数据对象
+ * 加载系统状态信息
+ * @returns {Promise<boolean>} 数据加载是否成功
  */
-function createFallbackMemoryData() {
-  console.log('创建备用内存数据 - 使用空数据替代模拟数据');
-  
-  // 返回备用数据结构，所有数值都设置为0或空数组
-  return {
-    totalMemory: {
-      total: 0,
-      used: 0,
-      free: 0,
-      usedPercentage: 0
-    },
-    heapMemory: {
-      total: 0,
-      used: 0,
-      free: 0,
-      usedPercentage: 0
-    },
-    peakMemory: 0,
-    externalMemory: 0,
-    memoryTrend: [],
-    consumptionPoints: [],
-    optimizationSuggestions: [],
-    memoryLogs: [],
-    memoryLeaks: []
-  };
-}
-
-/**
- * 更新内存监控页面所有UI元素
- * @param {Object} data 内存数据对象
- */
-function updateMemoryUI(data) {
-  if (!data) {
-    console.error('更新UI时数据为空');
-    return;
-  }
-  
-  console.log('更新所有UI元素');
+async function loadSystemStatus() {
+  console.log('开始加载系统状态信息...');
   
   try {
-    // 更新内存统计卡片
-    updateMemoryStats(data);
+    // 使用API获取系统状态
+    const url = `${getApiBaseUrl()}/api/status?t=${Date.now()}`;
+    console.log(`从API获取系统状态: ${url}`);
     
-    // 更新内存趋势图表
-    if (data.memoryTrend) {
-      console.log('更新内存趋势图表，数据点数量:', data.memoryTrend.length);
-      updateMemoryTrendChart(data.memoryTrend);
-    } else {
-      console.warn('缺少内存趋势数据');
-      // 生成模拟数据
-      updateMemoryTrendChart([]);
+    try {
+      // 发送API请求获取数据
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+      }
+      
+      const jsonResponse = await response.json();
+      console.log('已获取系统状态:', jsonResponse);
+      
+      // 提取数据对象
+      let statusData;
+      if (jsonResponse.success === true && jsonResponse.data) {
+        statusData = jsonResponse.data;
+      } else {
+        statusData = jsonResponse;
+      }
+      
+      // 更新系统状态UI
+      updateSystemStatusUI(statusData);
+      return true;
+    } catch (apiError) {
+      console.error('API请求或解析失败:', apiError);
+      console.log('继续使用其他数据，不影响主要功能');
+      return false;
     }
-    
-    // 更新其他UI元素
-    if (data.optimizationSuggestions) {
-      loadOptimizationSuggestions(data.optimizationSuggestions);
-    }
-    
-    if (data.consumptionPoints) {
-      loadConsumptionPoints(data.consumptionPoints);
-    }
-    
-    if (data.memoryLogs) {
-      loadMemoryLogs(data.memoryLogs);
-    }
-    
-    if (data.memoryLeaks) {
-      loadMemoryLeaks(data.memoryLeaks);
-    }
-    
-    // 更新最后更新时间
-    const lastUpdated = document.querySelector('.current-date-time');
-    if (lastUpdated) {
-      lastUpdated.textContent = formatDateTime(new Date());
-    }
-    
-    console.log('UI更新完成');
   } catch (error) {
-    console.error('更新UI过程中出错:', error);
-    showNotification('错误', '更新界面时出错', 'error');
+    console.error('加载系统状态信息失败:', error);
+    return false;
   }
 }
 
 /**
- * 更新内存统计数据显示
- * @param {Object} data - 内存数据
+ * 更新系统状态UI
+ * @param {Object} statusData 系统状态数据
  */
-function updateMemoryStats(data) {
-  if (!data) return;
+function updateSystemStatusUI(statusData) {
+  try {
+    // 获取DOM元素
+    const uptimeElement = document.querySelector('.uptime');
+    const statusDot = document.querySelector('.status-dot');
+    const statusText = document.querySelector('.status-text');
+    const dateTimeElement = document.querySelector('.current-date-time');
+    
+    if (statusData?.status) {
+      // 更新运行状态
+      const isRunning = statusData.status === 'running';
+      
+      if (statusDot) {
+        statusDot.className = `status-dot ${isRunning ? 'running' : 'stopped'}`;
+      }
+      
+      if (statusText) {
+        statusText.textContent = isRunning ? '运行中' : '已停止';
+        statusText.className = `status-text ${isRunning ? 'text-success' : 'text-error'}`;
+      }
+      
+      // 更新运行时间
+      if (uptimeElement && statusData.uptime) {
+        uptimeElement.textContent = formatUptime(statusData.uptime);
+      }
+      
+      // 更新当前时间
+      if (dateTimeElement && statusData.currentTime) {
+        dateTimeElement.textContent = formatDateTime(statusData.currentTime);
+      } else if (dateTimeElement) {
+        // 如果API没有返回时间，使用当前时间
+        dateTimeElement.textContent = formatDateTime(new Date());
+      }
+    }
+  } catch (error) {
+    console.error('更新系统状态UI失败:', error);
+  }
+}
+
+/**
+ * 格式化运行时间
+ * @param {number|string} uptime 运行时间(秒)
+ * @returns {string} 格式化后的运行时间
+ */
+function formatUptime(uptime) {
+  try {
+    let uptimeSeconds = 0;
+    
+    if (typeof uptime === 'string') {
+      // 尝试解析字符串为数字
+      uptimeSeconds = Number.parseInt(uptime, 10) || 0;
+    } else if (typeof uptime === 'number') {
+      uptimeSeconds = uptime;
+    }
+    
+    // 计算小时、分钟和秒
+    const hours = Math.floor(uptimeSeconds / 3600);
+    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+    
+    // 格式化输出
+    if (hours > 0) {
+      return `${hours}小时${minutes}分钟`;
+    } 
+    
+    if (minutes > 0) {
+      return `${minutes}分钟`;
+    } 
+    
+    return '刚刚启动';
+  } catch (error) {
+    console.error('格式化运行时间失败:', error);
+    return '--';
+  }
+}
+
+/**
+ * 格式化日期时间
+ * @param {string|Date} dateTime 日期时间
+ * @returns {string} 格式化后的日期时间
+ */
+function formatDateTime(dateTime) {
+  try {
+    const date = typeof dateTime === 'string' ? new Date(dateTime) : dateTime;
+    
+    if (Number.isNaN(date.getTime())) {
+      throw new Error('无效的日期时间');
+    }
+    
+    // 格式化为 YYYY-MM-DD HH:MM:SS
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  } catch (error) {
+    console.error('格式化日期时间失败:', error);
+    return '--';
+  }
+}
+
+/**
+ * 更新内存监控UI
+ * @param {Object} data 内存数据
+ */
+function updateMemoryUI(data) {
+  try {
+    console.log('更新内存监控UI，数据:', data);
+    
+    // 提取数据，处理不同的数据结构格式
+    let totalMemoryInfo;
+    let heapMemoryInfo; 
+    let peakMemoryValue;
+    let externalMemoryValue;
+    let memoryTrends;
+    let consumptionPoints;
+    let suggestions;
+    let memoryLogs;
+    let memoryLeakInfo;
+    
+    // 判断数据结构类型并提取数据
+    if (data.totalMemory && data.heapMemory) {
+      // 标准结构
+      console.log('使用标准数据结构解析');
+      totalMemoryInfo = data.totalMemory;
+      heapMemoryInfo = data.heapMemory;
+      peakMemoryValue = data.peakMemory;
+      externalMemoryValue = data.externalMemory;
+      memoryTrends = data.memoryTrend;
+      consumptionPoints = data.consumptionPoints;
+      suggestions = data.optimizationSuggestions;
+      memoryLogs = data.memoryLogs;
+      memoryLeakInfo = data.memoryLeaks;
+      
+      console.log('数据结构检查: totalMemory', !!totalMemoryInfo);
+      console.log('数据结构检查: heapMemory', !!heapMemoryInfo);
+      console.log('数据结构检查: memoryTrend', memoryTrends && memoryTrends.length);
+    } else {
+      // 简单结构 - 尝试提取最基本的内存信息
+      console.log('使用简单数据结构解析');
+      totalMemoryInfo = {
+        total: data.total || data.totalMemory || 0,
+        used: data.used || data.usedMemory || 0,
+        free: data.free || data.freeMemory || 0,
+        usedPercentage: data.usedPercentage || 0
+      };
+      
+      // 如果没有详细的堆内存信息，使用估算值
+      heapMemoryInfo = data.heap || {
+        total: data.heapTotal || Math.floor(totalMemoryInfo.total * 0.5),
+        used: data.heapUsed || Math.floor(totalMemoryInfo.used * 0.6),
+        free: data.heapFree || 0,
+        usedPercentage: data.heapUsedPercentage || 0
+      };
+      
+      // 其他可选数据
+      peakMemoryValue = data.peak || 0;
+      externalMemoryValue = data.external || 0;
+      memoryTrends = data.trends || [];
+      consumptionPoints = data.consumption || [];
+      suggestions = data.suggestions || [];
+      memoryLogs = data.logs || [];
+      memoryLeakInfo = data.leaks || [];
+    }
+    
+    // 更新内存统计数据
+    console.log('更新内存统计数据...');
+    console.log('totalMemoryInfo:', totalMemoryInfo);
+    console.log('heapMemoryInfo:', heapMemoryInfo);
+    updateMemoryStats(totalMemoryInfo, heapMemoryInfo, peakMemoryValue, externalMemoryValue);
+    
+    // 更新内存趋势图表
+    if (memoryTrends && memoryTrends.length > 0) {
+      console.log('更新内存趋势图表...');
+      updateMemoryTrendChart(memoryTrends);
+    } else {
+      console.warn('无法更新内存趋势图表：没有趋势数据');
+    }
+    
+    // 更新内存消耗点分析
+    if (consumptionPoints && consumptionPoints.length > 0) {
+      loadConsumptionPoints(consumptionPoints);
+    }
+    
+    // 更新优化建议
+    if (suggestions && suggestions.length > 0) {
+      loadOptimizationSuggestions(suggestions);
+    }
+    
+    // 更新内存日志
+    if (memoryLogs && memoryLogs.length > 0) {
+      loadMemoryLogs(memoryLogs);
+    }
+    
+    // 更新内存泄漏信息
+    if (memoryLeakInfo && memoryLeakInfo.length > 0) {
+      loadMemoryLeaks(memoryLeakInfo);
+    }
+    
+    console.log('内存UI更新完成');
+  } catch (error) {
+    console.error('更新内存UI时发生错误:', error);
+    console.error('错误堆栈:', error.stack);
+  }
+}
+
+/**
+ * 更新内存统计数据
+ * @param {Object} totalMemory 总内存数据
+ * @param {Object} heapMemory 堆内存数据
+ * @param {number} peakMemory 峰值内存
+ * @param {number} externalMemory 外部内存
+ */
+function updateMemoryStats(totalMemory, heapMemory, peakMemory, externalMemory) {
+  console.log('DOM元素检查 - usedMemory:', !!elements.usedMemory);
+  console.log('DOM元素检查 - totalMemory:', !!elements.totalMemory);
+  console.log('DOM元素检查 - heapUsed:', !!elements.heapUsed);
+  console.log('DOM元素检查 - peakMemory:', !!elements.peakMemory);
   
-  // 更新总内存使用
-  if (elements.usedMemory) elements.usedMemory.textContent = data.totalMemory.used;
-  if (elements.totalMemory) elements.totalMemory.textContent = `总计: ${data.totalMemory.total} MB`;
-  if (elements.usedPercentage) elements.usedPercentage.textContent = `${data.totalMemory.usedPercentage}%`;
-  if (elements.memoryBar) elements.memoryBar.style.width = `${data.totalMemory.usedPercentage}%`;
+  console.log('数据值检查 - totalMemory:', totalMemory);
+  console.log('数据值检查 - heapMemory:', heapMemory);
+  console.log('数据值检查 - peakMemory:', peakMemory);
+  console.log('数据值检查 - externalMemory:', externalMemory);
   
-  // 更新堆内存
-  if (elements.heapUsed) elements.heapUsed.textContent = data.heapMemory.used;
-  if (elements.heapTotal) elements.heapTotal.textContent = `总计: ${data.heapMemory.total} MB`;
-  if (elements.heapPercentage) elements.heapPercentage.textContent = `${data.heapMemory.usedPercentage}%`;
-  if (elements.heapBar) elements.heapBar.style.width = `${data.heapMemory.usedPercentage}%`;
+  // 更新总内存信息
+  if (elements.usedMemory) {
+    console.log('更新usedMemory元素:', totalMemory.used);
+    elements.usedMemory.textContent = totalMemory.used || '--';
+  }
+  
+  if (elements.totalMemory) {
+    console.log('更新totalMemory元素:', totalMemory.total);
+    elements.totalMemory.textContent = `总计: ${totalMemory.total || '--'} MB`;
+  }
+  
+  if (elements.usedPercentage) {
+    console.log('更新usedPercentage元素:', totalMemory.usedPercentage);
+    elements.usedPercentage.textContent = `${totalMemory.usedPercentage || '--'}%`;
+  }
+  
+  if (elements.memoryBar) {
+    console.log('更新memoryBar元素:', totalMemory.usedPercentage);
+    elements.memoryBar.style.width = `${totalMemory.usedPercentage || 0}%`;
+  }
+  
+  // 更新堆内存信息
+  if (elements.heapUsed) {
+    console.log('更新heapUsed元素:', heapMemory.used);
+    elements.heapUsed.textContent = heapMemory.used || '--';
+  }
+  
+  if (elements.heapTotal) {
+    console.log('更新heapTotal元素:', heapMemory.total);
+    elements.heapTotal.textContent = `总计: ${heapMemory.total || '--'} MB`;
+  }
+  
+  if (elements.heapPercentage) {
+    console.log('更新heapPercentage元素:', heapMemory.usedPercentage);
+    elements.heapPercentage.textContent = `${heapMemory.usedPercentage || '--'}%`;
+  }
+  
+  if (elements.heapBar) {
+    console.log('更新heapBar元素:', heapMemory.usedPercentage);
+    elements.heapBar.style.width = `${heapMemory.usedPercentage || 0}%`;
+  }
   
   // 更新峰值内存
-  if (elements.peakMemory) elements.peakMemory.textContent = data.peakMemory;
+  if (elements.peakMemory) {
+    console.log('更新peakMemory元素:', peakMemory);
+    elements.peakMemory.textContent = peakMemory || '--';
+  }
+  
+  // 更新峰值时间
+  if (elements.peakTime && memoryData && memoryData.peakTime) {
+    console.log('更新peakTime元素:', memoryData.peakTime);
+    const peakDate = new Date(memoryData.peakTime);
+    const formattedDate = `${peakDate.getHours().toString().padStart(2, '0')}:${peakDate.getMinutes().toString().padStart(2, '0')}`;
+    elements.peakTime.textContent = formattedDate || '--';
+  } else if (elements.peakTime) {
+    console.log('无法更新peakTime元素: 没有峰值时间数据');
+    elements.peakTime.textContent = '--';
+  }
   
   // 更新外部内存
-  if (elements.externalMemory) elements.externalMemory.textContent = data.externalMemory;
+  if (elements.externalMemory) {
+    console.log('更新externalMemory元素:', externalMemory);
+    elements.externalMemory.textContent = externalMemory || '--';
+  }
   
-  // 设置内存条的颜色
-  setMemoryBarColors(data.totalMemory.usedPercentage, data.heapMemory.usedPercentage);
+  // 设置内存条颜色
+  setMemoryBarColors(totalMemory.usedPercentage, heapMemory.usedPercentage);
+  
+  console.log('内存统计卡片更新完成');
 }
 
 /**
@@ -387,196 +631,229 @@ function setMemoryBarColors(memoryPercentage, heapPercentage) {
 
 /**
  * 更新内存趋势图表
- * @param {Array} memoryTrend 内存趋势数据
+ * @param {Array} memoryTrend 内存趋势数据点数组
  */
 function updateMemoryTrendChart(memoryTrend) {
-  console.log('更新内存趋势图表:', memoryTrend);
-  
-  // 确保图表容器存在
-  if (!elements.memoryTrendChart) {
-    console.error('找不到内存趋势图表容器元素!');
-    return;
-  }
-  
-  // 确保Chart.js已加载
-  if (typeof Chart === 'undefined') {
-    console.error('Chart.js未加载，无法创建图表');
-    return;
-  }
-  
-  // 验证数据有效性
-  if (!memoryTrend || !Array.isArray(memoryTrend) || memoryTrend.length === 0) {
-    console.warn('内存趋势数据无效或为空，使用空数组');
-    memoryTrend = [];
-  }
-  
-  // 解析图表数据
-  const labels = [];
-  const memoryUsageData = [];
-  const heapUsageData = [];
-  
-  // 获取当前图表周期
-  const currentChartPeriod = getCurrentChartPeriod();
-  console.log('当前图表周期:', currentChartPeriod);
-  
-  // 根据选择的时间段过滤数据
-  const filteredData = memoryTrend;
-  
-  // 处理数据格式
-  for (const point of filteredData) {
-    // 格式化时间戳为更友好的格式
-    let timeLabel;
+  try {
+    console.log('更新内存趋势图表，数据点数量:', memoryTrend.length);
+    console.log('内存趋势数据样本:', memoryTrend[0]);
     
-    if (currentChartPeriod === '1小时') {
-      // 小时:分钟格式
-      timeLabel = new Date(point.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    } else if (currentChartPeriod === '6小时') {
-      // 日期和小时格式
-      timeLabel = new Date(point.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    } else {
-      // 日期格式
-      timeLabel = new Date(point.timestamp).toLocaleDateString([], {month: 'short', day: 'numeric'});
+    // 销毁旧图表（如果存在）
+    if (memoryChart) {
+      memoryChart.destroy();
+      memoryChart = null;
     }
     
-    labels.push(timeLabel);
-    
-    // 获取内存使用量，兼容不同的字段名称
-    const totalUsage = point.used || point.usage || 0;
-    const heapUsage = point.heap || point.heapUsage || 0;
-    
-    // 转换MB到GB并保留2位小数
-    const usageGB = (totalUsage / 1024).toFixed(2);
-    const heapUsageGB = (heapUsage / 1024).toFixed(2);
-    
-    memoryUsageData.push(usageGB);
-    heapUsageData.push(heapUsageGB);
+    // 获取canvas元素
+    const canvas = elements.memoryTrendChart.querySelector('canvas');
+    if (!canvas) {
+      console.error('找不到canvas元素，请确保HTML中包含canvas元素');
+    return;
   }
   
-  // 如果已存在图表实例，销毁它
-  if (memoryChart) {
-    memoryChart.destroy();
-  }
-  
-  // 获取图表上下文
-  const ctx = elements.memoryTrendChart.getContext('2d');
-  
-  console.log('创建图表，数据点数:', labels.length);
-  console.log('内存数据:', memoryUsageData);
-  console.log('堆内存数据:', heapUsageData);
-  
-  // 创建新图表
-  memoryChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
+    // 获取2D上下文
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.error('无法获取canvas 2D上下文');
+      return;
+    }
+    
+    // 设置canvas尺寸
+    const containerWidth = elements.memoryTrendChart.clientWidth;
+    canvas.width = containerWidth;
+    canvas.height = 300;
+    
+    console.log('创建内存趋势图表，容器尺寸:', containerWidth, 'x 300px');
+    
+    // 解析数据
+    const timestamps = [];
+    const usedData = [];
+    const heapData = [];
+    
+    // 获取当前选中的时间段
+    const activePeriodButton = document.querySelector('.card-header .btn[data-period].active');
+    const currentPeriod = activePeriodButton ? activePeriodButton.getAttribute('data-period') : '6小时';
+    console.log('当前选中的时间段:', currentPeriod);
+    
+    // 确定时间范围跨度
+    const oldestTimestamp = new Date(memoryTrend[0]?.timestamp || new Date());
+    const newestTimestamp = new Date(memoryTrend[memoryTrend.length - 1]?.timestamp || new Date());
+    const timeSpanHours = (newestTimestamp - oldestTimestamp) / (1000 * 60 * 60);
+    console.log('时间跨度(小时):', timeSpanHours);
+    
+    // 提取时间和数据点
+    for (const dataPoint of memoryTrend) {
+      // 解析时间戳
+      const timestamp = new Date(dataPoint.timestamp);
+      
+      // 根据不同时间段使用不同的时间格式
+      let formattedTime;
+      if (currentPeriod === '1小时') {
+        // 1小时视图 - 显示时:分
+        const hours = timestamp.getHours().toString().padStart(2, '0');
+        const minutes = timestamp.getMinutes().toString().padStart(2, '0');
+        formattedTime = `${hours}:${minutes}`;
+      } else if (currentPeriod === '6小时') {
+        // 6小时视图 - 显示时:分
+        const hours = timestamp.getHours().toString().padStart(2, '0');
+        const minutes = timestamp.getMinutes().toString().padStart(2, '0');
+        formattedTime = `${hours}:${minutes}`;
+      } else if (currentPeriod === '24小时') {
+        // 24小时视图 - 显示日期+时间
+        const month = (timestamp.getMonth() + 1).toString().padStart(2, '0');
+        const day = timestamp.getDate().toString().padStart(2, '0');
+        const hours = timestamp.getHours().toString().padStart(2, '0');
+        formattedTime = `${month}-${day} ${hours}:00`;
+    } else {
+        // 默认格式
+        const hours = timestamp.getHours().toString().padStart(2, '0');
+        const minutes = timestamp.getMinutes().toString().padStart(2, '0');
+        formattedTime = `${hours}:${minutes}`;
+      }
+      
+      timestamps.push(formattedTime);
+      
+      // 解析内存使用数据
+      // 尝试从不同可能的属性名中获取数据
+      const usedMemory = dataPoint.used || dataPoint.usedMemoryMb || 0;
+      const heapMemory = dataPoint.heap || (dataPoint.used ? Math.round(dataPoint.used * 0.65) : 0) || 0;
+      
+      usedData.push(usedMemory);
+      heapData.push(heapMemory);
+    }
+    
+    console.log('处理后的时间点:', timestamps);
+    console.log('处理后的内存使用数据:', usedData);
+    console.log('处理后的堆内存数据:', heapData);
+    
+    // 配置图表数据
+    const chartData = {
+      labels: timestamps,
       datasets: [
         {
-          label: '总内存使用量 (GB)',
-          data: memoryUsageData,
-          borderColor: 'rgba(54, 162, 235, 1)',
-          backgroundColor: 'rgba(54, 162, 235, 0.1)',
+          label: '总内存使用',
+          data: usedData,
+          backgroundColor: 'rgba(99, 179, 237, 0.2)',
+          borderColor: 'rgba(99, 179, 237, 1)',
           borderWidth: 2,
-          fill: true,
-          tension: 0.3
+          tension: 0.2,
+          pointRadius: 3,
+          pointBackgroundColor: 'rgba(99, 179, 237, 1)',
+          fill: true
         },
         {
-          label: '堆内存使用量 (GB)',
-          data: heapUsageData,
-          borderColor: 'rgba(255, 99, 132, 1)',
-          backgroundColor: 'rgba(255, 99, 132, 0.1)',
+          label: '堆内存使用',
+          data: heapData,
+          backgroundColor: 'rgba(250, 151, 132, 0.2)',
+          borderColor: 'rgba(250, 151, 132, 1)',
           borderWidth: 2,
-          fill: true,
-          tension: 0.3
+          tension: 0.2,
+          pointRadius: 3,
+          pointBackgroundColor: 'rgba(250, 151, 132, 1)',
+          fill: true
         }
       ]
-    },
-    options: {
+    };
+    
+    // 根据不同时间段调整X轴刻度数量
+    let ticksConfig = {};
+    if (currentPeriod === '1小时') {
+      // 1小时显示所有点
+      ticksConfig = { 
+        maxTicksLimit: 6,
+        maxRotation: 45,
+        minRotation: 0
+      };
+    } else if (currentPeriod === '6小时') {
+      // 6小时限制点数
+      ticksConfig = {
+        maxTicksLimit: 12,
+        maxRotation: 45,
+        minRotation: 0
+      };
+    } else if (currentPeriod === '24小时') {
+      // 24小时更少的点
+      ticksConfig = {
+        maxTicksLimit: 8,
+        maxRotation: 45,
+        minRotation: 0
+      };
+    }
+    
+    // 图表配置
+    const chartOptions = {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: 'top',
+          display: true,
+          position: 'top'
         },
         tooltip: {
           mode: 'index',
           intersect: false,
           callbacks: {
-            label: (context) => `${context.dataset.label}: ${context.raw} GB`
+            title: (tooltipItems) => {
+              const index = tooltipItems[0].dataIndex;
+              if (memoryTrend[index]) {
+                // 在提示中显示完整时间
+                const date = new Date(memoryTrend[index].timestamp);
+                return date.toLocaleString('zh-CN', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+              }
+              return '';
+            },
+            label: (context) => {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              if (context.parsed.y !== null) {
+                label += `${context.parsed.y} MB`;
+              }
+              return label;
+            }
           }
         }
       },
       scales: {
         x: {
-          display: true,
-          title: {
-            display: true,
-            text: '时间'
-          },
+          ticks: ticksConfig,
           grid: {
-            display: false
+            display: true,
+            color: 'rgba(0, 0, 0, 0.05)'
           }
         },
         y: {
-          display: true,
-          title: {
-            display: true,
-            text: '内存使用量 (GB)'
-          },
           beginAtZero: false,
-          suggestedMin: (() => {
-            // 计算最小值略低于实际最小值
-            const allValues = [...memoryUsageData, ...heapUsageData].map(Number);
-            const min = Math.min(...allValues);
-            return Math.max(0, min * 0.95);
-          })(),
           ticks: {
-            callback: (value) => `${value} GB`
+            callback: (value) => `${value} MB`
+          },
+          grid: {
+            display: true,
+            color: 'rgba(0, 0, 0, 0.05)'
           }
         }
-      },
-      interaction: {
-        mode: 'nearest',
-        axis: 'x',
-        intersect: false
-      },
-      animation: {
-        duration: 1000
       }
-    }
-  });
-  
-  console.log('内存趋势图表已更新');
-  
-  // 更新图表周期按钮状态
-  updateChartPeriodButtonState(currentChartPeriod);
-}
-
-/**
- * 获取当前选择的图表周期
- * @returns {string} 当前图表周期
- */
-function getCurrentChartPeriod() {
-  const activeButton = document.querySelector('.card-header .btn.active');
-  if (activeButton) {
-    return activeButton.textContent.trim();
+    };
+    
+    // 创建图表
+    memoryChart = new Chart(ctx, {
+      type: 'line',
+      data: chartData,
+      options: chartOptions
+    });
+    
+    console.log('内存趋势图表创建成功');
+  } catch (error) {
+    console.error('创建内存趋势图表失败:', error);
+    console.error('错误详情:', error.stack);
   }
-  return '6小时'; // 默认周期
-}
-
-/**
- * 更新图表周期按钮状态
- * @param {string} activePeriod - 激活的周期
- */
-function updateChartPeriodButtonState(activePeriod) {
-  const periodButtons = document.querySelectorAll('.card-header .btn');
-  
-  periodButtons.forEach(button => {
-    if (button.textContent.trim() === activePeriod) {
-      button.classList.add('active');
-    } else {
-      button.classList.remove('active');
-    }
-  });
 }
 
 /**
@@ -652,16 +929,23 @@ function loadConsumptionPoints(points) {
 function filterConsumptionPoints(points) {
   if (!points || !Array.isArray(points)) return [];
   
+  console.log('开始过滤消耗点...');
+  
   // 获取当前过滤条件
   const statusFilter = elements.statusFilter ? elements.statusFilter.value : 'all';
   const searchText = elements.searchInput ? elements.searchInput.value.toLowerCase() : '';
   
-  return points.filter(point => {
+  console.log('过滤条件:', { statusFilter, searchText });
+  console.log('过滤前消耗点数量:', points.length);
+  
+  const filtered = points.filter(point => {
     // 状态过滤
-    if (statusFilter !== 'all' && point.status !== statusFilter) {
-      if (!(statusFilter === 'normal' && point.status === '正常')) return false;
-      if (!(statusFilter === 'warning' && point.status === '注意')) return false;
-      if (!(statusFilter === 'error' && point.status === '错误')) return false;
+    if (statusFilter !== 'all') {
+      const status = point.status;
+      
+      if (statusFilter === 'normal' && status !== '正常') return false;
+      if (statusFilter === 'warning' && status !== '注意') return false;
+      if (statusFilter === 'error' && status !== '错误') return false;
     }
     
     // 搜索过滤
@@ -671,6 +955,9 @@ function filterConsumptionPoints(points) {
     
     return true;
   });
+  
+  console.log('过滤后消耗点数量:', filtered.length);
+  return filtered;
 }
 
 /**
@@ -767,7 +1054,7 @@ function addLog(message, level = 'info') {
   };
   
   // 添加到日志数组
-  if (memoryData && memoryData.memoryLogs) {
+  if (memoryData?.memoryLogs) {
     memoryData.memoryLogs.unshift(newLog);
     
     // 重新加载日志显示
@@ -781,7 +1068,7 @@ function addLog(message, level = 'info') {
 function initEventListeners() {
   // 优化内存按钮
   if (elements.optimizeMemory) {
-    elements.optimizeMemory.addEventListener('click', function() {
+    elements.optimizeMemory.addEventListener('click', () => {
       showNotification('处理中', '正在优化内存...', 'info');
       addLog('手动触发内存优化', 'info');
       
@@ -799,7 +1086,7 @@ function initEventListeners() {
           memoryData.heapMemory.usedPercentage = ((memoryData.heapMemory.used / memoryData.heapMemory.total) * 100).toFixed(1);
           
           // 更新界面
-          updateMemoryStats(memoryData);
+          updateMemoryStats(memoryData.totalMemory, memoryData.heapMemory, memoryData.peakMemory, memoryData.externalMemory);
           addLog(`内存优化完成，释放了 ${optimizedAmount}MB 内存`, 'success');
         }
         
@@ -810,14 +1097,14 @@ function initEventListeners() {
   
   // 刷新按钮
   if (elements.refreshBtn) {
-    elements.refreshBtn.addEventListener('click', function() {
+    elements.refreshBtn.addEventListener('click', () => {
       loadMemoryStats();
     });
   }
   
   // 刷新建议按钮
   if (elements.generateSuggestions) {
-    elements.generateSuggestions.addEventListener('click', function() {
+    elements.generateSuggestions.addEventListener('click', () => {
       showNotification('处理中', '正在分析内存使用并生成建议...', 'info');
       addLog('手动触发内存分析', 'info');
       
@@ -939,13 +1226,23 @@ function initEventListeners() {
     });
   }
   
-  // 状态筛选
+  // 状态筛选下拉菜单
   if (elements.statusFilter) {
     elements.statusFilter.addEventListener('change', function() {
+      console.log('状态筛选条件变更为:', this.value);
+      
       if (currentConsumptionPoints.length > 0) {
+        // 重新应用过滤并显示结果
         loadConsumptionPoints(currentConsumptionPoints);
+        
+        const statusText = this.value === 'all' ? '全部状态' : 
+                         this.value === 'normal' ? '正常' :
+                         this.value === 'warning' ? '注意' : '错误';
+                         
+        showNotification('筛选', `已筛选: ${statusText}`, 'info');
+      } else {
+        console.log('无可过滤数据');
       }
-      showNotification('筛选', `已选择筛选条件: ${this.value}`, 'info');
     });
   }
   
@@ -992,7 +1289,13 @@ function stopAutoRefresh() {
  * 应用图表周期切换
  */
 function initChartPeriodButtons() {
-  const periodButtons = document.querySelectorAll('.card-header .btn');
+  const periodButtons = document.querySelectorAll('.card-header .btn[data-period]');
+  console.log('初始化周期切换按钮，找到按钮数量:', periodButtons.length);
+  
+  if(periodButtons.length === 0) {
+    console.error('未找到图表周期按钮，请检查HTML结构');
+    return;
+  }
   
   periodButtons.forEach(button => {
     button.addEventListener('click', function() {
@@ -1003,10 +1306,17 @@ function initChartPeriodButtons() {
       this.classList.add('active');
       
       // 根据不同时间段生成数据并更新图表
-      const period = this.textContent.trim();
+      const period = this.getAttribute('data-period');
+      console.log('选择了时间段:', period);
       updateChartByPeriod(period);
     });
   });
+  
+  // 默认激活6小时按钮
+  const defaultButton = document.querySelector('.card-header .btn[data-period="6小时"]');
+  if(defaultButton) {
+    defaultButton.classList.add('active');
+  }
 }
 
 /**
@@ -1014,7 +1324,14 @@ function initChartPeriodButtons() {
  * @param {string} period - 时间段 (1小时|6小时|24小时)
  */
 function updateChartByPeriod(period) {
-  if (!memoryData || !memoryData.memoryTrend) return;
+  console.log('根据时间段更新图表:', period);
+  
+  if (!memoryData || !memoryData.memoryTrend) {
+    console.error('没有可用的内存趋势数据');
+    return;
+  }
+  
+  console.log('原始趋势数据点数量:', memoryData.memoryTrend.length);
   
   let filteredData = [];
   const now = new Date();
@@ -1027,6 +1344,14 @@ function updateChartByPeriod(period) {
       const pointDate = new Date(point.timestamp);
       return pointDate >= oneHourAgo;
     });
+
+    // 确保有足够的数据点显示
+    if (filteredData.length < 6) {
+      // 如果数据点不够，选择最新的6个点
+      filteredData = memoryData.memoryTrend.slice(-6);
+    }
+    
+    console.log('过滤后1小时数据点数量:', filteredData.length);
   } else if (period === '6小时') {
     // 过去6小时的数据点
     const sixHoursAgo = new Date(now.getTime() - 3600000 * 6);
@@ -1034,15 +1359,105 @@ function updateChartByPeriod(period) {
       const pointDate = new Date(point.timestamp);
       return pointDate >= sixHoursAgo;
     });
+    
+    // 确保数据点间隔合适，如果太多可以采样
+    if (filteredData.length > 12) {
+      // 如果点太多，每隔几个点取一个
+      const step = Math.floor(filteredData.length / 12);
+      const sampledData = [];
+      for (let i = 0; i < filteredData.length; i += step) {
+        sampledData.push(filteredData[i]);
+      }
+      // 确保最新的点也包含在内
+      if (sampledData.length > 0 && sampledData[sampledData.length - 1] !== filteredData[filteredData.length - 1]) {
+        sampledData.push(filteredData[filteredData.length - 1]);
+      }
+      filteredData = sampledData;
+    }
+    
+    console.log('过滤后6小时数据点数量:', filteredData.length);
   } else if (period === '24小时') {
-    // 所有数据点
-    filteredData = memoryData.memoryTrend;
+    // 所有24小时数据点
+    const dayAgo = new Date(now.getTime() - 3600000 * 24);
+    filteredData = memoryData.memoryTrend.filter(point => {
+      const pointDate = new Date(point.timestamp);
+      return pointDate >= dayAgo;
+    });
+    
+    // 如果数据点太多，进行采样
+    if (filteredData.length > 24) {
+      const step = Math.floor(filteredData.length / 24);
+      const sampledData = [];
+      for (let i = 0; i < filteredData.length; i += step) {
+        sampledData.push(filteredData[i]);
+      }
+      // 确保最新的点也包含在内
+      if (sampledData.length > 0 && sampledData[sampledData.length - 1] !== filteredData[filteredData.length - 1]) {
+        sampledData.push(filteredData[filteredData.length - 1]);
+      }
+      filteredData = sampledData;
+    }
+    
+    console.log('过滤后24小时数据点数量:', filteredData.length);
+  } else {
+    console.warn('未知的时间段:', period, '使用所有数据');
+    filteredData = [...memoryData.memoryTrend];
   }
   
-  // 如果没有足够数据，生成模拟数据
-  if (filteredData.length < 6) {
+  // 确保数据点按时间排序 (从旧到新)
+  filteredData.sort((a, b) => {
+    return new Date(a.timestamp) - new Date(b.timestamp);
+  });
+  
+  // 如果仍然没有足够数据点，尝试基于现有数据生成更多点
+  if (filteredData.length < 2) {
+    console.log('数据点不足，生成额外数据点');
+    
+    // 如果没有任何数据点，使用当前内存数据创建一个起点
+    if (filteredData.length === 0) {
+      console.log('没有数据点，使用当前内存创建初始点');
+      const baseMemory = memoryData.totalMemory.used || 1000;
+      const baseHeap = memoryData.heapMemory.used || 600;
+      
+      filteredData.push({
+        timestamp: now.toISOString(),
+        used: baseMemory,
+        heap: baseHeap
+      });
+    }
+    
+    const basePoint = filteredData[0];
+    const baseMemory = basePoint.used || 0;
+    const baseHeap = basePoint.heap || 0;
+    const baseTime = new Date(basePoint.timestamp);
+    
+    // 生成额外的点
     const pointCount = period === '1小时' ? 6 : period === '6小时' ? 12 : 24;
-    filteredData = generateMockTrendData(pointCount, period);
+    const timeStep = period === '1小时' ? 10 : period === '6小时' ? 30 : 60; // 分钟
+    
+    for (let i = 1; i < pointCount; i++) {
+      const newTime = new Date(baseTime);
+      newTime.setMinutes(newTime.getMinutes() - (timeStep * i));
+      
+      // 随机波动程度根据时间段调整
+      const variationRange = period === '1小时' ? 0.05 : period === '6小时' ? 0.1 : 0.15;
+      const variation = (Math.random() * 2 * variationRange) - variationRange;
+      const newMemory = Math.max(0, Math.round(baseMemory * (1 + variation)));
+      const newHeap = Math.max(0, Math.round(baseHeap * (1 + variation)));
+      
+      filteredData.push({
+        timestamp: newTime.toISOString(),
+        used: newMemory,
+        heap: newHeap
+      });
+    }
+    
+    // 重新排序
+    filteredData.sort((a, b) => {
+      return new Date(a.timestamp) - new Date(b.timestamp);
+    });
+    
+    console.log('生成后数据点数量:', filteredData.length);
   }
   
   // 更新图表
@@ -1062,273 +1477,31 @@ function generateMockTrendData(pointCount, period) {
 }
 
 /**
- * 页面初始化
+ * 初始化事件监听和页面数据
  */
-document.addEventListener('DOMContentLoaded', async function() {
-  console.log('内存监控页面初始化...');
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('页面加载完成，初始化内存监控...');
   
-  // 确保关键元素存在
-  if (!elements.memoryTrendChart) {
-    console.error('找不到内存趋势图表容器元素!');
-    showNotification('错误', '页面初始化失败: 找不到图表容器', 'error');
-  } else {
-    console.log('图表容器已找到:', elements.memoryTrendChart);
-    // 设置图表容器尺寸，确保图表可见
-    elements.memoryTrendChart.style.height = '300px';
-    elements.memoryTrendChart.style.width = '100%';
-  }
+  // 初始化DOM元素
+  initElements();
   
-  // 确保Chart.js已加载
-  if (typeof Chart === 'undefined') {
-    console.error('Chart.js未加载! 请检查页面依赖项');
-    showNotification('错误', '页面初始化失败: Chart.js未加载', 'error');
-  } else {
-    console.log('Chart.js已加载, 版本:', Chart.version);
-  }
-  
-  // 初始化事件监听
-  initEventListeners();
-  
-  // 初始化图表周期按钮
-  initChartPeriodButtons();
-  
-  // 添加调试按钮
-  addDebugButton();
-  
-  // 加载内存数据
-  try {
-    console.log('开始加载内存数据...');
-    const success = await loadMemoryStats();
-    if (success) {
-      console.log('内存数据加载成功，启动自动刷新');
-      // 启动自动刷新 (每30秒)
-      startAutoRefresh(30000);
+  // 检查API状态
+  checkApiStatus().then((status) => {
+    if (status.available) {
+      // 加载数据
+      loadMemoryStats();
+      
+      // 设置定时刷新
+      startAutoRefresh();
+      
+      // 初始化事件监听器
+      initEventListeners();
+      
+      // 初始化图表周期按钮
+      initChartPeriodButtons();
     } else {
-      console.warn('内存数据加载失败，不启动自动刷新');
-      showNotification('警告', '数据加载失败，请检查网络连接', 'warning');
-    }
-  } catch (error) {
-    console.error('初始化过程中出错:', error);
-    showNotification('错误', '页面初始化失败: ' + error.message, 'error');
-  }
-  
-  // 设置退出时清理
-  window.addEventListener('beforeunload', function() {
-    stopAutoRefresh();
-  });
-  
-  console.log('内存监控页面初始化完成');
-});
-
-/**
- * 添加调试按钮 - 帮助排查API问题
- */
-function addDebugButton() {
-  // 已经存在就不重复添加
-  if (document.getElementById('debugApiBtn')) return;
-  
-  // 创建调试按钮
-  const debugBtn = document.createElement('button');
-  debugBtn.id = 'debugApiBtn';
-  debugBtn.className = 'btn btn-outline btn-sm';
-  debugBtn.title = '调试API连接';
-  debugBtn.innerHTML = '<i class="ri-bug-line"></i> 调试';
-  debugBtn.style.position = 'fixed';
-  debugBtn.style.bottom = '20px';
-  debugBtn.style.right = '20px';
-  debugBtn.style.zIndex = '999';
-  
-  // 添加事件监听
-  debugBtn.addEventListener('click', showApiDebugInfo);
-  
-  // 添加到页面
-  document.body.appendChild(debugBtn);
-}
-
-/**
- * 显示API调试信息
- */
-function showApiDebugInfo() {
-  console.log('显示API调试信息...');
-  
-  // 收集调试信息
-  const debugInfo = {
-    env: window.ENV,
-    apiUrl: getApiBaseUrl(),
-    chartStatus: {
-      container: elements.memoryTrendChart ? {
-        width: elements.memoryTrendChart.clientWidth,
-        height: elements.memoryTrendChart.clientHeight,
-        visible: elements.memoryTrendChart.offsetParent !== null
-      } : null,
-      instance: memoryChart ? true : false
-    },
-    memoryData: memoryData ? {
-      hasData: !!memoryData,
-      hasMemoryTrend: !!(memoryData && memoryData.memoryTrend),
-      trendLength: memoryData && memoryData.memoryTrend ? memoryData.memoryTrend.length : 0
-    } : null,
-    chartJs: {
-      loaded: typeof Chart !== 'undefined',
-      version: typeof Chart !== 'undefined' ? Chart.version : null
-    }
-  };
-  
-  console.log('API调试信息:', debugInfo);
-  
-  // 创建可视化调试信息
-  let content = `
-    <div style="max-height: 500px; overflow-y: auto;">
-      <h3>API调试信息</h3>
-      <div style="margin: 10px 0;">
-        <strong>环境配置:</strong>
-        <pre>${JSON.stringify(debugInfo.env, null, 2)}</pre>
-      </div>
-      <div style="margin: 10px 0;">
-        <strong>API地址:</strong> ${debugInfo.apiUrl}
-      </div>
-      <div style="margin: 10px 0;">
-        <strong>图表状态:</strong>
-        <pre>${JSON.stringify(debugInfo.chartStatus, null, 2)}</pre>
-      </div>
-      <div style="margin: 10px 0;">
-        <strong>数据状态:</strong>
-        <pre>${JSON.stringify(debugInfo.memoryData, null, 2)}</pre>
-      </div>
-      <div style="margin: 10px 0;">
-        <strong>Chart.js状态:</strong>
-        <pre>${JSON.stringify(debugInfo.chartJs, null, 2)}</pre>
-      </div>
-      <div style="margin-top: 15px;">
-        <button id="forceRefreshBtn" class="btn btn-primary">强制刷新数据</button>
-        <button id="clearMockDataBtn" class="btn btn-error">清除模拟数据</button>
-        <button id="regenerateChartBtn" class="btn btn-warning">重新生成图表</button>
-      </div>
-    </div>
-  `;
-  
-  // 创建模态窗口
-  const modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.innerHTML = `
-    <div class="modal-overlay"></div>
-    <div class="modal-container">
-      <div class="modal-header">
-        <h3>API调试</h3>
-        <button class="modal-close">&times;</button>
-      </div>
-      <div class="modal-body">
-        ${content}
-      </div>
-    </div>
-  `;
-  
-  // 添加样式
-  const style = document.createElement('style');
-  style.textContent = `
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-    }
-    .modal-container {
-      position: relative;
-      background-color: var(--card-bg-color, #fff);
-      border-radius: 8px;
-      max-width: 80%;
-      width: 600px;
-      max-height: 80%;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-      z-index: 1001;
-    }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px;
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-    }
-    .modal-close {
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: var(--secondary-text-color, #718096);
-    }
-    .modal-body {
-      padding: 15px;
-      overflow-y: auto;
-    }
-    pre {
-      background-color: var(--card-bg-color, #f7fafc);
-      border: 1px solid var(--border-color, #e2e8f0);
-      padding: 10px;
-      border-radius: 4px;
-      overflow-x: auto;
-      font-size: 12px;
-    }
-    .btn {
-      margin-right: 10px;
-    }
-  `;
-  
-  // 添加到页面
-  document.head.appendChild(style);
-  document.body.appendChild(modal);
-  
-  // 关闭按钮事件
-  const closeBtn = modal.querySelector('.modal-close');
-  closeBtn.addEventListener('click', () => {
-    modal.remove();
-  });
-  
-  // 点击遮罩关闭
-  const overlay = modal.querySelector('.modal-overlay');
-  overlay.addEventListener('click', () => {
-    modal.remove();
-  });
-  
-  // 强制刷新按钮事件
-  const forceRefreshBtn = modal.querySelector('#forceRefreshBtn');
-  forceRefreshBtn.addEventListener('click', async () => {
-    modal.remove();
-    await loadMemoryStats();
-  });
-  
-  // 清除模拟数据按钮事件
-  const clearMockDataBtn = modal.querySelector('#clearMockDataBtn');
-  clearMockDataBtn.addEventListener('click', () => {
-    window.ENV.USE_MOCK_DATA = false;
-    modal.remove();
-    showNotification('提示', '已切换到真实API模式', 'info');
-    loadMemoryStats();
-  });
-  
-  // 重新生成图表按钮事件
-  const regenerateChartBtn = modal.querySelector('#regenerateChartBtn');
-  regenerateChartBtn.addEventListener('click', () => {
-    if (memoryData && memoryData.memoryTrend) {
-      updateMemoryTrendChart(memoryData.memoryTrend);
-      modal.remove();
-    } else {
-      showNotification('错误', '没有可用的内存趋势数据', 'error');
+      console.error('API不可用，无法加载内存数据');
+      showNotification('错误', 'API服务不可用，请检查服务器状态', 'error');
     }
   });
-}
-
-// 添加日志的全局函数
-window.addLog = addLog; 
+}); 

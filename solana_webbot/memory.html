@@ -6,24 +6,20 @@
   <title>Solana MEV机器人 - 内存监控</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.min.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/memory.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
   <!-- 环境变量注入 -->
   <script>
     // 全局环境变量对象
     window.ENV = {
-      API_URL: '/api',
+      API_URL: 'http://localhost:8080',
       API_PORT: '8080',
       USE_MOCK_DATA: false // 强制禁用模拟数据
     };
     
-    // 始终使用真实API数据
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      window.ENV.API_URL = 'http://localhost:8080/api';
-      
-      // 添加调试信息
-      console.log('本地开发环境，连接真实API');
-      console.log('API请求将使用路径:', window.ENV.API_URL);
-    }
+    // 添加调试信息
+    console.log('本地开发环境，使用统一API服务器');
+    console.log('API请求将使用路径:', window.ENV.API_URL);
     
     // 输出环境信息到控制台
     console.log('当前环境配置:', window.ENV);
@@ -34,145 +30,6 @@
       return window.ENV.API_URL;
     };
   </script>
-  <style>
-    /* 内存监控页面特定样式 */
-    .memory-card {
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .memory-details {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 0.5rem;
-      font-size: 0.875rem;
-      color: var(--secondary-text-color);
-    }
-    
-    /* 修改内存统计卡片样式，使其铺满整行 */
-    .content-area .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      width: 100%;
-      margin-bottom: 1rem;
-    }
-    
-    /* 响应式布局，在小屏幕上调整为两列或一列 */
-    @media (max-width: 1024px) {
-      .content-area .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    
-    @media (max-width: 640px) {
-      .content-area .stats-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    
-    .suggestion-item {
-      padding: 0.75rem;
-      margin-bottom: 0.5rem;
-      border-radius: var(--border-radius);
-      background-color: rgba(99, 179, 237, 0.1);
-      border-left: 3px solid var(--info-color);
-    }
-    
-    .memory-consumption-row {
-      display: flex;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid var(--border-color);
-      align-items: center;
-    }
-    
-    .memory-consumption-row:last-child {
-      border-bottom: none;
-    }
-    
-    .consumption-module {
-      flex: 2;
-    }
-    
-    .consumption-usage {
-      flex: 1;
-      text-align: right;
-    }
-    
-    .consumption-status {
-      flex: 1;
-      text-align: center;
-    }
-    
-    .consumption-updated {
-      flex: 1;
-      text-align: right;
-      font-size: 0.75rem;
-      color: var(--secondary-text-color);
-    }
-    
-    .memory-log-entry {
-      padding: 0.5rem 0;
-      display: flex;
-      align-items: center;
-      border-bottom: 1px solid var(--border-color);
-    }
-    
-    .memory-log-entry:last-child {
-      border-bottom: none;
-    }
-    
-    .log-level-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      margin-right: 0.5rem;
-      font-size: 10px;
-      color: white;
-    }
-    
-    .log-level-badge.info {
-      background-color: var(--info-color);
-    }
-    
-    .log-level-badge.warning {
-      background-color: var(--warning-color);
-    }
-    
-    .log-level-badge.error {
-      background-color: var(--error-color);
-    }
-    
-    .leak-item {
-      padding: 0.75rem;
-      margin-bottom: 0.5rem;
-      border-radius: var(--border-radius);
-      background-color: rgba(252, 129, 129, 0.1);
-      border-left: 3px solid var(--error-color);
-    }
-    
-    .leak-header {
-      display: flex;
-      justify-content: space-between;
-      font-weight: 500;
-      margin-bottom: 0.25rem;
-    }
-    
-    .leak-details {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.875rem;
-      color: var(--secondary-text-color);
-    }
-    
-    .leak-suggestion {
-      margin-top: 0.5rem;
-      font-style: italic;
-    }
-  </style>
 </head>
 <body>
   <!-- 侧边栏 -->
@@ -208,22 +65,6 @@
         设置
       </a>
     </nav>
-    
-    <div class="system-status">
-      <div class="system-status-indicator">
-        <div class="status-dot running"></div>
-        <div class="status-text text-success">运行中</div>
-      </div>
-      <div class="text-secondary text-sm">运行时间: <span class="uptime">3小时15分钟</span></div>
-      <div class="control-buttons">
-        <button class="btn btn-error btn-sm" id="stopBtn" title="停止系统">
-          <i class="ri-stop-circle-line"></i> 停止
-        </button>
-        <button class="btn btn-primary btn-sm" id="startBtn" title="启动系统">
-          <i class="ri-play-circle-line"></i> 启动
-        </button>
-      </div>
-    </div>
   </div>
 
   <!-- 主内容区 -->
@@ -234,7 +75,7 @@
       </button>
       <h1 class="page-title">内存监控</h1>
       <div class="top-bar-right flex items-center gap-4">
-        <div class="current-date-time text-secondary text-sm">2023-11-26 15:32:45</div>
+        <div class="current-date-time text-secondary text-sm">--</div>
         <button class="btn btn-outline btn-sm btn-icon" id="optimizeMemory" title="优化内存">
           <i class="ri-settings-5-line"></i>
         </button>
@@ -249,39 +90,39 @@
       <div class="stats-grid">
         <div class="stat-card memory-card">
           <div class="stat-title">总内存使用</div>
-          <div class="stat-value"><span id="usedMemory">3482</span> MB</div>
+          <div class="stat-value"><span id="usedMemory">--</span> MB</div>
           <div class="progress-bar">
-            <div class="progress-fill memory" id="memoryBar" style="width: 42.5%"></div>
+            <div class="progress-fill memory" id="memoryBar" style="width: 0%"></div>
           </div>
           <div class="memory-details">
-            <span id="usedPercentage">42.5%</span>
-            <span id="totalMemory">总计: 8192 MB</span>
+            <span id="usedPercentage">--</span>
+            <span id="totalMemory">总计: -- MB</span>
           </div>
         </div>
         
         <div class="stat-card memory-card">
           <div class="stat-title">堆内存</div>
-          <div class="stat-value"><span id="heapUsed">2356</span> MB</div>
+          <div class="stat-value"><span id="heapUsed">--</span> MB</div>
           <div class="progress-bar">
-            <div class="progress-fill cpu" id="heapBar" style="width: 57.5%"></div>
+            <div class="progress-fill cpu" id="heapBar" style="width: 0%"></div>
           </div>
           <div class="memory-details">
-            <span id="heapPercentage">57.5%</span>
-            <span id="heapTotal">总计: 4096 MB</span>
+            <span id="heapPercentage">--</span>
+            <span id="heapTotal">总计: -- MB</span>
           </div>
         </div>
         
         <div class="stat-card">
           <div class="stat-title">峰值内存</div>
-          <div class="stat-value"><span id="peakMemory">4215</span> MB</div>
+          <div class="stat-value"><span id="peakMemory">--</span> MB</div>
           <div class="stat-indicator">
-            <i class="ri-time-line"></i> 最近峰值时间: 14:45
+            <i class="ri-time-line"></i> 最近峰值时间: <span id="peakTime">--</span>
           </div>
         </div>
         
         <div class="stat-card">
           <div class="stat-title">外部内存</div>
-          <div class="stat-value"><span id="externalMemory">312</span> MB</div>
+          <div class="stat-value"><span id="externalMemory">--</span> MB</div>
           <div class="stat-indicator">
             非V8管理的内存
           </div>
@@ -293,12 +134,14 @@
         <div class="card-header">
           <div class="card-title">内存趋势</div>
           <div class="flex gap-2">
-            <button class="btn btn-outline btn-sm">1小时</button>
-            <button class="btn btn-outline btn-sm active">6小时</button>
-            <button class="btn btn-outline btn-sm">24小时</button>
+            <button class="btn btn-outline btn-sm" data-period="1小时">1小时</button>
+            <button class="btn btn-outline btn-sm active" data-period="6小时">6小时</button>
+            <button class="btn btn-outline btn-sm" data-period="24小时">24小时</button>
           </div>
         </div>
-        <div class="chart-container" id="memoryTrendChart"></div>
+        <div class="chart-container" id="memoryTrendChart" style="height: 300px; position: relative;">
+          <canvas></canvas>
+        </div>
       </div>
       
       <!-- 内存优化建议区域 -->
@@ -311,6 +154,7 @@
         </div>
         <div class="card-body" id="suggestionsContainer">
           <!-- 建议会通过JavaScript动态加载 -->
+          <div class="text-secondary">加载中...</div>
         </div>
       </div>
       
@@ -330,6 +174,7 @@
         </div>
         <div class="card-body" id="consumptionPoints">
           <!-- 消耗点会通过JavaScript动态加载 -->
+          <div class="text-secondary">加载中...</div>
         </div>
       </div>
       
@@ -343,6 +188,7 @@
         </div>
         <div class="card-body" id="leaksContainer">
           <!-- 泄漏检测结果会通过JavaScript动态加载 -->
+          <div class="text-secondary">等待检测...</div>
         </div>
       </div>
       
@@ -356,6 +202,7 @@
         </div>
         <div class="card-body" id="logsContainer">
           <!-- 日志内容会通过JavaScript动态加载 -->
+          <div class="text-secondary">加载中...</div>
         </div>
       </div>
     </div>
@@ -363,7 +210,5 @@
 
   <script src="js/utils.js"></script>
   <script src="js/memory.js"></script>
-  
-  <!-- 旧的内联脚本已移至memory.js -->
 </body>
 </html> 

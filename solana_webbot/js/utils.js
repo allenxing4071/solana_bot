@@ -15,13 +15,13 @@ function getApiBaseUrl() {
     if (!window.ENV) {
         console.warn('[getApiBaseUrl] 环境变量未定义，使用默认API URL');
         window.ENV = {
-            API_URL: 'http://localhost:3000/api',
+            API_URL: 'http://localhost:8080',
             ENVIRONMENT: 'development',
-            USE_MOCK_DATA: true
+            USE_MOCK_DATA: false // 设置为false以使用真实API
         };
     }
     
-    return window.ENV.API_URL || 'http://localhost:3000/api';
+    return window.ENV.API_URL || 'http://localhost:8080';
 }
 
 // 设置API基础URL
@@ -49,13 +49,29 @@ function formatDateTime(dateStr, showTime = true) {
 }
 
 /**
- * 格式化数字，添加千位分隔符
+ * 格式化数字为中文单位（万、亿）
  * @param {number} num - 需要格式化的数字
  * @param {number} decimals - 小数位数
  * @returns {string} 格式化后的数字字符串
  */
 function formatNumber(num, decimals = 2) {
-  if (Number.isNaN(num)) return '0';
+  if (Number.isNaN(num) || num === undefined || num === null) return '0';
+  
+  // 使用中文的万、亿单位
+  if (num >= 100000000) { // 亿
+    return `${(num / 100000000).toFixed(2)}亿`;
+  } 
+  
+  if (num >= 10000) { // 万
+    return `${(num / 10000).toFixed(2)}万`;
+  }
+  
+  // 如果数字很小，使用科学计数法
+  if (num < 0.001 && num !== 0) {
+    return num.toExponential(2);
+  }
+  
+  // 其他情况使用标准千位分隔符
   return num.toLocaleString('zh-CN', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
@@ -132,7 +148,7 @@ async function fetchData(endpoint, options = {}) {
         if (!window.ENV) {
             console.warn('[fetchData] 环境变量未定义，初始化默认值');
             window.ENV = {
-                API_URL: 'http://localhost:8080/api',
+                API_URL: 'http://localhost:8080',
                 ENVIRONMENT: 'development',
                 USE_MOCK_DATA: false // 确保不使用模拟数据
             };
@@ -141,7 +157,10 @@ async function fetchData(endpoint, options = {}) {
         // 获取API基础URL
         const apiBaseUrl = getApiBaseUrl();
         
-        console.log('[fetchData] 请求API: ' + apiBaseUrl + endpoint);
+        // 确保endpoint以/开头
+        const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+        
+        console.log(`[fetchData] 请求API: ${apiBaseUrl}${formattedEndpoint}, USE_MOCK_DATA=${window.ENV.USE_MOCK_DATA}`);
         
         // 设置默认选项
         const defaultOptions = {
@@ -153,25 +172,20 @@ async function fetchData(endpoint, options = {}) {
         };
         
         // 合并选项
-        const requestOptions = { ...defaultOptions, ...options };
+        const mergedOptions = { ...defaultOptions, ...options };
         
-        // 发起请求
-        const response = await fetch(`${apiBaseUrl}${endpoint}`, requestOptions);
+        // 发送请求
+        const response = await fetch(`${apiBaseUrl}${formattedEndpoint}`, mergedOptions);
         
-        // 检查HTTP状态
+        // 检查响应状态
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(`HTTP错误 ${response.status}: ${response.statusText}`);
         }
         
         // 解析JSON响应
         const data = await response.json();
         
-        // 检查API响应状态
-        if (data && data.success === false) {
-            throw new Error(data.error || '请求失败');
-        }
-        
-        console.log('[fetchData] 响应数据:', data);
+        console.log(`[fetchData] 响应数据 (${formattedEndpoint}):`, data);
         
         // 确保响应始终是统一格式
         // 如果API返回的不是标准格式，进行适配
@@ -196,25 +210,101 @@ async function fetchData(endpoint, options = {}) {
 }
 
 /**
+ * 检查API服务是否正常运行
+ * @returns {Promise<boolean>} API是否可用
+ */
+async function checkApiStatus() {
+  try {
+    console.log('[checkApiStatus] 开始检查API状态...');
+    const apiUrl = getApiBaseUrl();
+    
+    // 使用状态检查接口
+    const statusEndpoint = `${apiUrl}/status`;
+    console.log(`[checkApiStatus] 请求状态检查: ${statusEndpoint}`);
+    
+    // 设置超时，避免长时间等待
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+    
+    const response = await fetch(statusEndpoint, {
+      signal: controller.signal,
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      }
+    });
+    
+    clearTimeout(timeoutId);
+    
+    // 如果服务器响应正常
+    if (response.ok) {
+      console.log('[checkApiStatus] API服务正常运行');
+      return true;
+    }
+    
+    console.warn(`[checkApiStatus] API服务响应异常: ${response.status} ${response.statusText}`);
+    return false;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error('[checkApiStatus] API请求超时');
+    } else {
+      console.error('[checkApiStatus] API健康检查失败:', error);
+    }
+    return false;
+  }
+}
+
+/**
+ * 格式化运行时间
+ * @param {number} uptime 运行时间（秒）
+ * @returns {string} 格式化后的运行时间
+ */
+function formatUptime(uptime) {
+  if (uptime === undefined || uptime === null) return '--';
+  
+  // 如果传入的是字符串形式（如 "3d 5h 10m"），直接返回
+  if (typeof uptime === 'string' && (uptime.includes('d') || uptime.includes('h') || uptime.includes('m'))) {
+    return uptime;
+  }
+  
+  // 转换为数字
+  const seconds = Number(uptime);
+  if (Number.isNaN(seconds)) return uptime;
+  
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  let result = '';
+  if (days > 0) result += `${days}天`;
+  if (hours > 0 || days > 0) result += `${hours}小时`;
+  result += `${minutes}分钟`;
+  
+  return result;
+}
+
+/**
  * 初始化系统状态
  * @returns {Promise<void>}
  */
 async function initSystemStatus() {
   try {
-    const data = await fetchData('system_status.json');
-    if (!data || !data.success || !data.data) {
+    const data = await fetchData('/api/status');
+    if (!data || !data.success) {
       console.error('[initSystemStatus] 无法获取系统状态数据');
       return;
     }
     
-    const systemStatus = data.data;
+    // 适配API返回格式的差异
+    const systemStatus = data.data || data;
     
     // 更新系统状态指示器
     const statusDot = document.querySelector('.status-dot');
     const statusText = document.querySelector('.status-text');
     
     if (statusDot && statusText) {
-      if (systemStatus.status === 'running【M】') {
+      if (systemStatus.status === 'running' || systemStatus.status === 'running【M】') {
         statusDot.className = 'status-dot running';
         statusText.textContent = '运行中';
         statusText.className = 'status-text text-success';

@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 加载代币数据
   async function loadTokensData() {
     try {
+      // 显示加载中状态
+      showLoading();
+      
       // 从API获取代币数据
       const url = `${getApiBaseUrl()}/tokens?t=${Date.now()}`;
       console.log(`从API获取代币数据: ${url}`);
@@ -25,17 +28,21 @@ document.addEventListener('DOMContentLoaded', async function() {
       const data = await response.json();
       console.log('收到API响应:', data);
       
-      if (!data.success) {
-        throw new Error('API返回错误: ' + (data.message || '未知错误'));
+      // 检查API响应是否成功且包含数据
+      if (!data.success || !data.data || data.data.length === 0) {
+        // 如果没有数据，显示"--"
+        hideLoading();
+        displayNoDataState();
+        return;
       }
       
       // 处理API返回的真实数据
       const tokensData = {
         stats: {
-          whitelistCount: data.stats?.active || 0,
-          blacklistCount: Math.floor(Math.random() * 20) + 5, // 模拟黑名单数量
+          whitelistCount: data.stats?.whitelistCount || 0,
+          blacklistCount: data.stats?.blacklistCount || 0,
           detectedToday: data.stats?.today_new || 0,
-          avgRiskScore: calculateAvgRiskScore(data.data) || 5.2
+          avgRiskScore: data.stats?.avgRiskScore || calculateAvgRiskScore(data.data) || 5.0
         },
         tokens: transformTokensData(data.data)
       };
@@ -54,9 +61,14 @@ document.addEventListener('DOMContentLoaded', async function() {
       
       // 更新最后更新时间
       document.querySelector('.last-updated').textContent = `最后更新: ${formatDateTime(new Date().toISOString())}`;
+      
+      // 隐藏加载状态
+      hideLoading();
     } catch (error) {
       console.error('加载代币数据失败:', error);
       showNotification('错误', `加载数据失败: ${error.message}`, 'error');
+      hideLoading();
+      displayNoDataState();
     }
   }
   
@@ -129,6 +141,45 @@ document.addEventListener('DOMContentLoaded', async function() {
         lastUpdated: new Date().toISOString()
       };
     });
+  }
+  
+  // 显示没有数据的状态，所有指标显示"--"
+  function displayNoDataState() {
+    // 更新统计数据为"--"
+    document.getElementById('whitelistCount').textContent = "--";
+    document.getElementById('blacklistCount').textContent = "--";
+    document.getElementById('detectedToday').textContent = "--";
+    document.getElementById('avgRiskScore').textContent = "--";
+    
+    // 清空代币数据
+    allTokens = [];
+    
+    // 更新表格显示无数据
+    const tableBody = document.getElementById('tokensTableBody');
+    if (tableBody) {
+      const emptyRow = document.createElement('tr');
+      emptyRow.innerHTML = '<td colspan="8" class="text-center">没有代币数据</td>';
+      tableBody.innerHTML = '';
+      tableBody.appendChild(emptyRow);
+    }
+    
+    // 清空网格视图
+    const gridContainer = document.getElementById('tokensGridContainer');
+    if (gridContainer) {
+      gridContainer.innerHTML = '<div class="empty-grid-message">没有代币数据</div>';
+    }
+    
+    // 清空分页
+    const paginationContainer = document.getElementById('tokensPagination');
+    if (paginationContainer) {
+      paginationContainer.innerHTML = '';
+    }
+    
+    // 更新最后更新时间
+    const lastUpdatedElement = document.querySelector('.last-updated');
+    if (lastUpdatedElement) {
+      lastUpdatedElement.textContent = `最后更新: ${formatDateTime(new Date().toISOString())}`;
+    }
   }
   
   /**
@@ -853,4 +904,24 @@ document.addEventListener('DOMContentLoaded', async function() {
       showNotification('错误', 'API服务不可用，请检查网络连接或服务器状态', 'error');
     }
   });
+
+  // 显示加载状态
+  function showLoading() {
+    const tableBody = document.getElementById('tokensTableBody');
+    if (tableBody) {
+      tableBody.innerHTML = `
+        <tr class="loading-state">
+          <td colspan="8">
+            <i class="ri-loader-4-line loading-spinner"></i>
+            <span>加载数据中...</span>
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  // 隐藏加载状态
+  function hideLoading() {
+    // 加载状态由内容替换，不需要特别处理
+  }
 }); 

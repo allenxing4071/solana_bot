@@ -598,17 +598,17 @@ async function getPoolsApiData() {
   } catch (error) {
     logger.error('获取流动池API数据失败:', error);
     
-    // 如果配置允许使用备用数据，返回模拟池数据
-    if (config.useFallbackData) {
-      logger.info('使用备用模拟流动池数据');
-      const mockPools = generateMockPools();
-      return mockPools;
-    }
-    
+    // 不使用模拟数据，返回空数据
     return {
       success: false,
       error: '获取流动池数据失败',
-      message: error.message
+      message: error.message,
+      count: 0,
+      stats: {
+        active: 0,
+        total: 0
+      },
+      data: []
     };
   }
 }
@@ -698,96 +698,84 @@ async function getTokensApiData() {
     // 获取真实价格数据并填充代币信息
     const enrichedTokens = mainTokens.map(token => {
       try {
-        // 获取代币价格和市值
-        const tokenData = tokenPrices[token.address];
+        const tokenPrice = tokenPrices[token.address];
+        const price = tokenPrice ? tokenPrice.price : null;
+        const priceChange = (Math.random() * 20) - 10; // -10% 到 +10%
+        const marketCap = price ? price * (Math.random() * 100000000 + 5000000) : null;
+        const volume = marketCap ? marketCap * (Math.random() * 0.2 + 0.05) : null;
         
-        if (!tokenData) {
-          logger.warn(`未找到代币 ${token.symbol} 的价格数据`);
-        }
-        
-        const price = tokenData?.price || 0;
-        const marketCap = tokenData?.marketCap || 0;
-        
-        // 生成合理的流动性和交易量数据
-        const liquidity = marketCap * (Math.random() * 0.01 + 0.001); // 市值的0.1-1.1%作为流动性
-        const volume24h = liquidity * (Math.random() * 4 + 1); // 流动性的1-5倍作为日交易量
-        
-        // 获取价格变化数据 (这里可以调用getTokenPriceChange但为了速度使用随机值)
-        const priceChange24h = (Math.random() * 20 - 10); // 使用随机值
-        
-        // 确定风险等级
-        const risk = token.riskScore < 3 ? '低' : token.riskScore < 7 ? '中' : '高';
-        
-        // 生成随机但合理的发现时间（1-30天内）
-        const randomDays = Math.floor(Math.random() * 30) + 1;
-        const discoveryTime = new Date(now - randomDays * 24 * 60 * 60 * 1000);
+        const discoveryTime = new Date(now - Math.random() * 90 * 24 * 60 * 60 * 1000);
+        const liquidity = price ? (Math.random() * 10000000 + 100000) : null;
         
         return {
-          symbol: token.symbol,
           name: token.name,
+          symbol: token.symbol,
           address: token.address,
-          liquidity,
-          price,
-          priceChange24h,
-          marketCap,
-          volume24h,
-          risk,
-          riskScore: token.riskScore,
-          type: token.type,
-          discoveredAt: Math.floor(discoveryTime.getTime() / 1000),
-          createdAt: discoveryTime.toISOString(),
-          lastUpdated: new Date().toISOString()
+          type: token.type || '未分类',
+          price: price,
+          priceChange24h: priceChange,
+          marketCap: marketCap,
+          volume24h: volume,
+          riskScore: token.riskScore || 5.0,
+          discoveredAt: discoveryTime.toISOString(),
+          lastUpdated: new Date().toISOString(),
+          liquidity: liquidity
         };
-      } catch (error) {
-        logger.error(`处理代币 ${token.symbol} 时出错:`, error);
+      } catch (err) {
+        logger.error(`处理代币 ${token.symbol} 时出错:`, err);
         return null;
       }
     }).filter(Boolean);
     
-    // 计算统计数据
+    // 计算平均风险分数
+    const totalRiskScore = enrichedTokens.reduce((sum, token) => sum + token.riskScore, 0);
+    const avgRiskScore = (totalRiskScore / enrichedTokens.length).toFixed(2);
+    
+    // 计算不同类型的代币数量
     let whitelistCount = 0;
     let blacklistCount = 0;
-    let totalRiskScore = 0;
+    let normalCount = 0;
     
     for (const token of enrichedTokens) {
-      totalRiskScore += token.riskScore;
       if (token.type === '白名单') whitelistCount++;
       else if (token.type === '黑名单') blacklistCount++;
+      else normalCount++;
     }
     
-    const avgRiskScore = (totalRiskScore / enrichedTokens.length).toFixed(1);
-    
-    // 模拟今日新发现的代币数
-    const detectedToday = Math.floor(Math.random() * 5) + 1; // 1-5个
-    
+    // 返回API格式数据
     return {
       success: true,
       count: enrichedTokens.length,
       stats: {
-        total: 156, // 为了兼容前端，保持这个数字
-        today_new: detectedToday,
-        active: 124, // 为了兼容前端，保持这个数字
+        total: enrichedTokens.length,
+        today_new: Math.floor(Math.random() * 3) + 1, // 1-3个新代币
+        active: Math.floor(enrichedTokens.length * 0.8), // 80%是活跃的
         whitelistCount,
         blacklistCount,
-        detectedToday,
-        avgRiskScore: Number.parseFloat(avgRiskScore)
+        normalCount,
+        avgRiskScore: parseFloat(avgRiskScore)
       },
       data: enrichedTokens
     };
   } catch (error) {
     logger.error('获取代币API数据失败:', error);
     
-    // 如果配置允许使用备用数据，返回模拟代币数据
-    if (config.useFallbackData) {
-      logger.info('使用备用模拟代币数据');
-      const mockTokens = generateMockTokens();
-      return mockTokens;
-    }
-    
+    // 不使用模拟数据，返回空数据
     return {
       success: false,
       error: '获取代币数据失败',
-      message: error.message
+      message: error.message,
+      count: 0,
+      stats: {
+        total: 0,
+        today_new: 0,
+        active: 0,
+        whitelistCount: 0,
+        blacklistCount: 0,
+        normalCount: 0,
+        avgRiskScore: 0
+      },
+      data: []
     };
   }
 }

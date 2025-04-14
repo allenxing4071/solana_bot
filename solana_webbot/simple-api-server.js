@@ -549,65 +549,19 @@ async function fetchSolanaPools() {
     return result;
   } catch (error) {
     console.error('获取Solana流动池数据失败:', error);
-    // 出错时返回模拟数据
-    return generateMockPools();
-  }
-}
-
-// 生成模拟流动池数据（用于出错时的备选方案）
-function generateMockPools() {
-  const pools = [];
-  
-  // 交易所选项
-  const dexOptions = ['Raydium', 'Orca', 'Meteora', 'Lifinity', 'Cykura'];
-  
-  // 生成10个池子记录
-  for (let i = 0; i < 10; i++) {
-    const isActive = Math.random() > 0.3; // 70%概率是活跃的
-    const token0Symbol = `${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    const token1Symbol = Math.random() > 0.5 ? 'SOL' : 'USDC';
-    const name = `${token0Symbol}/${token1Symbol}`;
-    const dex = dexOptions[Math.floor(Math.random() * dexOptions.length)];
-    const address = `pool${Math.random().toString(36).substring(2, 10)}`;
-    const liquidity = (Math.random() * 5000 + 500).toFixed(2);
-    const volume24h = (Math.random() * 2000 + 200).toFixed(2);
-    const apy = (Math.random() * 20 + 2).toFixed(2);
-    const price = (Math.random() * 100).toFixed(4);
-    const priceChange24h = (Math.random() * 10 - 5).toFixed(2);
-    
-    pools.push({
-      name,
-      address,
-      dex,
-      isActive,
-      liquidity: parseFloat(liquidity),
-      volume24h: parseFloat(volume24h),
-      apy: parseFloat(apy),
-      price: parseFloat(price),
-      priceChange24h: parseFloat(priceChange24h),
-      token0: {
-        symbol: token0Symbol,
-        name: `${token0Symbol} Token`,
-        address: `addr${Math.random().toString(36).substring(2, 10)}`
+    // 出错时返回空数据，不使用模拟数据
+    return {
+      success: false,
+      error: '获取流动池数据失败',
+      message: error.message,
+      count: 0,
+      stats: {
+        active: 0,
+        total: 0
       },
-      token1: {
-        symbol: token1Symbol,
-        name: token1Symbol === 'SOL' ? 'Solana' : 'USD Coin',
-        address: token1Symbol === 'SOL' ? 'So11111111111111111111111111111111111111112' : 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
-      },
-      lastUpdated: new Date().toISOString()
-    });
+      data: []
+    };
   }
-  
-  return {
-    success: true,
-    count: pools.length,
-    stats: {
-      active: 32,
-      total: 45
-    },
-    data: pools
-  };
 }
 
 // 添加全局错误处理，防止未捕获的异常导致进程崩溃

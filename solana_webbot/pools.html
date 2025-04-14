@@ -232,55 +232,104 @@
       // 加载流动性池数据
       async function loadPoolsData() {
         try {
-          const data = await fetchData('/api/pools');
-          if (!data || !data.success) {
-            showNotification('错误', '无法加载流动性池数据', 'error');
+          // 显示加载中状态
+          showLoading();
+          
+          // 获取流动性池数据
+          const response = await fetch('/api/pools');
+          const data = await response.json();
+          
+          if (!data.success || !data.data || data.data.length === 0) {
+            // 如果请求不成功或没有数据，显示无数据状态
+            hideLoading();
+            
+            // 更新统计数据为"--"
+            document.getElementById('totalPools').textContent = "--";
+            document.getElementById('totalValue').textContent = "--";
+            document.getElementById('avgVolume').textContent = "--";
+            document.getElementById('mostActiveDex').textContent = "--";
+            
+            // 更新流动性池总数为"--"
+            const statIndicator = document.querySelector('.stat-indicator:first-of-type');
+            if (statIndicator) {
+              statIndicator.textContent = `流动性池总数 --/--`;
+            }
+            
+            // 更新表格显示无数据
+            const tableBody = document.getElementById('poolsTableBody');
+            if (tableBody) {
+              const emptyRow = document.createElement('tr');
+              emptyRow.innerHTML = '<td colspan="8" class="text-center">没有流动性池数据</td>';
+              tableBody.innerHTML = '';
+              tableBody.appendChild(emptyRow);
+            }
+            
+            // 清空分页
+            const paginationContainer = document.getElementById('poolsPagination');
+            if (paginationContainer) {
+              paginationContainer.innerHTML = '';
+            }
+            
             return;
           }
           
-          // 存储所有池子数据
-          allPools = data.data;
+          // 隐藏加载中状态
+          hideLoading();
+          
+          // 提取流动性池数据
+          allPools = data.data || [];
           
           // 计算统计数据
-          // 总锁定价值
-          const totalValue = allPools.reduce((sum, pool) => sum + pool.liquidity, 0);
+          let totalValue = 0;
+          let avgVolume = 0;
+          let mostActiveDex = '';
+          let maxDexVolume = 0;
           
-          // 平均交易量
-          const avgVolume = allPools.reduce((sum, pool) => sum + pool.volume24h, 0) / allPools.length;
-          
-          // 找出最活跃的DEX
+          // 创建按交易所分类的交易量映射
           const dexVolumes = {};
+          
           for (const pool of allPools) {
-            if (!dexVolumes[pool.dex]) {
-              dexVolumes[pool.dex] = 0;
+            totalValue += pool.liquidity || 0;
+            avgVolume += pool.volume24h || 0;
+            
+            // 计算每个交易所的交易量
+            const dex = pool.dex;
+            if (dex) {
+              if (!dexVolumes[dex]) {
+                dexVolumes[dex] = 0;
+              }
+              dexVolumes[dex] += pool.volume24h || 0;
             }
-            dexVolumes[pool.dex] += pool.volume24h;
           }
           
-          let mostActiveDex = '';
-          let maxVolume = 0;
+          // 找出交易量最大的交易所
           for (const [dex, volume] of Object.entries(dexVolumes)) {
-            if (volume > maxVolume) {
-              maxVolume = volume;
+            if (volume > maxDexVolume) {
+              maxDexVolume = volume;
               mostActiveDex = dex;
             }
           }
           
-          // 收集所有交易所名称
+          // 计算平均交易量
+          avgVolume = allPools.length > 0 ? avgVolume / allPools.length : 0;
+          
+          // 提取交易所列表
           exchanges = [...new Set(allPools.map(pool => pool.dex))];
           
           // 更新统计数据
-          document.getElementById('totalPools').textContent = data.stats.total || allPools.length;
-          document.getElementById('totalValue').textContent = '$' + formatNumber(totalValue);
-          document.getElementById('avgVolume').textContent = '$' + formatNumber(avgVolume);
-          document.getElementById('mostActiveDex').textContent = mostActiveDex;
+          document.getElementById('totalPools').textContent = data.stats.total || allPools.length || "--";
+          document.getElementById('totalValue').textContent = totalValue ? ('$' + formatNumber(totalValue)) : "--";
+          document.getElementById('avgVolume').textContent = avgVolume ? ('$' + formatNumber(avgVolume)) : "--";
+          document.getElementById('mostActiveDex').textContent = mostActiveDex || "--";
           
           // 计算出活跃池的数量并更新流动性池总数
           const activePools = allPools.filter(pool => pool.isActive).length;
           const totalPools = allPools.length;
           const statIndicator = document.querySelector('.stat-indicator:first-of-type');
           if (statIndicator) {
-            statIndicator.textContent = `流动性池总数 ${activePools}/${totalPools}`;
+            statIndicator.textContent = totalPools > 0 
+              ? `流动性池总数 ${activePools}/${totalPools}`
+              : `流动性池总数 --/--`;
           }
           
           // 更新最后更新时间
@@ -305,8 +354,39 @@
           };
           initPagination(pagination);
         } catch (error) {
+          // 出错时显示错误信息并显示"--"
           console.error('加载流动性池数据失败:', error);
           showNotification('错误', '加载流动性池数据时发生错误', 'error');
+          
+          // 隐藏加载中状态
+          hideLoading();
+          
+          // 更新统计数据为"--"
+          document.getElementById('totalPools').textContent = "--";
+          document.getElementById('totalValue').textContent = "--";
+          document.getElementById('avgVolume').textContent = "--";
+          document.getElementById('mostActiveDex').textContent = "--";
+          
+          // 更新流动性池总数为"--"
+          const statIndicator = document.querySelector('.stat-indicator:first-of-type');
+          if (statIndicator) {
+            statIndicator.textContent = `流动性池总数 --/--`;
+          }
+          
+          // 更新表格显示错误信息
+          const tableBody = document.getElementById('poolsTableBody');
+          if (tableBody) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.innerHTML = '<td colspan="8" class="text-center">加载数据时发生错误</td>';
+            tableBody.innerHTML = '';
+            tableBody.appendChild(emptyRow);
+          }
+          
+          // 清空分页
+          const paginationContainer = document.getElementById('poolsPagination');
+          if (paginationContainer) {
+            paginationContainer.innerHTML = '';
+          }
         }
       }
       

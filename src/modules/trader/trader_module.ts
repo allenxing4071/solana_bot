@@ -123,12 +123,12 @@ const MODULE_NAME = 'TraderModule';
  * private = 内部事务：只有部门内部才能接触的事务和数据
  */
 export class TraderModule extends EventEmitter {
-  private walletManager: WalletManager;
-  private transactionBuilder: TransactionBuilder;
-  private tokenValidator: TokenValidator;
-  private riskManager: RiskManager;
-  private opportunityDetector: OpportunityDetector;
-  private strategyManager: StrategyManager;
+  private walletManager: WalletManager = {} as WalletManager;
+  private transactionBuilder: TransactionBuilder = {} as TransactionBuilder;
+  private tokenValidator: TokenValidator = {} as TokenValidator;
+  private riskManager: RiskManager = {} as RiskManager;
+  private opportunityDetector: OpportunityDetector = {} as OpportunityDetector;
+  private strategyManager: StrategyManager = {} as StrategyManager;
   private isRunning = false;
   private isExecuting = false;
   private activeOpportunities: Map<string, TradingOpportunity> = new Map();

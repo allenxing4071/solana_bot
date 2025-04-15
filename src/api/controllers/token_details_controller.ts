@@ -96,20 +96,22 @@ export const getTokenDetails = async (req: Request, res: Response): Promise<void
     const tokenAddress = req.query.address as string;
     
     if (!tokenAddress) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: '代币地址参数不能为空'
       });
+      return;
     }
     
     // 查找代币
     const token = mockTokens.find(t => t.address.includes(tokenAddress));
     
     if (!token) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: '找不到该代币'
       });
+      return;
     }
     
     // 返回代币详情

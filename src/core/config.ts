@@ -103,6 +103,27 @@ interface SellStrategyConfig {
 }
 
 /**
+ * API服务配置
+ */
+const apiConfig = {
+  // API端口，默认为8080
+  port: process.env.API_PORT ? parseInt(process.env.API_PORT) : 8080,
+  
+  // 是否使用模拟数据
+  useMockData: process.env.USE_MOCK_DATA === 'true',
+  
+  // CORS设置
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  },
+  
+  // 静态文件目录
+  staticDir: process.env.STATIC_DIR || 'public'
+};
+
+/**
  * 完整配置接口
  */
 export interface AppConfig {
@@ -115,6 +136,7 @@ export interface AppConfig {
   notification: NotificationConfig;
   logging: LoggingConfig;
   jitoMev: JitoConfig;
+  api: typeof apiConfig;
 }
 
 /**
@@ -382,7 +404,8 @@ function buildConfig() {
     security: getSecurityConfig(),
     notification: getNotificationConfig(),
     logging: getLoggingConfig(),
-    jitoMev: getJitoConfig()
+    jitoMev: getJitoConfig(),
+    api: apiConfig
   };
 }
 

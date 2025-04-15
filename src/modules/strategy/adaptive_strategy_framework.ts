@@ -604,10 +604,10 @@ export class AdaptiveStrategyFramework {
     }
     
     // 检查滑点是否在可接受范围内
-    if (opportunity.estimatedSlippage > activeStrategy.buyConditions.maxSlippage) {
+    if (opportunity.estimatedSlippage !== undefined && opportunity.estimatedSlippage > activeStrategy.buyConditions.maxSlippage) {
       logger.debug(
         MODULE_NAME,
-        `预计网具损耗过大 (滑点: ${opportunity.estimatedSlippage.toFixed(2)}%, 最大接受: ${activeStrategy.buyConditions.maxSlippage.toFixed(2)}%)`
+        `预计网具损耗过大 (滑点: ${opportunity.estimatedSlippage?.toFixed(2) || 'unknown'}%, 最大接受: ${activeStrategy.buyConditions.maxSlippage.toFixed(2)}%)`
       );
       return false;
     }
@@ -624,7 +624,7 @@ export class AdaptiveStrategyFramework {
     // 如果所有条件都满足，则推荐买入
     logger.info(
       MODULE_NAME,
-      `发现值得捕捞的鱼群! 代币: ${opportunity.tokenSymbol}, 预计收益: ${opportunity.estimatedProfit.toFixed(2)}%, 策略: ${activeStrategy.name}`
+      `发现值得捕捞的鱼群! 代币: ${opportunity.tokenSymbol}, 预计收益: ${opportunity.estimatedProfit?.toFixed(2) || 'unknown'}%, 策略: ${activeStrategy.name}`
     );
     
     return true;
@@ -647,10 +647,10 @@ export class AdaptiveStrategyFramework {
         case StrategyType.TAKE_PROFIT: {
           // 检查是否达到目标利润
           const takeProfitPercentage = condition.percentage || 0;
-          if (position.currentProfitPercentage >= takeProfitPercentage) {
+          if (position.currentProfitPercentage !== undefined && position.currentProfitPercentage >= takeProfitPercentage) {
             return {
               sell: true,
-              reason: `达到目标收益 (${position.currentProfitPercentage.toFixed(2)}% >= ${takeProfitPercentage.toFixed(2)}%)`
+              reason: `达到目标收益 (${position.currentProfitPercentage?.toFixed(2) || 'unknown'}% >= ${takeProfitPercentage.toFixed(2)}%)`
             };
           }
           break;
@@ -659,10 +659,10 @@ export class AdaptiveStrategyFramework {
         case StrategyType.STOP_LOSS: {
           // 检查是否触发止损
           const stopLossPercentage = condition.percentage || 0;
-          if (position.currentProfitPercentage <= -stopLossPercentage) {
+          if (position.currentProfitPercentage !== undefined && position.currentProfitPercentage <= -stopLossPercentage) {
             return {
               sell: true,
-              reason: `触发安全警报 (${position.currentProfitPercentage.toFixed(2)}% <= -${stopLossPercentage.toFixed(2)}%)`
+              reason: `触发安全警报 (${position.currentProfitPercentage?.toFixed(2) || 'unknown'}% <= -${stopLossPercentage.toFixed(2)}%)`
             };
           }
           break;

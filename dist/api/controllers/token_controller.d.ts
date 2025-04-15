@@ -2,7 +2,7 @@
  * 代币控制器
  * 处理与代币黑名单/白名单相关的所有请求
  */
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 /**
  * 获取所有黑名单代币
  * @param req 请求对象

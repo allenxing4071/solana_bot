@@ -15,13 +15,13 @@ function getApiBaseUrl() {
     if (!window.ENV) {
         console.warn('[getApiBaseUrl] 环境变量未定义，使用默认API URL');
         window.ENV = {
-            API_URL: 'http://localhost:8080',
+            API_URL: 'http://localhost:8080/api',
             ENVIRONMENT: 'development',
-            USE_MOCK_DATA: false // 设置为false以使用真实API
+            USE_MOCK_DATA: true // 设置为false以使用真实API
         };
     }
     
-    return window.ENV.API_URL || 'http://localhost:8080';
+    return window.ENV.API_URL || 'http://localhost:8080/api';
 }
 
 // 设置API基础URL

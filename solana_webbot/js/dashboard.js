@@ -565,7 +565,7 @@ async function fetchTokenDiscoveryTrend(period) {
         addLog(`正在获取${period}代币发现趋势...`, 'info');
         
         // 构建API URL
-        const apiUrl = `${getApiBaseUrl()}/token-trends`;
+        const apiUrl = `${getApiBaseUrl()}/api/token-trends`;
         console.log(`[fetchTokenDiscoveryTrend] 请求API: ${apiUrl}`);
         
         // 发起API请求
@@ -622,7 +622,7 @@ async function fetchProfitTrend(period) {
         addLog(`正在获取${period}利润趋势...`, 'info');
         
         // 构建API URL
-        const apiUrl = `${getApiBaseUrl()}/profit-trends`;
+        const apiUrl = `${getApiBaseUrl()}/api/profit-trends`;
         console.log(`[fetchProfitTrend] 请求API: ${apiUrl}`);
         
         // 发起API请求
@@ -683,8 +683,8 @@ async function fetchSystemData(showLoading = false) {
         console.log('[fetchSystemData] 开始获取系统数据...');
         
         // 构建API URL
-        const apiStatusUrl = `${getApiBaseUrl()}/system/status`;
-        const apiSystemInfoUrl = `${getApiBaseUrl()}/system/info`;
+        const apiStatusUrl = `${getApiBaseUrl()}/api/system/status`;
+        const apiSystemInfoUrl = `${getApiBaseUrl()}/api/system/info`;
         
         console.log(`[fetchSystemData] 请求状态API: ${apiStatusUrl}`);
         console.log(`[fetchSystemData] 请求系统信息API: ${apiSystemInfoUrl}`);
@@ -759,7 +759,7 @@ async function fetchRecentTrades() {
     
     try {
         // 构建API URL
-        const apiUrl = `${getApiBaseUrl()}/transactions`;
+        const apiUrl = `${getApiBaseUrl()}/api/transactions`;
         console.log(`[fetchRecentTrades] 请求API: ${apiUrl}`);
         
         const response = await fetch(apiUrl);
@@ -876,7 +876,7 @@ async function fetchRecentTokens() {
         console.log('[fetchRecentTokens] 开始获取代币数据');
         
         // 构建API URL
-        const apiUrl = `${getApiBaseUrl()}/tokens`;
+        const apiUrl = `${getApiBaseUrl()}/api/tokens`;
         console.log(`[fetchRecentTokens] 请求API: ${apiUrl}`);
         
         const response = await fetch(apiUrl);
@@ -1013,7 +1013,7 @@ async function fetchProfitSummary() {
         console.log('[fetchProfitSummary] 开始获取利润摘要数据');
         
         // 使用正确的profit/summary端点
-        const apiUrl = `${getApiBaseUrl()}/profit/summary`;
+        const apiUrl = `${getApiBaseUrl()}/api/profit-summary`;
         console.log(`[fetchProfitSummary] 请求API: ${apiUrl}`);
         
         const response = await fetch(apiUrl);
@@ -1701,7 +1701,7 @@ async function fetchPoolsData() {
         console.log('[fetchPoolsData] 开始获取池子数据');
         addLog('开始获取池子数据...', 'info');
         
-        const apiUrl = `${getApiBaseUrl()}/pools`;
+        const apiUrl = `${getApiBaseUrl()}/api/pools`;
         console.log(`[fetchPoolsData] 请求API: ${apiUrl}`);
         
         const response = await fetch(apiUrl);

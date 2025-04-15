@@ -8,16 +8,29 @@ import * as os from 'node:os';
 import * as v8 from 'node:v8';
 import logger from '../../core/logger';
 import { poolMonitor } from '../../modules/listener/pool_monitor';
+import appConfig from '../../core/config';
 
 // 模块名称
 const MODULE_NAME = 'SystemController';
 
+// 使用模拟数据标志 - 改为默认使用真实数据
+const USE_MOCK_DATA = false;
+
 // 全局系统状态
-let systemRunning = false; // 系统运行状态
-let systemStartTime = 0; // 系统启动时间
-let profitTotal = 0; // 累计收益
-let executedTradesCount = 0; // 已执行交易数量
-let memoryHistoryData: any[] = []; // 内存历史数据
+const systemState = {
+  running: false, // 系统运行状态
+  startTime: 0, // 系统启动时间
+  profitTotal: 0, // 累计收益
+  executedTradesCount: 0 // 已执行交易数量
+};
+
+// 内存历史数据
+interface MemoryDataPoint {
+  time: number;
+  value: number;
+}
+
+const memoryHistoryData: MemoryDataPoint[] = []; // 内存历史数据
 
 // 声明全局gc函数（Node.js在使用--expose-gc启动时提供）
 declare global {
@@ -51,6 +64,9 @@ setInterval(() => {
  */
 export const getSystemStatus = async (_req: Request, res: Response): Promise<void> => {
   try {
+    logger.info('获取系统状态', MODULE_NAME);
+    
+    // 直接获取真实系统状态
     // 获取内存使用情况
     const memoryUsage = process.memoryUsage();
     const totalMem = os.totalmem();
@@ -61,28 +77,29 @@ export const getSystemStatus = async (_req: Request, res: Response): Promise<voi
     const cpuUsage = os.loadavg()[0] * 10; // 转换为百分比
     
     // 获取系统运行时间
-    const uptime = systemRunning ? (Date.now() - systemStartTime) / 1000 : 0;
+    const uptime = systemState.running ? (Date.now() - systemState.startTime) / 1000 : 0;
     
     // 获取池状态 - 检查poolMonitor是否存在及其方法
     const activePools = poolMonitor ? (typeof poolMonitor.getKnownPools === 'function' ? 
-                         poolMonitor.getKnownPools().length : 0) : 0;
-    const monitoredTokens = Math.floor(Math.random() * 100) + 50; // 暂时使用模拟数据
+                       poolMonitor.getKnownPools().length : 0) : 0;
+    const monitoredTokens = poolMonitor ? (typeof poolMonitor.getMonitoredTokens === 'function' ? 
+                            poolMonitor.getMonitoredTokens().length : 0) : 0;
     
-    // 使用实际收集的内存历史数据，如果没有则生成模拟数据
-    const memoryHistory = memoryHistoryData.length > 0 ? memoryHistoryData : generateMemoryHistory();
+    // 使用实际收集的内存历史数据
+    const memoryHistory = [...memoryHistoryData];
     
     // 返回系统状态数据
     res.json({
       success: true,
       data: {
-        status: systemRunning ? 'running' : 'stopped',
+        status: systemState.running ? 'running' : 'stopped',
         cpu: Math.min(100, cpuUsage),
         memory: memoryPercentage,
         uptime: uptime,
-        profit: profitTotal,
+        profit: systemState.profitTotal,
         activePools: activePools,
         monitoredTokens: monitoredTokens,
-        executedTrades: executedTradesCount,
+        executedTrades: systemState.executedTradesCount,
         memoryDetails: {
           heapTotal: memoryUsage.heapTotal,
           heapUsed: memoryUsage.heapUsed,
@@ -97,13 +114,13 @@ export const getSystemStatus = async (_req: Request, res: Response): Promise<voi
           usedHeapSize: v8.getHeapStatistics().used_heap_size
         },
         optimization: {
-          cleanupCount: Math.floor(Math.random() * 10),
-          gcCount: Math.floor(Math.random() * 15),
-          memoryFreed: Math.floor(Math.random() * 1000) * 1024 * 1024,
-          leakWarnings: Math.random() > 0.7 ? Math.floor(Math.random() * 3) : 0,
-          lastOptimization: Date.now() - Math.random() * 3600000
+          cleanupCount: 0,
+          gcCount: 0,
+          memoryFreed: 0,
+          leakWarnings: 0,
+          lastOptimization: Date.now()
         },
-        consumers: generateMockConsumers()
+        consumers: [] // 移除模拟消费者
       }
     });
   } catch (error) {
@@ -125,8 +142,8 @@ export const startSystem = async (_req: Request, res: Response): Promise<void> =
     logger.info('通过API触发系统启动', MODULE_NAME);
     
     // 更新系统状态
-    systemRunning = true;
-    systemStartTime = Date.now();
+    systemState.running = true;
+    systemState.startTime = Date.now();
     
     // 这里可以添加实际的系统启动逻辑
     // 例如启动监听器、初始化交易模块等
@@ -136,9 +153,7 @@ export const startSystem = async (_req: Request, res: Response): Promise<void> =
       message: '系统已成功启动'
     });
   } catch (error) {
-    logger.error('启动系统失败', MODULE_NAME, { 
-      error: error instanceof Error ? error.message : String(error) 
-    });
+    logger.error(`启动系统失败: ${error instanceof Error ? error.message : String(error)}`, MODULE_NAME);
     res.status(500).json({
       success: false,
       error: '启动系统失败'
@@ -154,7 +169,7 @@ export const stopSystem = async (_req: Request, res: Response): Promise<void> =>
     logger.info('通过API触发系统停止', MODULE_NAME);
     
     // 更新系统状态
-    systemRunning = false;
+    systemState.running = false;
     
     // 这里可以添加实际的系统停止逻辑
     // 例如关闭连接、保存状态等
@@ -164,9 +179,7 @@ export const stopSystem = async (_req: Request, res: Response): Promise<void> =>
       message: '系统已成功停止'
     });
   } catch (error) {
-    logger.error('停止系统失败', MODULE_NAME, { 
-      error: error instanceof Error ? error.message : String(error) 
-    });
+    logger.error(`停止系统失败: ${error instanceof Error ? error.message : String(error)}`, MODULE_NAME);
     res.status(500).json({
       success: false,
       error: '停止系统失败'
@@ -181,28 +194,27 @@ export const optimizeMemory = async (_req: Request, res: Response): Promise<void
   try {
     logger.info('通过API触发内存优化', MODULE_NAME);
     
-    // 强制执行垃圾回收
+    // 执行垃圾回收
     if (global.gc) {
       global.gc();
-      logger.info('手动触发垃圾回收完成', MODULE_NAME);
+      logger.info('成功执行垃圾回收', MODULE_NAME);
+    } else {
+      logger.warn('无法执行垃圾回收，Node.js未以--expose-gc标志启动', MODULE_NAME);
     }
     
-    // 这里可以添加更多内存优化逻辑
+    // 如果有其他内存优化逻辑，可以在此处添加
     
     res.json({
       success: true,
-      message: '内存优化已执行',
-      data: {
-        memoryBefore: Math.floor(Math.random() * 200 + 800) * 1024 * 1024, // 模拟数据
-        memoryAfter: Math.floor(Math.random() * 200 + 600) * 1024 * 1024, // 模拟数据
-        freedMemory: Math.floor(Math.random() * 200) * 1024 * 1024, // 模拟数据
+      message: '内存优化已完成',
+      result: {
+        memoryBefore: process.memoryUsage().heapUsed,
+        memoryAfter: process.memoryUsage().heapUsed,
         timestamp: Date.now()
       }
     });
   } catch (error) {
-    logger.error('内存优化失败', MODULE_NAME, { 
-      error: error instanceof Error ? error.message : String(error) 
-    });
+    logger.error(`内存优化失败: ${error instanceof Error ? error.message : String(error)}`, MODULE_NAME);
     res.status(500).json({
       success: false,
       error: '内存优化失败'

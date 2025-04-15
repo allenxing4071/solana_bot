@@ -3,6 +3,13 @@
  * 处理与系统状态、性能监控和操作相关的所有请求
  */
 import { Request, Response } from 'express';
+declare global {
+    namespace NodeJS {
+        interface Global {
+            gc?: () => void;
+        }
+    }
+}
 /**
  * 获取系统状态
  */

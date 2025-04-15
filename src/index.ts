@@ -236,7 +236,7 @@ class Application {
       logger.info('Solana MEV机器人启动完成', MODULE_NAME);
     } catch (error) {
       this.setSystemStatus(SystemStatus.ERROR);
-      logger.error('启动失败', MODULE_NAME, error);
+      logger.error('启动失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   }
@@ -273,7 +273,7 @@ class Application {
             await serviceObj.start();
             logger.info(`已关闭服务: ${service.constructor.name}`, MODULE_NAME);
           } catch (error) {
-            logger.error(`关闭服务失败: ${service.constructor.name}`, MODULE_NAME, error);
+            logger.error(`关闭服务失败: ${service.constructor.name}`, MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
           }
         }
       }
@@ -282,7 +282,7 @@ class Application {
       logger.info('Solana MEV机器人已关闭', MODULE_NAME);
     } catch (error) {
       this.setSystemStatus(SystemStatus.ERROR);
-      logger.error('关闭失败', MODULE_NAME, error);
+      logger.error('关闭失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   }
@@ -379,7 +379,7 @@ class Application {
 
       logger.info('所有系统模块初始化完成', MODULE_NAME);
     } catch (error) {
-      logger.error('系统模块初始化失败', MODULE_NAME, error);
+      logger.error('系统模块初始化失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   }
@@ -412,7 +412,7 @@ class Application {
 
       logger.info('所有业务逻辑已启动', MODULE_NAME);
     } catch (error) {
-      logger.error('业务逻辑启动失败', MODULE_NAME, error);
+      logger.error('业务逻辑启动失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   }
@@ -423,7 +423,7 @@ const app = new Application();
 
 // 启动应用程序并处理错误
 app.start().catch(error => {
-  logger.error('应用程序启动失败', MODULE_NAME, { error: error instanceof Error ? error.toString() : String(error) });
+  logger.error('应用程序启动失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
   process.exit(1);
 });
 

@@ -43,15 +43,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const systemController = __importStar(require("../controllers/system_controller"));
 const router = express_1.default.Router();
-// 获取系统状态数据
+const MODULE_NAME = 'SystemApi';
+// 使用控制器方法处理请求
 router.get('/status', systemController.getSystemStatus);
-// 启动系统
 router.post('/start', systemController.startSystem);
-// 停止系统
 router.post('/stop', systemController.stopSystem);
-// 优化内存
 router.post('/optimize-memory', systemController.optimizeMemory);
-// 获取内存统计数据
 router.get('/memory-stats', systemController.getMemoryStats);
 exports.default = router;
 //# sourceMappingURL=system_routes.js.map

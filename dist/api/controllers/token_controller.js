@@ -20,6 +20,45 @@ const MODULE_NAME = 'TokenController';
 const blacklistPath = config_1.default.security.tokenValidation.blacklistPath;
 const whitelistPath = config_1.default.security.tokenValidation.whitelistPath;
 /**
+ * 读取代币文件内容
+ * @param filePath 文件路径
+ * @returns 文件内容
+ */
+async function readTokenFile(filePath) {
+    try {
+        if (!fs_extra_1.default.existsSync(filePath)) {
+            await fs_extra_1.default.ensureFile(filePath);
+            await fs_extra_1.default.writeJson(filePath, [], { spaces: 2 });
+            return '[]';
+        }
+        const data = await fs_extra_1.default.readFile(filePath, 'utf-8');
+        return data;
+    }
+    catch (error) {
+        logger_1.default.error(`读取代币文件失败: ${filePath}`, MODULE_NAME, {
+            error: error instanceof Error ? error.message : String(error)
+        });
+        return '[]';
+    }
+}
+/**
+ * 解析代币列表
+ * @param data 代币列表JSON字符串
+ * @returns 解析后的代币数组
+ */
+function parseTokenList(data) {
+    try {
+        const parsed = JSON.parse(data);
+        return Array.isArray(parsed) ? parsed : [];
+    }
+    catch (error) {
+        logger_1.default.error('解析代币列表失败', MODULE_NAME, {
+            error: error instanceof Error ? error.message : String(error)
+        });
+        return [];
+    }
+}
+/**
  * 加载黑名单文件内容
  * @returns 黑名单数组
  */
@@ -555,20 +594,28 @@ const getAllTokens = async (req, res) => {
         const search = req.query.search || '';
         const type = req.query.type || 'all';
         // 获取白名单和黑名单
-        const whitelistRaw = await readTokenFile(config_1.default.whitelistPath);
-        const blacklistRaw = await readTokenFile(config_1.default.blacklistPath);
+        const whitelistRaw = await readTokenFile(whitelistPath);
+        const blacklistRaw = await readTokenFile(blacklistPath);
         // 转换为TokenInfo数组
         const whitelist = parseTokenList(whitelistRaw);
         const blacklist = parseTokenList(blacklistRaw);
         // 将所有代币合并到一个数组中
         let allTokens = [
-            ...whitelist.map(token => ({ ...token, type: 'whitelist' })),
-            ...blacklist.map(token => ({ ...token, type: 'blacklist' }))
+            ...whitelist.map(token => ({
+                ...token,
+                type: 'whitelist',
+                mint: token?.mint || ''
+            })),
+            ...blacklist.map(token => ({
+                ...token,
+                type: 'blacklist',
+                mint: token?.mint || ''
+            }))
         ];
         // 应用搜索过滤
         if (search) {
-            allTokens = allTokens.filter(token => (token.symbol && token.symbol.toLowerCase().includes(search.toLowerCase())) ||
-                (token.name && token.name.toLowerCase().includes(search.toLowerCase())) ||
+            allTokens = allTokens.filter(token => (token.symbol?.toLowerCase().includes(search.toLowerCase())) ||
+                (token.name?.toLowerCase().includes(search.toLowerCase())) ||
                 token.mint.toString().includes(search));
         }
         // 按类型过滤

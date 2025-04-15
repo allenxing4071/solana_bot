@@ -184,20 +184,22 @@ export const getTransactionById = async (req: Request, res: Response): Promise<v
     const transactionId = req.params.id;
     
     if (!transactionId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: '交易ID不能为空'
       });
+      return;
     }
     
     // 查找交易
     const transaction = mockTransactions.find(tx => tx.id === transactionId);
     
     if (!transaction) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: '交易不存在'
       });
+      return;
     }
     
     res.json({

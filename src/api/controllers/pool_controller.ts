@@ -8,9 +8,13 @@ import { PublicKey } from '@solana/web3.js';
 import poolMonitor from '../../modules/listener/pool_monitor';
 import type { DexType, PoolInfo } from '../../core/types';
 import logger from '../../core/logger';
+import appConfig from '../../core/config';
 
 // 模块名称
 const MODULE_NAME = 'PoolController';
+
+// 使用模拟数据标志 - 改为默认使用真实数据
+const USE_MOCK_DATA = false;
 
 /**
  * 获取所有流动性池
@@ -91,9 +95,7 @@ export const getAllPools = async (req: Request, res: Response): Promise<void> =>
       data: paginatedPools
     });
   } catch (error) {
-    logger.error('获取流动性池失败', MODULE_NAME, {
-      error: error instanceof Error ? error.message : String(error)
-    });
+    logger.error(`获取流动性池失败: ${error instanceof Error ? error.message : String(error)}`, MODULE_NAME);
     res.status(500).json({
       success: false,
       error: '获取流动性池失败'
@@ -120,6 +122,8 @@ export const getAllPools = async (req: Request, res: Response): Promise<void> =>
 export const getPoolDetails = async (req: Request, res: Response): Promise<void> => {
   try {
     const { address } = req.params;
+    
+    logger.info(`获取流动性池详情: ${address}`, MODULE_NAME);
     
     if (!address) {
       res.status(400).json({
@@ -159,9 +163,7 @@ export const getPoolDetails = async (req: Request, res: Response): Promise<void>
       data: pool
     });
   } catch (error) {
-    logger.error('获取流动性池详情失败', MODULE_NAME, {
-      error: error instanceof Error ? error.message : String(error)
-    });
+    logger.error(`获取流动性池详情失败: ${error instanceof Error ? error.message : String(error)}`, MODULE_NAME);
     res.status(500).json({
       success: false,
       error: '获取流动性池详情失败'

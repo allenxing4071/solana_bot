@@ -1,3 +1,13 @@
+import type { Request, Response } from 'express';
+import logger from '../../core/logger';
+import { TradeHistoryManager } from '../../modules/trader/trade_history_manager';
+
+// 模块名称常量
+const MODULE_NAME = 'TradeController';
+
+// 创建交易历史管理器实例
+const tradeHistoryManager = new TradeHistoryManager();
+
 /**
  * 获取交易历史记录
  * @param req 请求对象
@@ -18,9 +28,9 @@ export const getTradeHistory = async (req: Request, res: Response): Promise<void
     // 应用搜索过滤
     if (search) {
       trades = trades.filter(trade => 
-        (trade.tokenSymbol && trade.tokenSymbol.toLowerCase().includes(search.toLowerCase())) ||
+        (trade.tokenSymbol?.toLowerCase().includes(search.toLowerCase())) ||
         trade.id.toLowerCase().includes(search.toLowerCase()) ||
-        (trade.txid && trade.txid.toLowerCase().includes(search.toLowerCase()))
+        (trade.txid?.toLowerCase().includes(search.toLowerCase()))
       );
     }
     

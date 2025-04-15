@@ -18,713 +18,284 @@ bigint: Failed to load bindings, pure JS will be used (try npm run rebuild?)
 - GET /api/status (额外保证)
 - GET /api/memory_stats.json (额外保证)
 服务器正在运行中...
-2025-04-14T03:56:15.760Z - GET /memory.html
-2025-04-14T03:56:15.784Z - GET /css/style.css
-2025-04-14T03:56:15.786Z - GET /css/memory.css
-2025-04-14T03:56:15.789Z - GET /img/logo.svg
-2025-04-14T03:56:15.790Z - GET /js/utils.js
-2025-04-14T03:56:16.001Z - GET /js/memory.js
-2025-04-14T03:56:16.222Z - GET /api/status
-处理请求: /api/status
-处理健康检查请求
-2025-04-14T03:56:16.229Z - GET /favicon.ico
-2025-04-14T03:56:16.231Z - GET /api/memory_stats.json?t=1744602976229
-处理请求: /api/memory_stats.json
-2025-04-14T03:56:16.249Z - GET /api/status?t=1744602976247
-处理请求: /api/status
-2025-04-14T03:56:20.455Z - GET /pools.html
-2025-04-14T03:56:20.478Z - GET /css/style.css
-2025-04-14T03:56:20.478Z - GET /img/logo.svg
-2025-04-14T03:56:20.479Z - GET /js/utils.js
-2025-04-14T03:56:20.892Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:56:20.895Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 获取流动池数据...
-[INFO] 创建到 https://api.mainnet-beta.solana.com 的新连接
-2025-04-14T03:56:20.968Z - GET /favicon.ico
+2025-04-15T02:06:52.608Z - GET /api/tokens
+处理请求: /api/tokens
 [INFO] 从Jupiter获取代币价格数据...
 [WARN] 请求 https://quote-api.jup.ag/v4/price 失败，2次重试中...
-2025-04-14T03:56:22.242Z - GET /pools.html
-2025-04-14T03:56:22.258Z - GET /css/style.css
-2025-04-14T03:56:22.259Z - GET /img/logo.svg
-2025-04-14T03:56:22.262Z - GET /js/utils.js
-2025-04-14T03:56:22.747Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:56:22.750Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 获取流动池数据...
-2025-04-14T03:56:22.759Z - GET /favicon.ico
-[INFO] 从Jupiter获取代币价格数据...
 [WARN] 请求 https://quote-api.jup.ag/v4/price 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price 失败，2次重试中...
 [ERROR] 从Jupiter获取代币价格失败 Error: 请求失败: 530 undefined
     at fetchWithRetry (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:68:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
     at async getJupiterTokenPrices (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:153:22)
     at async getTokenInfo (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:195:19)
-    at async getPoolsList (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:332:25)
-    at async Object.getPoolsApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:583:19)
-    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:933:14)
-    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1151:11
-[WARN] Jupiter API获取失败，尝试其他来源
-[INFO] 从Birdeye获取代币 So11111111111111111111111111111111111111112 价格数据...
-[WARN] 请求 https://quote-api.jup.ag/v4/price 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price?address=So11111111111111111111111111111111111111112 失败，2次重试中...
-[ERROR] 从Jupiter获取代币价格失败 Error: 请求失败: 530 undefined
-    at fetchWithRetry (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:68:13)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async getJupiterTokenPrices (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:153:22)
-    at async getTokenInfo (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:195:19)
-    at async getPoolsList (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:332:25)
-    at async Object.getPoolsApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:583:19)
-    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:933:14)
-    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1151:11
+    at async Object.getTokensApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:620:25)
+    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:889:14)
+    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1116:11
 [WARN] Jupiter API获取失败，尝试其他来源
 [INFO] 从Birdeye获取代币 So11111111111111111111111111111111111111112 价格数据...
 [WARN] 请求 https://public-api.birdeye.so/public/price?address=So11111111111111111111111111111111111111112 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price?address=So11111111111111111111111111111111111111112 失败，1次重试中...
 [WARN] 请求 https://public-api.birdeye.so/public/price?address=So11111111111111111111111111111111111111112 失败，1次重试中...
 [ERROR] 从Birdeye获取代币 So11111111111111111111111111111111111111112 价格失败 Error: 请求失败: 404 Not Found
     at fetchWithRetry (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:68:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
     at async getBirdeyeTokenPrice (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:170:22)
     at async getTokenInfo (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:211:22)
-    at async getPoolsList (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:332:25)
-    at async Object.getPoolsApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:583:19)
-    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:933:14)
-    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1151:11
+    at async Object.getTokensApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:620:25)
+    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:889:14)
+    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1116:11
 [INFO] 从Birdeye获取代币 EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 价格数据...
 [WARN] 请求 https://public-api.birdeye.so/public/price?address=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 失败，2次重试中...
-[ERROR] 从Birdeye获取代币 So11111111111111111111111111111111111111112 价格失败 Error: 请求失败: 404 Not Found
-    at fetchWithRetry (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:68:13)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async getBirdeyeTokenPrice (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:170:22)
-    at async getTokenInfo (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:211:22)
-    at async getPoolsList (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:332:25)
-    at async Object.getPoolsApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:583:19)
-    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:933:14)
-    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1151:11
-[INFO] 从Birdeye获取代币 EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 价格数据...
-[WARN] 请求 https://public-api.birdeye.so/public/price?address=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price?address=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 失败，1次重试中...
 [WARN] 请求 https://public-api.birdeye.so/public/price?address=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 失败，1次重试中...
 [ERROR] 从Birdeye获取代币 EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 价格失败 Error: 请求失败: 404 Not Found
     at fetchWithRetry (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:68:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
     at async getBirdeyeTokenPrice (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:170:22)
     at async getTokenInfo (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:211:22)
-    at async getPoolsList (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:332:25)
-    at async Object.getPoolsApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:583:19)
-    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:933:14)
-    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1151:11
+    at async Object.getTokensApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:620:25)
+    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:889:14)
+    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1116:11
 [INFO] 从Birdeye获取代币 Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB 价格数据...
 [WARN] 请求 https://public-api.birdeye.so/public/price?address=Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB 失败，2次重试中...
-[ERROR] 从Birdeye获取代币 EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 价格失败 Error: 请求失败: 404 Not Found
-    at fetchWithRetry (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:68:13)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async getBirdeyeTokenPrice (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:170:22)
-    at async getTokenInfo (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:211:22)
-    at async getPoolsList (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:332:25)
-    at async Object.getPoolsApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:583:19)
-    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:933:14)
-    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1151:11
-[INFO] 从Birdeye获取代币 Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB 价格数据...
-[WARN] 请求 https://public-api.birdeye.so/public/price?address=Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB 失败，2次重试中...
+2025-04-15T02:07:02.699Z - GET /api-monitor.html
+修正API路径: /api-monitor.html -> /api/-monitor.html
+404错误: GET /api/-monitor.html
+2025-04-15T02:07:02.940Z - GET /favicon.ico
+2025-04-15T02:07:03.779Z - GET /api-monitor.html
+修正API路径: /api-monitor.html -> /api/-monitor.html
+404错误: GET /api/-monitor.html
 [WARN] 请求 https://public-api.birdeye.so/public/price?address=Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price?address=Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB 失败，1次重试中...
+2025-04-15T02:07:04.014Z - GET /favicon.ico
+2025-04-15T02:07:04.234Z - GET /api-monitor.html
+修正API路径: /api-monitor.html -> /api/-monitor.html
+404错误: GET /api/-monitor.html
+2025-04-15T02:07:04.477Z - GET /favicon.ico
+2025-04-15T02:07:04.544Z - GET /api-monitor.html
+修正API路径: /api-monitor.html -> /api/-monitor.html
+404错误: GET /api/-monitor.html
+2025-04-15T02:07:04.781Z - GET /favicon.ico
 [ERROR] 从Birdeye获取代币 Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB 价格失败 Error: 请求失败: 404 Not Found
     at fetchWithRetry (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:68:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
     at async getBirdeyeTokenPrice (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:170:22)
     at async getTokenInfo (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:211:22)
-    at async getPoolsList (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:332:25)
-    at async Object.getPoolsApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:583:19)
-    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:933:14)
-    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1151:11
-[INFO] 从Birdeye获取代币 DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 价格数据...
-[ERROR] 从Birdeye获取代币 Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB 价格失败 Error: 请求失败: 404 Not Found
-    at fetchWithRetry (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:68:13)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async getBirdeyeTokenPrice (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:170:22)
-    at async getTokenInfo (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:211:22)
-    at async getPoolsList (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:332:25)
-    at async Object.getPoolsApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:583:19)
-    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:933:14)
-    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1151:11
+    at async Object.getTokensApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:620:25)
+    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:889:14)
+    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1116:11
 [INFO] 从Birdeye获取代币 DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 价格数据...
 [WARN] 请求 https://public-api.birdeye.so/public/price?address=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price?address=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price?address=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 失败，1次重试中...
 [WARN] 请求 https://public-api.birdeye.so/public/price?address=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 失败，1次重试中...
 [ERROR] 从Birdeye获取代币 DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 价格失败 Error: 请求失败: 404 Not Found
     at fetchWithRetry (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:68:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
     at async getBirdeyeTokenPrice (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:170:22)
     at async getTokenInfo (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:211:22)
-    at async getPoolsList (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:332:25)
-    at async Object.getPoolsApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:583:19)
-    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:933:14)
-    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1151:11
+    at async Object.getTokensApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:620:25)
+    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:889:14)
+    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1116:11
 [INFO] 从Birdeye获取代币 mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So 价格数据...
 [WARN] 请求 https://public-api.birdeye.so/public/price?address=mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So 失败，2次重试中...
-[ERROR] 从Birdeye获取代币 DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 价格失败 Error: 请求失败: 404 Not Found
-    at fetchWithRetry (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:68:13)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async getBirdeyeTokenPrice (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:170:22)
-    at async getTokenInfo (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:211:22)
-    at async getPoolsList (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:332:25)
-    at async Object.getPoolsApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:583:19)
-    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:933:14)
-    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1151:11
-[INFO] 从Birdeye获取代币 mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So 价格数据...
-[WARN] 请求 https://public-api.birdeye.so/public/price?address=mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price?address=mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So 失败，1次重试中...
 [WARN] 请求 https://public-api.birdeye.so/public/price?address=mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So 失败，1次重试中...
 [ERROR] 从Birdeye获取代币 mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So 价格失败 Error: 请求失败: 404 Not Found
     at fetchWithRetry (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:68:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
     at async getBirdeyeTokenPrice (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:170:22)
     at async getTokenInfo (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:211:22)
-    at async getPoolsList (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:332:25)
-    at async Object.getPoolsApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:583:19)
-    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:933:14)
-    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1151:11
+    at async Object.getTokensApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:620:25)
+    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:889:14)
+    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1116:11
 [WARN] 无法从任何来源获取代币数据，使用模拟数据
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=So11111111111111111111111111111111111111112 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=So11111111111111111111111111111111111111112 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=So11111111111111111111111111111111111111112 失败，2次重试中...
-[ERROR] 从Birdeye获取代币 mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So 价格失败 Error: 请求失败: 404 Not Found
-    at fetchWithRetry (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:68:13)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async getBirdeyeTokenPrice (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:170:22)
-    at async getTokenInfo (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:211:22)
-    at async getPoolsList (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:332:25)
-    at async Object.getPoolsApiData (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/solana-data-provider.js:583:19)
-    at async Object.response (/Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:933:14)
-    at async /Users/xinghailong/Documents/solana_MEVbot/solana_webbot/simple-api-server.js:1151:11
-[WARN] 无法从任何来源获取代币数据，使用模拟数据
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=So11111111111111111111111111111111111111112 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=So11111111111111111111111111111111111111112 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=So11111111111111111111111111111111111111112 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3 失败，2次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=So11111111111111111111111111111111111111112 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=So11111111111111111111111111111111111111112 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=So11111111111111111111111111111111111111112 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=So11111111111111111111111111111111111111112 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=So11111111111111111111111111111111111111112 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3 失败，1次重试中...
-[WARN] 请求 https://quote-api.jup.ag/v4/price/change?ids=So11111111111111111111111111111111111111112 失败，1次重试中...
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=So11111111111111111111111111111111111111112&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=So11111111111111111111111111111111111111112&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=So11111111111111111111111111111111111111112&type=day 失败，2次重试中...
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 从Jupiter获取价格变化失败: 请求失败: 530 undefined
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=So11111111111111111111111111111111111111112&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=So11111111111111111111111111111111111111112&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=So11111111111111111111111111111111111111112&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3&type=day 失败，2次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=So11111111111111111111111111111111111111112&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=So11111111111111111111111111111111111111112&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=So11111111111111111111111111111111111111112&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac&type=day 失败，1次重试中...
-2025-04-14T03:56:54.892Z - GET /memory.html
-2025-04-14T03:56:54.911Z - GET /css/style.css
-2025-04-14T03:56:54.912Z - GET /css/memory.css
-2025-04-14T03:56:54.913Z - GET /img/logo.svg
-2025-04-14T03:56:54.913Z - GET /js/utils.js
-2025-04-14T03:56:55.125Z - GET /js/memory.js
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3&type=day 失败，1次重试中...
-2025-04-14T03:56:55.339Z - GET /api/status
-处理请求: /api/status
-处理健康检查请求
-2025-04-14T03:56:55.350Z - GET /api/memory_stats.json?t=1744603015347
-处理请求: /api/memory_stats.json
-2025-04-14T03:56:55.356Z - GET /favicon.ico
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=So11111111111111111111111111111111111111112&type=day 失败，1次重试中...
-2025-04-14T03:56:55.371Z - GET /api/status?t=1744603015370
-处理请求: /api/status
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=So11111111111111111111111111111111111111112&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=So11111111111111111111111111111111111111112&type=day 失败，1次重试中...
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3&type=day 失败，1次重试中...
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 请求 https://public-api.birdeye.so/public/price/change?address=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263&type=day 失败，1次重试中...
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[INFO] 成功获取10个流动池数据
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[WARN] 从Birdeye获取价格变化失败: 请求失败: 404 Not Found
-[INFO] 成功获取10个流动池数据
-2025-04-14T03:56:57.220Z - GET /index.html
-2025-04-14T03:56:57.246Z - GET /css/style.css
-2025-04-14T03:56:57.246Z - GET /css/log-style.css
-2025-04-14T03:56:57.247Z - GET /css/apple-log-style.css
-2025-04-14T03:56:57.247Z - GET /img/logo.svg
-2025-04-14T03:56:57.248Z - GET /js/dashboard.js
-2025-04-14T03:56:57.671Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:56:57.673Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-14T03:56:57.677Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-14T03:56:57.679Z - GET /api/transactions
-处理请求: /api/transactions
-2025-04-14T03:56:57.697Z - GET /favicon.ico
-2025-04-14T03:56:57.698Z - GET /api/tokens
-处理请求: /api/tokens
-[INFO] 使用缓存的代币价格数据
-收到请求: /api/profit/summary
-2025-04-14T03:56:57.742Z - GET /api/token-trends
-处理请求: /api/token-trends
-2025-04-14T03:56:57.747Z - GET /api/profit-trends
-处理请求: /api/profit-trends
-2025-04-14T03:56:58.169Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:56:59.407Z - GET /api/memory_stats.json?t=1744603019404
-处理请求: /api/memory_stats.json
-2025-04-14T03:56:59.440Z - GET /api/status?t=1744603019438
-处理请求: /api/status
-2025-04-14T03:56:59.508Z - GET /memory.html
-2025-04-14T03:56:59.538Z - GET /css/style.css
-2025-04-14T03:56:59.538Z - GET /css/memory.css
-2025-04-14T03:56:59.540Z - GET /img/logo.svg
-2025-04-14T03:56:59.540Z - GET /js/utils.js
-2025-04-14T03:56:59.729Z - GET /js/memory.js
-2025-04-14T03:56:59.946Z - GET /api/status
-处理请求: /api/status
-处理健康检查请求
-2025-04-14T03:56:59.955Z - GET /api/memory_stats.json?t=1744603019951
-处理请求: /api/memory_stats.json
-2025-04-14T03:56:59.956Z - GET /favicon.ico
-2025-04-14T03:56:59.981Z - GET /api/status?t=1744603019979
-处理请求: /api/status
-2025-04-14T03:57:01.389Z - GET /pools.html
-2025-04-14T03:57:01.426Z - GET /css/style.css
-2025-04-14T03:57:01.427Z - GET /img/logo.svg
-2025-04-14T03:57:01.427Z - GET /js/utils.js
-2025-04-14T03:57:01.831Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:57:01.835Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:57:01.864Z - GET /favicon.ico
-2025-04-14T03:57:02.690Z - GET /tokens.html
-2025-04-14T03:57:02.739Z - GET /css/style.css
-2025-04-14T03:57:02.739Z - GET /img/logo.svg
-2025-04-14T03:57:02.741Z - GET /js/utils.js
-2025-04-14T03:57:02.928Z - GET /js/tokens.js
-2025-04-14T03:57:03.157Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:57:03.166Z - GET /favicon.ico
-2025-04-14T03:57:04.685Z - GET /tokens.html
-2025-04-14T03:57:04.697Z - GET /css/style.css
-2025-04-14T03:57:04.700Z - GET /img/logo.svg
-2025-04-14T03:57:04.701Z - GET /js/utils.js
-2025-04-14T03:57:04.887Z - GET /js/tokens.js
-2025-04-14T03:57:04.945Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:57:05.117Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:57:05.169Z - GET /favicon.ico
+2025-04-15T02:07:30.309Z - GET /api/api/system/status
+2025-04-15T02:07:30.310Z - GET /api/api/system/info
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+2025-04-15T02:07:30.311Z - GET /api/api/pools
+404错误: GET /api/api/pools
 服务器心跳检测 - 保持活跃
-2025-04-14T03:57:06.442Z - GET /tokens.html
-2025-04-14T03:57:06.455Z - GET /css/style.css
-2025-04-14T03:57:06.456Z - GET /img/logo.svg
-2025-04-14T03:57:06.457Z - GET /js/utils.js
-2025-04-14T03:57:06.693Z - GET /js/tokens.js
-2025-04-14T03:57:06.934Z - GET /tokens.html
-2025-04-14T03:57:07.006Z - GET /css/style.css
-2025-04-14T03:57:07.009Z - GET /img/logo.svg
-2025-04-14T03:57:07.011Z - GET /js/utils.js
-2025-04-14T03:57:07.138Z - GET /js/tokens.js
-2025-04-14T03:57:07.364Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:57:07.391Z - GET /favicon.ico
-2025-04-14T03:57:09.780Z - GET /pools.html
-2025-04-14T03:57:09.859Z - GET /css/style.css
-2025-04-14T03:57:09.859Z - GET /img/logo.svg
-2025-04-14T03:57:09.861Z - GET /js/utils.js
-2025-04-14T03:57:10.303Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:57:10.306Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:57:10.331Z - GET /favicon.ico
-2025-04-14T03:57:22.812Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:57:59.407Z - GET /api/memory_stats.json?t=1744603079404
-处理请求: /api/memory_stats.json
-2025-04-14T03:57:59.440Z - GET /api/status?t=1744603079437
-处理请求: /api/status
+2025-04-15T02:08:30.310Z - GET /api/api/system/status
+2025-04-15T02:08:30.310Z - GET /api/api/system/info
+2025-04-15T02:08:30.310Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
 服务器心跳检测 - 保持活跃
-2025-04-14T03:58:27.989Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:58:39.123Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:58:44.049Z - GET /pools.html
-2025-04-14T03:58:44.065Z - GET /css/style.css
-2025-04-14T03:58:44.066Z - GET /img/logo.svg
-2025-04-14T03:58:44.068Z - GET /js/utils.js
-2025-04-14T03:58:44.249Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:58:44.251Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:58:44.280Z - GET /favicon.ico
-2025-04-14T03:58:45.435Z - GET /pools.html
-2025-04-14T03:58:45.446Z - GET /css/style.css
-2025-04-14T03:58:45.446Z - GET /img/logo.svg
-2025-04-14T03:58:45.446Z - GET /js/utils.js
-2025-04-14T03:58:45.573Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:58:45.576Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:58:45.578Z - GET /favicon.ico
-2025-04-14T03:58:59.407Z - GET /api/memory_stats.json?t=1744603139404
-处理请求: /api/memory_stats.json
-2025-04-14T03:58:59.446Z - GET /api/status?t=1744603139444
-处理请求: /api/status
-2025-04-14T03:59:04.207Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
+2025-04-15T02:09:30.315Z - GET /api/api/system/status
+2025-04-15T02:09:30.315Z - GET /api/api/system/info
+2025-04-15T02:09:30.315Z - GET /api/api/pools
+404错误: GET /api/api/system/info
+404错误: GET /api/api/system/status
+404错误: GET /api/api/pools
 服务器心跳检测 - 保持活跃
-2025-04-14T03:59:19.988Z - GET /pools.html
-2025-04-14T03:59:20.004Z - GET /css/style.css
-2025-04-14T03:59:20.004Z - GET /img/logo.svg
-2025-04-14T03:59:20.005Z - GET /js/utils.js
-2025-04-14T03:59:20.090Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:59:20.092Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:59:20.114Z - GET /favicon.ico
-2025-04-14T03:59:21.404Z - GET /pools.html
-2025-04-14T03:59:21.413Z - GET /css/style.css
-2025-04-14T03:59:21.413Z - GET /img/logo.svg
-2025-04-14T03:59:21.414Z - GET /js/utils.js
-2025-04-14T03:59:21.513Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:59:21.514Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:59:21.518Z - GET /favicon.ico
-2025-04-14T03:59:21.542Z - GET /pools.html
-2025-04-14T03:59:21.553Z - GET /css/style.css
-2025-04-14T03:59:21.553Z - GET /img/logo.svg
-2025-04-14T03:59:21.553Z - GET /js/utils.js
-2025-04-14T03:59:21.649Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:59:21.651Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:59:21.655Z - GET /favicon.ico
-2025-04-14T03:59:21.734Z - GET /pools.html
-2025-04-14T03:59:21.744Z - GET /css/style.css
-2025-04-14T03:59:21.744Z - GET /img/logo.svg
-2025-04-14T03:59:21.745Z - GET /js/utils.js
-2025-04-14T03:59:21.839Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:59:21.841Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:59:21.844Z - GET /favicon.ico
-2025-04-14T03:59:22.382Z - GET /pools.html
-2025-04-14T03:59:22.398Z - GET /css/style.css
-2025-04-14T03:59:22.398Z - GET /img/logo.svg
-2025-04-14T03:59:22.399Z - GET /js/utils.js
-2025-04-14T03:59:22.491Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:59:22.493Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:59:22.496Z - GET /favicon.ico
-2025-04-14T03:59:22.551Z - GET /pools.html
-2025-04-14T03:59:22.560Z - GET /css/style.css
-2025-04-14T03:59:22.561Z - GET /img/logo.svg
-2025-04-14T03:59:22.561Z - GET /js/utils.js
-2025-04-14T03:59:22.656Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:59:22.659Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:59:22.662Z - GET /favicon.ico
-2025-04-14T03:59:22.767Z - GET /pools.html
-2025-04-14T03:59:22.776Z - GET /css/style.css
-2025-04-14T03:59:22.777Z - GET /img/logo.svg
-2025-04-14T03:59:22.777Z - GET /js/utils.js
-2025-04-14T03:59:22.872Z - GET /api/status
-处理请求: /api/status
-2025-04-14T03:59:22.873Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T03:59:22.877Z - GET /favicon.ico
-2025-04-14T03:59:59.406Z - GET /api/memory_stats.json?t=1744603199403
-处理请求: /api/memory_stats.json
-2025-04-14T03:59:59.444Z - GET /api/status?t=1744603199442
-处理请求: /api/status
+2025-04-15T02:10:30.310Z - GET /api/api/system/status
+2025-04-15T02:10:30.310Z - GET /api/api/system/info
+2025-04-15T02:10:30.311Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
 服务器心跳检测 - 保持活跃
-2025-04-14T04:00:31.969Z - GET /pools.html
-2025-04-14T04:00:31.982Z - GET /css/style.css
-2025-04-14T04:00:31.984Z - GET /js/utils.js
-2025-04-14T04:00:31.985Z - GET /img/logo.svg
-2025-04-14T04:00:32.090Z - GET /api/status
-处理请求: /api/status
-2025-04-14T04:00:32.092Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T04:00:32.097Z - GET /favicon.ico
-2025-04-14T04:00:33.049Z - GET /pools.html
-2025-04-14T04:00:33.059Z - GET /css/style.css
-2025-04-14T04:00:33.060Z - GET /img/logo.svg
-2025-04-14T04:00:33.061Z - GET /js/utils.js
-2025-04-14T04:00:33.157Z - GET /api/status
-处理请求: /api/status
-2025-04-14T04:00:33.159Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T04:00:33.164Z - GET /favicon.ico
-2025-04-14T04:00:33.270Z - GET /pools.html
-2025-04-14T04:00:33.279Z - GET /css/style.css
-2025-04-14T04:00:33.282Z - GET /img/logo.svg
-2025-04-14T04:00:33.282Z - GET /js/utils.js
-2025-04-14T04:00:33.381Z - GET /api/status
-处理请求: /api/status
-2025-04-14T04:00:33.383Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T04:00:33.390Z - GET /favicon.ico
-2025-04-14T04:00:33.497Z - GET /pools.html
-2025-04-14T04:00:33.506Z - GET /css/style.css
-2025-04-14T04:00:33.506Z - GET /img/logo.svg
-2025-04-14T04:00:33.506Z - GET /js/utils.js
-2025-04-14T04:00:33.606Z - GET /api/status
-处理请求: /api/status
-2025-04-14T04:00:33.608Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T04:00:33.612Z - GET /favicon.ico
-2025-04-14T04:00:33.679Z - GET /pools.html
-2025-04-14T04:00:33.688Z - GET /css/style.css
-2025-04-14T04:00:33.689Z - GET /img/logo.svg
-2025-04-14T04:00:33.689Z - GET /js/utils.js
-2025-04-14T04:00:33.788Z - GET /api/status
-处理请求: /api/status
-2025-04-14T04:00:33.790Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T04:00:33.793Z - GET /favicon.ico
-2025-04-14T04:00:41.285Z - GET /
-2025-04-14T04:00:45.851Z - GET /pools.html
-2025-04-14T04:00:59.406Z - GET /api/memory_stats.json?t=1744603259402
-处理请求: /api/memory_stats.json
-2025-04-14T04:00:59.446Z - GET /api/status?t=1744603259442
-处理请求: /api/status
+2025-04-15T02:11:30.308Z - GET /api/api/system/status
+404错误: GET /api/api/system/status
+2025-04-15T02:11:30.312Z - GET /api/api/system/info
+404错误: GET /api/api/system/info
+2025-04-15T02:11:30.314Z - GET /api/api/pools
+404错误: GET /api/api/pools
 服务器心跳检测 - 保持活跃
-2025-04-14T04:01:06.551Z - GET /memory.html
-2025-04-14T04:01:06.571Z - GET /css/style.css
-2025-04-14T04:01:06.571Z - GET /css/memory.css
-2025-04-14T04:01:06.572Z - GET /img/logo.svg
-2025-04-14T04:01:06.573Z - GET /js/utils.js
-2025-04-14T04:01:06.651Z - GET /js/memory.js
-2025-04-14T04:01:06.681Z - GET /api/status
-处理请求: /api/status
-处理健康检查请求
-2025-04-14T04:01:06.688Z - GET /api/memory_stats.json?t=1744603266684
-处理请求: /api/memory_stats.json
-2025-04-14T04:01:06.689Z - GET /favicon.ico
-2025-04-14T04:01:06.707Z - GET /api/status?t=1744603266705
-处理请求: /api/status
-2025-04-14T04:01:08.663Z - GET /css/style.css
-2025-04-14T04:01:08.664Z - GET /css/memory.css
-2025-04-14T04:01:10.758Z - GET /index.html
-2025-04-14T04:01:10.782Z - GET /css/style.css
-2025-04-14T04:01:10.782Z - GET /css/log-style.css
-2025-04-14T04:01:10.784Z - GET /img/logo.svg
-2025-04-14T04:01:10.785Z - GET /css/apple-log-style.css
-2025-04-14T04:01:10.785Z - GET /js/dashboard.js
-2025-04-14T04:01:11.203Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T04:01:11.204Z - GET /api/system/status
-处理请求: /api/system/status
-2025-04-14T04:01:11.204Z - GET /api/system/info
-处理CPU和系统信息请求
-2025-04-14T04:01:11.205Z - GET /api/transactions
-处理请求: /api/transactions
-收到请求: /api/profit/summary
-2025-04-14T04:01:11.206Z - GET /api/tokens
-处理请求: /api/tokens
-[INFO] 使用缓存的代币价格数据
-2025-04-14T04:01:11.207Z - GET /favicon.ico
-2025-04-14T04:01:11.265Z - GET /api/token-trends
-处理请求: /api/token-trends
-2025-04-14T04:01:11.268Z - GET /api/profit-trends
-处理请求: /api/profit-trends
-2025-04-14T04:01:11.497Z - GET /memory.html
-2025-04-14T04:01:11.528Z - GET /css/style.css
-2025-04-14T04:01:11.529Z - GET /css/memory.css
-2025-04-14T04:01:11.530Z - GET /img/logo.svg
-2025-04-14T04:01:11.531Z - GET /js/utils.js
-2025-04-14T04:01:11.723Z - GET /js/memory.js
-2025-04-14T04:01:11.947Z - GET /api/status
-处理请求: /api/status
-处理健康检查请求
-2025-04-14T04:01:11.951Z - GET /favicon.ico
-2025-04-14T04:01:11.957Z - GET /api/memory_stats.json?t=1744603271956
-处理请求: /api/memory_stats.json
-2025-04-14T04:01:11.976Z - GET /api/status?t=1744603271975
-处理请求: /api/status
-2025-04-14T04:01:12.498Z - GET /pools.html
-2025-04-14T04:01:12.544Z - GET /img/logo.svg
-2025-04-14T04:01:12.545Z - GET /css/style.css
-2025-04-14T04:01:12.545Z - GET /js/utils.js
-2025-04-14T04:01:12.774Z - GET /js/pools.js
-2025-04-14T04:01:12.963Z - GET /api/status
-处理请求: /api/status
-2025-04-14T04:01:12.965Z - GET /status
-404错误: GET /status
-2025-04-14T04:01:12.969Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-2025-04-14T04:01:12.972Z - GET /favicon.ico
-2025-04-14T04:01:41.322Z - GET /pools.html
-2025-04-14T04:01:41.337Z - GET /css/style.css
-2025-04-14T04:01:41.337Z - GET /img/logo.svg
-2025-04-14T04:01:41.340Z - GET /js/utils.js
-2025-04-14T04:01:41.523Z - GET /js/pools.js
-2025-04-14T04:01:41.571Z - GET /api/status
-处理请求: /api/status
-2025-04-14T04:01:41.573Z - GET /status
-2025-04-14T04:01:41.573Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-404错误: GET /status
-2025-04-14T04:01:41.621Z - GET /favicon.ico
-2025-04-14T04:01:59.403Z - GET /api/memory_stats.json?t=1744603319401
-处理请求: /api/memory_stats.json
-2025-04-14T04:01:59.431Z - GET /api/status?t=1744603319430
-处理请求: /api/status
-2025-04-14T04:02:01.639Z - GET /pools.html
-2025-04-14T04:02:01.654Z - GET /css/style.css
-2025-04-14T04:02:01.655Z - GET /img/logo.svg
-2025-04-14T04:02:01.655Z - GET /js/utils.js
-2025-04-14T04:02:01.723Z - GET /js/pools.js
-2025-04-14T04:02:02.355Z - GET /api/status
-处理请求: /api/status
-2025-04-14T04:02:02.356Z - GET /status
-2025-04-14T04:02:02.356Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-404错误: GET /status
-2025-04-14T04:02:03.385Z - GET /favicon.ico
-2025-04-14T04:02:03.881Z - GET /pools.html
-2025-04-14T04:02:03.890Z - GET /css/style.css
-2025-04-14T04:02:03.890Z - GET /img/logo.svg
-2025-04-14T04:02:03.890Z - GET /js/utils.js
-2025-04-14T04:02:04.031Z - GET /pools.html
-2025-04-14T04:02:04.041Z - GET /css/style.css
-2025-04-14T04:02:04.043Z - GET /img/logo.svg
-2025-04-14T04:02:04.044Z - GET /js/utils.js
-2025-04-14T04:02:04.200Z - GET /js/pools.js
-2025-04-14T04:02:04.734Z - GET /api/status
-处理请求: /api/status
-2025-04-14T04:02:04.735Z - GET /status
-2025-04-14T04:02:04.736Z - GET /api/pools
-处理请求: /api/pools
-[INFO] 使用缓存的流动池数据
-404错误: GET /status
-2025-04-14T04:02:05.911Z - GET /favicon.ico
+2025-04-15T02:12:30.307Z - GET /api/api/system/status
+2025-04-15T02:12:30.308Z - GET /api/api/system/info
+2025-04-15T02:12:30.308Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
 服务器心跳检测 - 保持活跃
-2025-04-14T04:02:59.404Z - GET /api/memory_stats.json?t=1744603379401
-处理请求: /api/memory_stats.json
-2025-04-14T04:02:59.443Z - GET /api/status?t=1744603379441
-处理请求: /api/status
+2025-04-15T02:13:30.294Z - GET /api/api/system/status
+2025-04-15T02:13:30.295Z - GET /api/api/system/info
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+2025-04-15T02:13:30.297Z - GET /api/api/pools
+404错误: GET /api/api/pools
 服务器心跳检测 - 保持活跃
+2025-04-15T02:14:30.293Z - GET /api/api/system/status
+2025-04-15T02:14:30.294Z - GET /api/api/system/info
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+2025-04-15T02:14:30.297Z - GET /api/api/pools
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:15:30.293Z - GET /api/api/system/status
+2025-04-15T02:15:30.293Z - GET /api/api/system/info
+2025-04-15T02:15:30.294Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:16:30.292Z - GET /api/api/system/status
+404错误: GET /api/api/system/status
+2025-04-15T02:16:30.292Z - GET /api/api/system/info
+404错误: GET /api/api/system/info
+2025-04-15T02:16:30.293Z - GET /api/api/pools
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:17:30.293Z - GET /api/api/system/status
+2025-04-15T02:17:30.294Z - GET /api/api/system/info
+2025-04-15T02:17:30.294Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:18:30.294Z - GET /api/api/system/status
+2025-04-15T02:18:30.294Z - GET /api/api/system/info
+2025-04-15T02:18:30.295Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:19:30.289Z - GET /api/api/system/status
+2025-04-15T02:19:30.290Z - GET /api/api/system/info
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+2025-04-15T02:19:30.291Z - GET /api/api/pools
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:20:30.295Z - GET /api/api/system/status
+2025-04-15T02:20:30.295Z - GET /api/api/system/info
+2025-04-15T02:20:30.296Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:21:30.290Z - GET /api/api/system/status
+2025-04-15T02:21:30.291Z - GET /api/api/system/info
+2025-04-15T02:21:30.291Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:22:30.288Z - GET /api/api/system/status
+2025-04-15T02:22:30.289Z - GET /api/api/system/info
+2025-04-15T02:22:30.289Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:23:30.288Z - GET /api/api/system/status
+2025-04-15T02:23:30.289Z - GET /api/api/system/info
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+2025-04-15T02:23:30.292Z - GET /api/api/pools
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:24:30.287Z - GET /api/api/system/status
+2025-04-15T02:24:30.288Z - GET /api/api/system/info
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+2025-04-15T02:24:30.291Z - GET /api/api/pools
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:25:30.286Z - GET /api/api/system/status
+2025-04-15T02:25:30.287Z - GET /api/api/system/info
+2025-04-15T02:25:30.287Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:26:30.289Z - GET /api/api/system/status
+2025-04-15T02:26:30.289Z - GET /api/api/system/info
+2025-04-15T02:26:30.290Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:27:30.288Z - GET /api/api/system/status
+2025-04-15T02:27:30.289Z - GET /api/api/system/info
+2025-04-15T02:27:30.289Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:28:30.288Z - GET /api/api/system/status
+2025-04-15T02:28:30.289Z - GET /api/api/system/info
+2025-04-15T02:28:30.290Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:29:30.286Z - GET /api/api/system/status
+2025-04-15T02:29:30.286Z - GET /api/api/system/info
+2025-04-15T02:29:30.287Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:30:30.285Z - GET /api/api/system/status
+2025-04-15T02:30:30.285Z - GET /api/api/system/info
+2025-04-15T02:30:30.285Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:31:30.284Z - GET /api/api/system/status
+2025-04-15T02:31:30.287Z - GET /api/api/system/info
+404错误: GET /api/api/system/status
+2025-04-15T02:31:30.289Z - GET /api/api/pools
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:32:30.289Z - GET /api/api/system/status
+2025-04-15T02:32:30.289Z - GET /api/api/system/info
+2025-04-15T02:32:30.289Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:33:30.182Z - GET /api/api/system/status
+2025-04-15T02:33:30.182Z - GET /api/api/system/info
+2025-04-15T02:33:30.183Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools
+服务器心跳检测 - 保持活跃
+2025-04-15T02:34:30.181Z - GET /api/api/system/status
+2025-04-15T02:34:30.182Z - GET /api/api/system/info
+2025-04-15T02:34:30.182Z - GET /api/api/pools
+404错误: GET /api/api/system/status
+404错误: GET /api/api/system/info
+404错误: GET /api/api/pools

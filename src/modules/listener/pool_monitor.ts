@@ -109,6 +109,20 @@ class PoolMonitor extends EventEmitter {
   private subscriptions: Map<string, number> = new Map();
 
   /**
+   * 检查监控器是否处于活动状态
+   * 
+   * 【比喻解释】
+   * 这就像查看探测雷达的工作状态灯：
+   * - 绿灯亮起表示系统正在运行
+   * - 红灯表示系统当前已关闭
+   * 
+   * @returns {boolean} 监控器是否正在运行
+   */
+  public isActive(): boolean {
+    return this.isRunning;
+  }
+
+  /**
    * 构造函数
    * 初始化池子监听器并加载配置
    * 

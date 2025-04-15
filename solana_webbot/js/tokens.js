@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       showLoading();
       
       // 从API获取代币数据
-      const url = `${getApiBaseUrl()}/tokens?t=${Date.now()}`;
+      const url = `${getApiBaseUrl()}/api/tokens?t=${Date.now()}`;
       console.log(`从API获取代币数据: ${url}`);
       
       const response = await fetch(url);
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   async function loadSystemStatus() {
     try {
       // 从API获取系统状态
-      const url = `${getApiBaseUrl()}/api/status?t=${Date.now()}`;
+      const url = `${getApiBaseUrl()}/api/system/status?t=${Date.now()}`;
       console.log(`从API获取系统状态: ${url}`);
       
       const response = await fetch(url);
@@ -802,7 +802,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       startBtn.addEventListener('click', async () => {
         try {
           // 调用启动系统API
-          const url = `${getApiBaseUrl()}/system/start`;
+          const url = `${getApiBaseUrl()}/api/system/start`;
           const response = await fetch(url, { method: 'POST' });
           
           if (response.ok) {
@@ -825,7 +825,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       stopBtn.addEventListener('click', async () => {
         try {
           // 调用停止系统API
-          const url = `${getApiBaseUrl()}/system/stop`;
+          const url = `${getApiBaseUrl()}/api/system/stop`;
           const response = await fetch(url, { method: 'POST' });
           
           if (response.ok) {

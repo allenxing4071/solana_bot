@@ -5,7 +5,9 @@
 
 import express from 'express';
 import cors from 'cors';
+import path from 'node:path';
 import logger from '../core/logger';
+import appConfig from '../core/config';
 import tokenRoutes from './routes/token_routes';
 import systemRoutes from './routes/system_routes';
 import poolRoutes from './routes/pool_routes';
@@ -16,8 +18,8 @@ import setupAPIMonitorRoute from './api-monitor'; // 使用TypeScript版本的AP
 // 模块名称
 const MODULE_NAME = 'ApiServer';
 
-// 默认API端口
-const DEFAULT_PORT = 3000;
+// 获取API端口，默认与简化版一致为8080
+const DEFAULT_PORT = appConfig.api?.port || 8080;
 
 /**
  * API服务器类
@@ -54,8 +56,10 @@ class ApiServer {
       allowedHeaders: ['Content-Type', 'Authorization']
     }));
     
-    // 提供静态文件
-    this.app.use(express.static('public'));
+    // 提供静态文件 - 使用简化版API服务器相同的静态文件目录
+    const staticDir = path.resolve(process.cwd(), 'solana_webbot');
+    logger.info(`静态文件目录: ${staticDir}`, MODULE_NAME);
+    this.app.use(express.static(staticDir));
     
     // 请求日志中间件
     this.app.use((req, _res, next) => {
@@ -190,7 +194,7 @@ class ApiServer {
 
 // 创建并导出单例
 const apiServer = new ApiServer(
-  Number.parseInt(process.env.API_PORT || '3000') || DEFAULT_PORT
+  Number.parseInt(process.env.API_PORT || '8080') || DEFAULT_PORT
 );
 
 export default apiServer;
@@ -199,7 +203,7 @@ export default apiServer;
 if (require.main === module) {
   apiServer.start()
     .then(() => {
-      console.log(`API服务器已启动，监听端口 ${process.env.API_PORT || 3000}`);
+      console.log(`API服务器已启动，监听端口 ${process.env.API_PORT || DEFAULT_PORT}`);
     })
     .catch(error => {
       console.error('启动API服务器失败:', error);

@@ -82,8 +82,9 @@ const getSystemStatus = async (_req, res) => {
         const cpuUsage = os.loadavg()[0] * 10; // 转换为百分比
         // 获取系统运行时间
         const uptime = systemRunning ? (Date.now() - systemStartTime) / 1000 : 0;
-        // 获取池状态
-        const activePools = pool_monitor_1.poolMonitor ? pool_monitor_1.poolMonitor.getKnownPools().length : 0;
+        // 获取池状态 - 检查poolMonitor是否存在及其方法
+        const activePools = pool_monitor_1.poolMonitor ? (typeof pool_monitor_1.poolMonitor.getKnownPools === 'function' ?
+            pool_monitor_1.poolMonitor.getKnownPools().length : 0) : 0;
         const monitoredTokens = Math.floor(Math.random() * 100) + 50; // 暂时使用模拟数据
         // 使用实际收集的内存历史数据，如果没有则生成模拟数据
         const memoryHistory = memoryHistoryData.length > 0 ? memoryHistoryData : generateMemoryHistory();

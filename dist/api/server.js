@@ -15,6 +15,7 @@ const system_routes_1 = __importDefault(require("./routes/system_routes"));
 const pool_routes_1 = __importDefault(require("./routes/pool_routes"));
 const transaction_routes_1 = __importDefault(require("./routes/transaction_routes"));
 const settings_routes_1 = __importDefault(require("./routes/settings_routes"));
+const api_monitor_1 = __importDefault(require("./api-monitor")); // 使用TypeScript版本的API监控模块
 // 模块名称
 const MODULE_NAME = 'ApiServer';
 // 默认API端口
@@ -81,6 +82,8 @@ class ApiServer {
         this.app.use('/api/transactions', transaction_routes_1.default);
         // 使用设置路由模块处理设置相关请求
         this.app.use('/api/settings', settings_routes_1.default);
+        // 设置API监控页面路由
+        (0, api_monitor_1.default)(this.app);
         // 增加根路由，提供前端页面
         this.app.get('/', (_req, res) => {
             res.sendFile('index.html', { root: 'public' });

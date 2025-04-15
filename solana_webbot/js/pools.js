@@ -133,7 +133,7 @@ async function loadPoolsData() {
     showLoading(true);
     
     // 从API获取流动性池数据
-    const url = `${getApiBaseUrl()}/pools?t=${Date.now()}`;
+    const url = `${getApiBaseUrl()}/api/pools?t=${Date.now()}`;
     console.log(`从API获取流动性池数据: ${url}`);
     
     const response = await fetch(url);
@@ -293,7 +293,7 @@ function transformPoolsData(rawPools) {
 async function loadSystemStatus() {
   try {
     // 从API获取系统状态
-    const url = `${getApiBaseUrl()}/api/status?t=${Date.now()}`;
+    const url = `${getApiBaseUrl()}/system/status?t=${Date.now()}`;
     console.log(`从API获取系统状态: ${url}`);
     
     const response = await fetch(url);
@@ -308,11 +308,11 @@ async function loadSystemStatus() {
       throw new Error('API返回错误: ' + (data.message || '未知错误'));
     }
     
-    // 更新系统状态UI - 使用/api/status格式的数据
+    // 更新系统状态UI - 使用TypeScript版API服务器的格式
     updateSystemStatusUI({
-      status: data.status === 'running' ? '运行中' : '已停止',
-      uptime: data.uptime,
-      currentTime: new Date().toISOString()
+      status: data.data.status === 'running' ? '运行中' : '已停止',
+      uptime: data.data.uptime,
+      currentTime: data.data.currentTime || new Date().toISOString()
     });
   } catch (error) {
     console.error('加载系统状态失败:', error);
@@ -602,7 +602,7 @@ async function showPoolDetails(poolId) {
     // 如果在当前数据中没有找到，尝试从API获取详情
     if (!pool) {
       // 从API获取池子详情
-      const url = `${getApiBaseUrl()}/pools/detail/${poolId}?t=${Date.now()}`;
+      const url = `${getApiBaseUrl()}/api/pools/detail/${poolId}?t=${Date.now()}`;
       console.log(`从API获取池子详情: ${url}`);
       
       const response = await fetch(url);
@@ -816,7 +816,7 @@ function initEventListeners() {
     elements.startBtn.addEventListener('click', async () => {
       try {
         // 调用启动系统API
-        const url = `${getApiBaseUrl()}/system/start`;
+        const url = `${getApiBaseUrl()}/api/system/start`;
         const response = await fetch(url, { method: 'POST' });
         
         if (response.ok) {
@@ -838,7 +838,7 @@ function initEventListeners() {
     elements.stopBtn.addEventListener('click', async () => {
       try {
         // 调用停止系统API
-        const url = `${getApiBaseUrl()}/system/stop`;
+        const url = `${getApiBaseUrl()}/api/system/stop`;
         const response = await fetch(url, { method: 'POST' });
         
         if (response.ok) {

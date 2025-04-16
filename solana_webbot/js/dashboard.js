@@ -3063,3 +3063,127 @@ function generateMockTokens() {
     
     return mockTokens;
 }
+
+// 在文件顶部初始化部分修改
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('仪表盘页面加载完成，开始初始化...');
+    
+    // 初始化DOM元素引用
+    if (!initElements()) {
+        console.error('初始化DOM元素失败，可能影响功能');
+        addLog('初始化DOM元素失败', 'error');
+    }
+    
+    // 初始化事件处理
+    bindEventHandlers();
+    
+    // 初始化图表
+    setTimeout(() => {
+        initCharts();
+        
+        // 确保图表初始化完成后再加载数据
+        setTimeout(() => {
+            // 加载图表数据
+            fetchProfitTrend('7天');
+            fetchTokenTrend('24小时');
+        }, 300);
+    }, 500);
+    
+    // 立即检查API状态
+    checkApiStatus().then(result => {
+        if (result.isAvailable) {
+            console.log('✅ 后端API服务正常运行', result);
+            addLog('✅ 后端API服务正常运行', 'success');
+            
+            // API正常，立即加载所有数据
+            loadAllData();
+        } else {
+            console.error('❌ 后端API服务不可用', result);
+            addLog('❌ 后端API服务不可用，使用模拟数据', 'error');
+            systemData.isRealData = false;
+            
+            // API不可用，使用模拟数据
+            loadMockData();
+        }
+    });
+    
+    // 500ms后输出API调试信息
+    setTimeout(apiDebugHelper, 500);
+});
+
+/**
+ * 加载所有实时数据
+ */
+function loadAllData() {
+    console.log('[loadAllData] 开始加载所有实时数据...');
+    
+    // 并行加载所有数据，避免顺序依赖导致的阻塞
+    Promise.allSettled([
+        fetchSystemPerformance(),
+        fetchSystemStatus(),
+        fetchRecentTrades(),
+        fetchRecentTokens()
+    ]).then(results => {
+        let successCount = 0;
+        let failCount = 0;
+        
+        results.forEach((result, index) => {
+            if (result.status === 'fulfilled') {
+                successCount++;
+            } else {
+                failCount++;
+                console.error(`[loadAllData] 数据加载失败(${index}):`, result.reason);
+            }
+        });
+        
+        console.log(`[loadAllData] 数据加载完成：${successCount}成功，${failCount}失败`);
+        
+        if (successCount > 0) {
+            addLog(`已加载${successCount}项数据`, 'success');
+        }
+        
+        if (failCount > 0) {
+            addLog(`${failCount}项数据加载失败`, 'warning');
+        }
+        
+        // 无论如何都更新最后更新时间
+        updateLastUpdated();
+    });
+}
+
+/**
+ * 加载模拟数据（当API不可用时）
+ */
+function loadMockData() {
+    console.log('[loadMockData] 加载模拟数据...');
+    systemData.isRealData = false;
+    
+    // 更新系统状态
+    updateSystemStatus('stopped【M】');
+    
+    // 生成并显示模拟交易数据
+    const mockTrades = generateMockTrades();
+    updateTradesTable(mockTrades);
+    
+    // 生成并显示模拟代币数据
+    const mockTokens = generateMockTokens();
+    updateTokensTable(mockTokens);
+    
+    // 更新其他UI元素
+    if (elements.cpuUsage) elements.cpuUsage.textContent = '8.5%';
+    if (elements.memoryUsage) elements.memoryUsage.textContent = '32.7%';
+    if (elements.uptime) elements.uptime.textContent = '0小时0分钟';
+    if (elements.profit) elements.profit.textContent = '0.65 SOL';
+    if (elements.todayProfit) elements.todayProfit.textContent = '0.15 SOL';
+    if (elements.weeklyProfit) elements.weeklyProfit.textContent = '0.65 SOL';
+    if (elements.activePools) elements.activePools.textContent = '3';
+    if (elements.totalPools) elements.totalPools.textContent = '12';
+    if (elements.monitoredTokens) elements.monitoredTokens.textContent = '5';
+    if (elements.todayNewTokens) elements.todayNewTokens.textContent = '2';
+    if (elements.executedTrades) elements.executedTrades.textContent = '5';
+    if (elements.successRate) elements.successRate.textContent = '80.0%';
+    
+    // 添加模拟数据日志
+    addLog('使用模拟数据显示', 'warning');
+    updateLastUpdated();
+}

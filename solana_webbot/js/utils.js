@@ -11,26 +11,42 @@
  * @returns {string} API基础URL
  */
 const getApiBaseUrl = () => {
-    // 首先尝试从全局环境变量中获取
-    if (window?.ENV?.API_URL) {
-        // 如果有端口，拼接端口
-        let baseUrl = window.ENV.API_URL;
-        if (window?.ENV?.API_PORT) {
-            // 确保URL不以/结尾
-            baseUrl = baseUrl.replace(/\/$/, '');
-            baseUrl += `:${window.ENV.API_PORT}`;
+    try {
+        // 首先尝试从全局环境变量中获取
+        if (window?.ENV?.API_URL) {
+            // 如果有端口，拼接端口
+            let baseUrl = window.ENV.API_URL;
+            
+            // 如果是相对路径（不包含http或https），则添加当前域名
+            if (!baseUrl.startsWith('http')) {
+                baseUrl = `${window.location.origin}${baseUrl.startsWith('/') ? '' : '/'}${baseUrl}`;
+            }
+            
+            if (window?.ENV?.API_PORT) {
+                // 确保URL不以/结尾
+                baseUrl = baseUrl.replace(/\/$/, '');
+                // 检查URL是否已包含端口号
+                if (!baseUrl.match(/:\d+$/)) {
+                    baseUrl += `:${window.ENV.API_PORT}`;
+                }
+            }
+            
+            console.log(`[getApiBaseUrl] 从ENV获取API地址: ${baseUrl}`);
+            return baseUrl;
         }
         
-        console.log(`[getApiBaseUrl] 从ENV获取API地址: ${baseUrl}`);
-        return baseUrl;
+        // 第二选择，尝试从当前URL推断
+        const currentUrl = window.location.origin;
+        // 默认假设API在8080端口
+        const apiUrl = currentUrl.replace(/(:\d+)?$/, ':8080');
+        
+        console.log(`[getApiBaseUrl] 根据当前地址推断API地址: ${apiUrl}`);
+        return apiUrl;
+    } catch (error) {
+        console.error('[getApiBaseUrl] 获取API URL时出错:', error);
+        // 默认回退到localhost:8080
+        return 'http://localhost:8080';
     }
-    
-    // 尝试从当前URL推断
-    const currentUrl = window.location.origin;
-    const apiUrl = currentUrl.replace(':8082', ':8080');
-    
-    console.log(`[getApiBaseUrl] 根据当前地址推断API地址: ${apiUrl}`);
-    return apiUrl;
 };
 
 // 使用不同的名称暴露到全局作用域，避免命名冲突
@@ -210,27 +226,98 @@ async function fetchData(endpoint, options = {}) {
 }
 
 /**
- * 检查API状态
- * @returns {Promise<boolean>} API是否可用
+ * 检查API服务是否正常运行
+ * @returns {Promise<{isAvailable: boolean, status: string, details: object}>} API状态信息
  */
 const checkApiStatus = async () => {
+    const timeoutMs = 5000; // 5秒超时
+    const statusEndpoints = [
+        '/api/status',
+        '/status',
+        '/api/system/status',
+        '/health'
+    ];
+    
+    console.log('[checkApiStatus] 开始检查API状态...');
+    
+    const apiUrl = getApiBaseUrl();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
     try {
-        console.log('[checkApiStatus] 开始检查API状态...');
-        const apiUrl = `${getApiBaseUrl()}/api/status`;
-        console.log(`[checkApiStatus] 请求状态检查: ${apiUrl}`);
-        
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        // 尝试多个可能的状态端点
+        for (const endpoint of statusEndpoints) {
+            try {
+                const url = `${apiUrl}${endpoint}`;
+                console.log(`[checkApiStatus] 尝试请求: ${url}`);
+                
+                const response = await fetch(url, {
+                    signal: controller.signal,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                
+                if (response.ok) {
+                    clearTimeout(timeoutId);
+                    const data = await response.json();
+                    
+                    console.log(`[checkApiStatus] 端点 ${endpoint} 响应成功:`, data);
+                    
+                    // 提取状态信息
+                    const status = data.data?.status || 
+                                  data.status ||
+                                  (data.success ? 'running' : 'error');
+                    
+                    return {
+                        isAvailable: true,
+                        status: status,
+                        details: data.data || data,
+                        endpoint: endpoint
+                    };
+                }
+                
+                console.warn(`[checkApiStatus] 端点 ${endpoint} 响应异常: ${response.status}`);
+            } catch (endpointError) {
+                console.warn(`[checkApiStatus] 检查端点 ${endpoint} 时出错:`, endpointError);
+                // 继续尝试下一个端点
+            }
         }
         
-        const data = await response.json();
-        console.log('[checkApiStatus] API响应:', data);
-        
-        return data?.success || false;
+        // 所有端点都失败
+        console.error('[checkApiStatus] 所有API状态端点都不可用');
+        return {
+            isAvailable: false,
+            status: 'unavailable',
+            details: {
+                error: 'API服务不可用或未响应',
+                checkedEndpoints: statusEndpoints
+            }
+        };
     } catch (error) {
+        clearTimeout(timeoutId);
+        
+        if (error.name === 'AbortError') {
+            console.error('[checkApiStatus] API请求超时');
+            return {
+                isAvailable: false,
+                status: 'timeout',
+                details: {
+                    error: 'API请求超时',
+                    timeout: timeoutMs
+                }
+            };
+        }
+        
         console.error('[checkApiStatus] API健康检查失败:', error);
-        return false;
+        return {
+            isAvailable: false,
+            status: 'error',
+            details: {
+                error: error.message
+            }
+        };
     }
 };
 

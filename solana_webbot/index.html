@@ -13,18 +13,19 @@
   <script>
     // 全局环境变量对象
     window.ENV = {
-      API_URL: '/api',
-      API_PORT: '8080',
-      USE_MOCK_DATA: false // 强制禁用模拟数据
+      API_URL: 'http://localhost:8080',
+      API_PORT: '', // 不需要额外的端口，已经包含在URL中
+      USE_MOCK_DATA: false, // 只有在API不可用时才使用模拟数据
+      DEBUG: true
     };
     
-    // 始终使用真实API数据
+    // 如果在开发环境中，输出更详细的日志
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      window.ENV.API_URL = 'http://localhost:8080/api';
-      
-      // 添加调试信息
-      console.log('本地开发环境，连接真实API');
-      console.log('API请求将使用路径:', window.ENV.API_URL);
+      // 本地环境额外调试信息
+      console.log('%c本地开发环境', 'color: green; font-weight: bold');
+      console.log('API URL:', window.ENV.API_URL);
+      console.log('API PORT:', window.ENV.API_PORT || '(不使用额外端口)');
+      console.log('DEBUG MODE:', window.ENV.DEBUG ? '启用' : '禁用');
     }
     
     // 输出环境信息到控制台
@@ -32,8 +33,13 @@
     
     // 添加全局函数验证API地址
     window.getApiBaseUrl = function() {
-      console.log('获取API基础URL:', window.ENV.API_URL);
-      return window.ENV.API_URL;
+      if (window.ENV.API_URL) {
+        const baseUrl = window.ENV.API_URL + (window.ENV.API_PORT ? `:${window.ENV.API_PORT}` : '');
+        console.log('获取API基础URL:', baseUrl);
+        return baseUrl;
+      }
+      // 默认回退到localhost:8080
+      return 'http://localhost:8080';
     };
   </script>
 </head>
@@ -268,69 +274,15 @@
   <!-- 加载主要脚本，包括仪表板逻辑 -->
   <script src="js/dashboard.js"></script>
 
-  <!-- 初始化脚本 -->
+  <!-- 初始化脚本 - 移除内联初始化函数，使用dashboard.js中的DOMContentLoaded事件处理 -->
   <script>
-    // 页面加载完成后执行初始化
+    // 页面加载完成后输出调试信息
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('页面加载完成，初始化应用');
-        
-        // 调试信息
-        console.log('环境变量:', window.ENV);
-        console.log('API基础URL:', window.utilsGetApiBaseUrl ? window.utilsGetApiBaseUrl() : '未定义');
-        
-        // 初始化仪表板
-        initializeDashboard();
+      console.log('DOM内容加载完成，准备初始化应用');
+      console.log('API基础URL:', window.utilsGetApiBaseUrl ? window.utilsGetApiBaseUrl() : '未定义');
+      
+      // dashboard.js会自动初始化应用
     });
-    
-    // 初始化仪表盘
-    function initializeDashboard() {
-        // 定义elements对象
-        const elements = {
-            // 系统状态
-            systemStatus: document.getElementById('systemStatus'),
-            cpuUsage: document.getElementById('cpuUsage'),
-            memoryUsage: document.getElementById('memoryUsage'),
-            uptime: document.getElementById('uptime'),
-            profit: document.getElementById('profit'),
-            todayProfit: document.getElementById('todayProfit'),
-            weeklyProfit: document.getElementById('weeklyProfit'),
-            activePools: document.getElementById('activePools'),
-            totalPools: document.getElementById('totalPools'),
-            monitoredTokens: document.getElementById('monitoredTokens'),
-            todayNewTokens: document.getElementById('todayNewTokens'),
-            executedTrades: document.getElementById('executedTrades'),
-            successRate: document.getElementById('successRate'),
-            
-            // 交易表格
-            tradesTable: document.getElementById('tradesTable'),
-            tradesTableBody: document.getElementById('tradesTableBody'),
-            
-            // 代币表格
-            tokensTable: document.getElementById('tokensTable'),
-            tokensTableBody: document.getElementById('tokensTableBody'),
-            
-            // 图表容器
-            profitChart: document.getElementById('profitChart'),
-            tokenChart: document.getElementById('tokenChart')
-        };
-        
-        // 初始化系统状态
-        initSystemStatus(elements);
-        
-        // 初始化交易表格
-        initTradesTable(elements);
-        
-        // 初始化代币表格
-        initTokensTable(elements);
-        
-        // 初始化图表
-        initCharts(elements);
-        
-        // 设置定时刷新
-        setInterval(() => {
-            refreshDashboard(elements);
-        }, 5000);
-    }
   </script>
 </body>
 </html> 

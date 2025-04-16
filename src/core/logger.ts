@@ -158,37 +158,37 @@ const winstonLogger = winston.createLogger({
 const logger = {
   /**
    * 记录调试信息
-   * 低级别的技术细节，通常用于开发调试
+   * 仅用于开发阶段的详细信息
    * 
    * 【比喻解释】
-   * 这就像记录船只日常运行的细节数据：
-   * - 记录发动机运行参数（技术细节）
-   * - 记录天气和洋流状况（环境数据）
-   * - 这些记录对航行不是必须，但对分析船只性能很有用
+   * 这就像记录船只航行中的细节观察：
+   * - 记录各种仪表读数（系统状态）
+   * - 记录天气变化（环境条件）
+   * - 记录船员操作（用户行为）
    * 
    * @param {string} message - 日志消息，就像记录的主要内容
    * @param {string} [module] - 模块名称，就像报告来源的船舱
-   * @param {Record<string, unknown>} [meta] - 元数据，就像事件的详细背景
+   * @param {unknown} [meta] - 元数据，就像观察的详细背景
    */
-  debug: (message: string, module?: string, meta?: Record<string, unknown>): void => {
+  debug: (message: string, module?: string, meta?: unknown): void => {
     winstonLogger.debug(message, { module, meta });
   },
 
   /**
    * 记录信息
-   * 常规操作信息，表示程序正常运行
+   * 普通操作和状态的通知
    * 
    * 【比喻解释】
-   * 这就像记录船只的正常航行信息：
-   * - 记录按计划到达某个航点（程序里程碑）
-   * - 记录补给燃料和物资（资源使用）
-   * - 记录例行维护工作（常规操作）
+   * 这就像记录船只正常航行的重要事件：
+   * - 记录航向变更（流程步骤）
+   * - 记录停靠港口（操作完成）
+   * - 记录燃料补给（资源管理）
    * 
    * @param {string} message - 日志消息，就像记录的主要内容
    * @param {string} [module] - 模块名称，就像报告来源的船舱
-   * @param {Record<string, unknown>} [meta] - 元数据，就像事件的详细背景
+   * @param {unknown} [meta] - 元数据，就像事件的详细背景
    */
-  info: (message: string, module?: string, meta?: Record<string, unknown>): void => {
+  info: (message: string, module?: string, meta?: unknown): void => {
     winstonLogger.info(message, { module, meta });
   },
 
@@ -204,9 +204,9 @@ const logger = {
    * 
    * @param {string} message - 日志消息，就像记录的主要内容
    * @param {string} [module] - 模块名称，就像报告来源的船舱
-   * @param {Record<string, unknown>} [meta] - 元数据，就像事件的详细背景
+   * @param {unknown} [meta] - 元数据，就像事件的详细背景
    */
-  warn: (message: string, module?: string, meta?: Record<string, unknown>): void => {
+  warn: (message: string, module?: string, meta?: unknown): void => {
     winstonLogger.warn(message, { module, meta });
   },
 
@@ -222,9 +222,9 @@ const logger = {
    * 
    * @param {string} message - 日志消息，就像记录的主要内容
    * @param {string} [module] - 模块名称，就像报告来源的船舱
-   * @param {Record<string, unknown>} [meta] - 元数据，就像事件的详细背景和错误堆栈
+   * @param {unknown} [meta] - 元数据，就像事件的详细背景和错误堆栈
    */
-  error: (message: string, module?: string, meta?: Record<string, unknown>): void => {
+  error: (message: string, module?: string, meta?: unknown): void => {
     winstonLogger.error(message, { module, meta });
   }
 };

@@ -109,11 +109,11 @@
       <div class="stats-grid index-stats-grid">
         <div class="stat-card">
           <div class="stat-title">CPU使用率</div>
-          <div class="stat-value"><span class="cpu-usage">--</span></div>
+          <div class="stat-value"><span class="cpu-usage"></span></div>
           <div class="progress-bar">
             <div class="progress-fill cpu" id="cpuBar" style="width: 5%"></div>
           </div>
-          <div class="stat-indicator" id="cpuCores">--</div>
+          <div class="stat-indicator" id="cpuCores"><span class="cpu-cores"></span></div>
         </div>
         
         <div class="stat-card">
@@ -258,7 +258,82 @@
     </div>
   </div>
 
-  <!-- 引入JavaScript文件 -->
+  <!-- 最重要的配置和环境文件必须优先加载 -->
+  <script src="js/env-config.js"></script>
+  <script src="js/utils.js"></script>
+
+  <!-- 加载Chart.js库 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+  <!-- 加载主要脚本，包括仪表板逻辑 -->
   <script src="js/dashboard.js"></script>
+
+  <!-- 初始化脚本 -->
+  <script>
+    // 页面加载完成后执行初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('页面加载完成，初始化应用');
+        
+        // 调试信息
+        console.log('环境变量:', window.ENV);
+        console.log('API基础URL:', window.utilsGetApiBaseUrl ? window.utilsGetApiBaseUrl() : '未定义');
+        
+        // 初始化仪表板
+        initializeDashboard();
+    });
+    
+    // 初始化仪表板并调用API获取数据
+    function initializeDashboard() {
+        console.log('初始化仪表板...');
+        
+        // 检查API连接并弹出提示
+        if (typeof checkApiStatus === 'function') {
+            checkApiStatus();
+        } else {
+            console.error('checkApiStatus函数未定义，请检查utils.js是否正确加载');
+        }
+        
+        // 检查必要DOM元素
+        if (!elements || !elements.tradesTableBody) {
+            console.warn('仪表板DOM元素未准备好，尝试重新初始化...');
+            setTimeout(initElements, 500);
+        }
+        
+        // 获取系统数据
+        setTimeout(function() {
+            console.log('获取初始数据...');
+            
+            // 获取系统状态
+            fetchSystemData(true);
+            
+            // 获取交易数据
+            if (typeof fetchRecentTrades === 'function') {
+                fetchRecentTrades();
+            } else {
+                console.error('fetchRecentTrades函数未定义');
+            }
+            
+            // 获取代币数据
+            if (typeof fetchRecentTokens === 'function') {
+                fetchRecentTokens();
+            } else {
+                console.error('fetchRecentTokens函数未定义');
+            }
+            
+            // 获取利润摘要
+            if (typeof fetchProfitSummary === 'function') {
+                fetchProfitSummary();
+            } else {
+                console.error('fetchProfitSummary函数未定义');
+            }
+            
+            // 设置数据刷新定时器
+            setInterval(function() {
+                fetchSystemData(false);
+            }, 30000); // 每30秒刷新一次
+            
+        }, 1000); // 延迟1秒等待页面完全加载
+    }
+  </script>
 </body>
 </html> 

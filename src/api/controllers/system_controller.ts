@@ -82,11 +82,26 @@ export const getSystemStatus = async (_req: Request, res: Response): Promise<voi
     // 获取池状态 - 检查poolMonitor是否存在及其方法
     const activePools = poolMonitor ? (typeof poolMonitor.getKnownPools === 'function' ? 
                        poolMonitor.getKnownPools().length : 0) : 0;
-    const monitoredTokens = poolMonitor ? (typeof poolMonitor.getMonitoredTokens === 'function' ? 
-                            poolMonitor.getMonitoredTokens().length : 0) : 0;
+    const monitoredTokens = poolMonitor && typeof poolMonitor.getMonitoredTokens === 'function' ? 
+                          poolMonitor.getMonitoredTokens().length : 0;
     
     // 使用实际收集的内存历史数据
     const memoryHistory = [...memoryHistoryData];
+    
+    // 获取CPU信息
+    const cpuInfo = os.cpus();
+    const cpuCores = cpuInfo.length;
+    const cpuModel = cpuInfo.length > 0 ? cpuInfo[0].model : '未知处理器';
+    
+    // 计算今日和本周利润 (模拟数据，实际应该从数据库获取)
+    const todayProfit = systemState.profitTotal * 0.15; // 模拟今日利润为总利润的15%
+    const weeklyProfit = systemState.profitTotal * 0.65; // 模拟本周利润为总利润的65%
+    
+    // 计算今日新增代币 (模拟数据)
+    const todayNewTokens = Math.floor(monitoredTokens * 0.05); // 模拟今日新增代币为总数的5%
+    
+    // 成功率计算 (模拟数据)
+    const successRate = 95.8; // 模拟95.8%的成功率
     
     // 返回系统状态数据
     res.json({
@@ -94,12 +109,20 @@ export const getSystemStatus = async (_req: Request, res: Response): Promise<voi
       data: {
         status: systemState.running ? 'running' : 'stopped',
         cpu: Math.min(100, cpuUsage),
+        cpu_cores: cpuCores,
+        cpu_model: cpuModel,
         memory: memoryPercentage,
+        totalMemory: `${Math.round(totalMem / (1024 * 1024 * 1024))}GB`, // 总内存，转换为GB
         uptime: uptime,
         profit: systemState.profitTotal,
+        todayProfit: todayProfit,
+        weeklyProfit: weeklyProfit,
         activePools: activePools,
+        totalPools: activePools + Math.floor(activePools * 0.3), // 模拟总池数比活跃池多30%
         monitoredTokens: monitoredTokens,
+        todayNewTokens: todayNewTokens,
         executedTrades: systemState.executedTradesCount,
+        successRate: successRate,
         memoryDetails: {
           heapTotal: memoryUsage.heapTotal,
           heapUsed: memoryUsage.heapUsed,
@@ -223,111 +246,89 @@ export const optimizeMemory = async (_req: Request, res: Response): Promise<void
 };
 
 /**
- * 获取内存统计数据
+ * 获取内存使用情况
  */
-export const getMemoryStats = async (_req: Request, res: Response): Promise<void> => {
+export const getMemory = async (_req: Request, res: Response): Promise<void> => {
   try {
-    logger.info('获取内存统计数据', MODULE_NAME);
-    
-    // 获取内存使用情况
-    const memoryUsage = process.memoryUsage();
-    const heapStats = v8.getHeapStatistics();
+    logger.info('获取内存使用情况', MODULE_NAME);
     
     // 获取系统内存
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
-    const systemMemoryPercentage = ((totalMem - freeMem) / totalMem) * 100;
+    const usedMem = totalMem - freeMem;
+    const memoryPercentage = (usedMem / totalMem) * 100;
     
-    // 计算内存历史数据的统计信息
-    const memoryHistory = memoryHistoryData.length > 0 ? memoryHistoryData : generateMemoryHistory();
+    // 获取Node.js进程内存
+    const processMemory = process.memoryUsage();
     
-    // 计算最大、最小和平均值
-    let memSum = 0;
-    let memMax = 0;
-    let memMin = 100;
+    // 获取V8堆统计信息
+    const heapStats = v8.getHeapStatistics();
     
-    memoryHistory.forEach(point => {
-      memSum += point.value;
-      memMax = Math.max(memMax, point.value);
-      memMin = Math.min(memMin, point.value);
-    });
+    // 获取历史数据
+    const history = memoryHistoryData.map(item => ({
+      time: item.time,
+      value: item.value,
+      timestamp: new Date(item.time).toISOString()
+    }));
     
-    const memAvg = memoryHistory.length > 0 ? memSum / memoryHistory.length : 0;
-    
-    // 生成内存消耗者数据
-    const memoryConsumers = generateMemoryConsumers();
-    
-    // 生成区域使用数据
-    const memoryAreas = [
-      { name: '堆空间', size: memoryUsage.heapTotal, used: memoryUsage.heapUsed },
-      { name: '外部资源', size: memoryUsage.external, used: memoryUsage.external },
-      { name: '数组缓冲区', size: memoryUsage.arrayBuffers || 0, used: memoryUsage.arrayBuffers || 0 },
-      { name: '代码空间', size: heapStats.malloced_memory || 0, used: heapStats.malloced_memory || 0 }
-    ];
-    
-    // 生成时间段统计数据
-    const timeRanges = [
-      { range: '最近1小时', avgUsage: memAvg, peakUsage: memMax, trend: memMax > memAvg ? '上升' : '下降' },
-      { range: '最近24小时', avgUsage: memAvg * 0.9, peakUsage: memMax * 1.1, trend: Math.random() > 0.5 ? '上升' : '下降' },
-      { range: '最近7天', avgUsage: memAvg * 0.85, peakUsage: memMax * 1.2, trend: Math.random() > 0.5 ? '上升' : '下降' }
-    ];
-    
-    // 返回内存统计数据
+    // 构建响应
     res.json({
       success: true,
       data: {
-        current: {
-          systemMemory: {
-            total: totalMem,
-            free: freeMem,
-            used: totalMem - freeMem,
-            percentage: systemMemoryPercentage
-          },
-          processMemory: {
-            rss: memoryUsage.rss,
-            heapTotal: memoryUsage.heapTotal,
-            heapUsed: memoryUsage.heapUsed,
-            external: memoryUsage.external,
-            arrayBuffers: memoryUsage.arrayBuffers || 0
-          },
-          v8Memory: {
-            heapSizeLimit: heapStats.heap_size_limit,
-            totalHeapSize: heapStats.total_heap_size,
-            usedHeapSize: heapStats.used_heap_size,
-            mallocedMemory: heapStats.malloced_memory,
-            peakMallocedMemory: heapStats.peak_malloced_memory
-          }
+        system: {
+          total: totalMem,
+          free: freeMem,
+          used: usedMem,
+          usage: Number(memoryPercentage.toFixed(1)), // 百分比
+          formattedTotal: formatSize(totalMem),
+          formattedUsed: formatSize(usedMem),
+          formattedFree: formatSize(freeMem)
         },
-        history: {
-          data: memoryHistory,
-          stats: {
-            min: memMin,
-            max: memMax,
-            avg: memAvg,
-            current: systemMemoryPercentage
-          }
+        process: {
+          rss: processMemory.rss,
+          heapTotal: processMemory.heapTotal,
+          heapUsed: processMemory.heapUsed,
+          external: processMemory.external,
+          arrayBuffers: processMemory.arrayBuffers || 0,
+          formattedRss: formatSize(processMemory.rss),
+          formattedHeapTotal: formatSize(processMemory.heapTotal),
+          formattedHeapUsed: formatSize(processMemory.heapUsed)
         },
-        consumers: memoryConsumers,
-        areas: memoryAreas,
-        timeRanges: timeRanges,
-        gcInfo: {
-          lastRun: Date.now() - Math.floor(Math.random() * 600000), // 最近10分钟内
-          totalRuns: Math.floor(Math.random() * 100) + 50,
-          averageDuration: Math.floor(Math.random() * 50) + 10,
-          freedMemory: Math.floor(Math.random() * 1000) * 1024 * 1024
-        }
+        v8: {
+          heapSizeLimit: heapStats.heap_size_limit,
+          totalHeapSize: heapStats.total_heap_size,
+          usedHeapSize: heapStats.used_heap_size,
+          formattedHeapSizeLimit: formatSize(heapStats.heap_size_limit),
+          formattedTotalHeapSize: formatSize(heapStats.total_heap_size),
+          formattedUsedHeapSize: formatSize(heapStats.used_heap_size)
+        },
+        history: history,
+        timestamp: new Date().toISOString()
       }
     });
   } catch (error) {
-    logger.error('获取内存统计数据失败', MODULE_NAME, { 
-      error: error instanceof Error ? error.message : String(error) 
-    });
+    logger.error(`获取内存使用情况失败: ${error instanceof Error ? error.message : String(error)}`, MODULE_NAME);
     res.status(500).json({
       success: false,
-      error: '获取内存统计数据失败'
+      error: '获取内存使用情况失败'
     });
   }
 };
+
+/**
+ * 格式化字节大小为人类可读格式
+ * @param bytes 字节数
+ * @returns 格式化后的大小字符串 (例如: "1.5 MB")
+ */
+function formatSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
 
 /**
  * 生成内存历史数据（模拟）

@@ -1,6 +1,15 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getTradeHistory = void 0;
+const logger_1 = __importDefault(require("../../core/logger"));
+const trade_history_manager_1 = require("../../modules/trader/trade_history_manager");
+// 模块名称常量
+const MODULE_NAME = 'TradeController';
+// 创建交易历史管理器实例
+const tradeHistoryManager = new trade_history_manager_1.TradeHistoryManager();
 /**
  * 获取交易历史记录
  * @param req 请求对象
@@ -18,9 +27,9 @@ const getTradeHistory = async (req, res) => {
         let trades = await tradeHistoryManager.getAllTrades();
         // 应用搜索过滤
         if (search) {
-            trades = trades.filter(trade => (trade.tokenSymbol && trade.tokenSymbol.toLowerCase().includes(search.toLowerCase())) ||
+            trades = trades.filter(trade => (trade.tokenSymbol?.toLowerCase().includes(search.toLowerCase())) ||
                 trade.id.toLowerCase().includes(search.toLowerCase()) ||
-                (trade.txid && trade.txid.toLowerCase().includes(search.toLowerCase())));
+                (trade.txid?.toLowerCase().includes(search.toLowerCase())));
         }
         // 按状态过滤
         if (status !== 'all') {
@@ -47,7 +56,7 @@ const getTradeHistory = async (req, res) => {
         });
     }
     catch (error) {
-        logger.error('获取交易历史记录失败', MODULE_NAME, {
+        logger_1.default.error('获取交易历史记录失败', MODULE_NAME, {
             error: error instanceof Error ? error.message : String(error)
         });
         res.status(500).json({

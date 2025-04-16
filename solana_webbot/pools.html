@@ -220,7 +220,11 @@
     </div>
   </div>
 
+  <!-- 确保env-config.js最先加载，设置全局环境变量 -->
+  <script src="js/env-config.js"></script>
+  <!-- 其他JS文件 -->
   <script src="js/utils.js"></script>
+  <script src="js/pools.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async function() {
       // 初始化变量

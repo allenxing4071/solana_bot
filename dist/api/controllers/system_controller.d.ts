@@ -27,6 +27,6 @@ export declare const stopSystem: (_req: Request, res: Response) => Promise<void>
  */
 export declare const optimizeMemory: (_req: Request, res: Response) => Promise<void>;
 /**
- * 获取内存统计数据
+ * 获取内存使用情况
  */
-export declare const getMemoryStats: (_req: Request, res: Response) => Promise<void>;
+export declare const getMemory: (_req: Request, res: Response) => Promise<void>;

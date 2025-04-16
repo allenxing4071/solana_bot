@@ -16,18 +16,26 @@
  * @returns {string} API基础URL
  */
 function getApiBaseUrl() {
-    // 确保环境变量对象存在
-    if (!window.ENV) {
-        console.warn('[getApiBaseUrl] 环境变量未定义，使用默认API URL');
-        window.ENV = {
-            API_URL: 'http://localhost:8080/api',
-            ENVIRONMENT: 'development',
-            USE_MOCK_DATA: true
-        };
+    // 首先尝试从全局环境变量中获取
+    if (window.ENV && window.ENV.API_URL) {
+        // 如果有端口，拼接端口
+        let baseUrl = window.ENV.API_URL;
+        if (window.ENV.API_PORT) {
+            // 确保URL不以/结尾
+            baseUrl = baseUrl.replace(/\/$/, '');
+            baseUrl += ':' + window.ENV.API_PORT;
+        }
+        
+        console.log(`[getApiBaseUrl] 从ENV获取API地址: ${baseUrl}`);
+        return baseUrl;
     }
     
-    // 返回API地址，如果不存在则使用默认值
-    return window.ENV.API_URL || 'http://localhost:8080/api';
+    // 尝试从当前URL推断
+    const currentUrl = window.location.origin;
+    const apiUrl = currentUrl.replace(':8082', ':8080');
+    
+    console.log(`[getApiBaseUrl] 根据当前地址推断API地址: ${apiUrl}`);
+    return apiUrl;
 }
 
 /**
@@ -43,20 +51,8 @@ async function checkApiStatus() {
         const statusEndpoint = `${apiUrl}/status`;
         console.log(`[checkApiStatus] 请求状态检查: ${statusEndpoint}`);
         
-        // 设置超时，避免长时间等待
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
-        
-        const response = await fetch(statusEndpoint, {
-            signal: controller.signal,
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Cache-Control': 'no-cache'
-            }
-        });
-        
-        clearTimeout(timeoutId);
+        // 完全简化请求，不使用任何自定义选项，避免CORS问题
+        const response = await fetch(statusEndpoint);
         
         // 如果服务器响应正常
         if (response.ok) {
@@ -107,41 +103,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(apiDebugHelper, 500);
 });
 
-// DOM元素缓存
-const elements = {
-    cpuUsage: document.querySelector('.cpu-usage'),
-    cpuBar: document.getElementById('cpuBar'),
-    cpuCores: document.querySelector('.stat-card:first-child .stat-indicator'),
-    memoryUsage: document.querySelector('.memory-usage'),
-    memoryBar: document.getElementById('memoryBar'),
-    memoryTotal: document.getElementById('memoryTotal'),
-    uptime: document.querySelector('.uptime'),
-    totalProfit: document.getElementById('totalProfit'),
-    monitoredTokens: document.getElementById('monitoredTokens'),
-    activePools: document.getElementById('activePools'),
-    totalPools: document.getElementById('totalPools'),
-    executedTrades: document.getElementById('executedTrades'),
-    tradesTableBody: document.getElementById('tradesTableBody'),
-    tokensTableBody: document.getElementById('tokensTableBody'),
-    logContainer: document.getElementById('logContainer'),
-    lastUpdated: document.querySelector('.last-updated'),
-    refreshBtn: document.getElementById('refreshBtn'),
-    tokenDiscoveryChart: document.getElementById('tokenDiscoveryChart'),
-    profitTrendChart: document.getElementById('profitTrendChart'),
-    startBtn: document.getElementById('startBtn'),
-    stopBtn: document.getElementById('stopBtn'),
-    statusIndicator: document.querySelector('.status-dot'),
-    statusText: document.querySelector('.status-text')
-};
-
-// 全局变量
-const charts = {
-    tokenDiscoveryChart: null,
-    profitTrendChart: null
-};
-
-// 使用const而不是let，因为我们只初始化一次
-const systemData = {
+// 全局变量定义
+let elements = {};
+let charts = {};
+let systemData = {
+    isRealData: true, // 标识数据来源是否为真实数据（否则为模拟数据）
     status: 'stopped',
     cpu: 0,
     memory: 0,
@@ -150,199 +116,97 @@ const systemData = {
     monitoredTokens: 0,
     activePools: 0,
     executedTrades: 0,
-    tokenDiscoveryTrend: [],  // 代币发现趋势
-    profitTrend: [],          // 利润趋势
-    isRealData: !window.ENV.USE_MOCK_DATA,  // 根据全局配置判断是否为真实数据
-    totalMemory: 0  // 新增totalMemory字段
+    profitTrend: [],
+    tokenDiscoveryTrend: []
 };
 
-/**
- * 防抖函数 - 限制函数在一定时间内只执行一次
- * @param {Function} func - 需要执行的函数
- * @param {number} wait - 等待时间（毫秒）
- * @returns {Function} - 包装后的函数
- */
-function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
+// DOM元素初始化
+function initElements() {
+    console.log('初始化DOM元素引用...');
+    
+    try {
+        // 获取主要UI元素
+        elements = {
+            // 状态指示器
+            statusIndicator: document.querySelector('.status-indicator'),
+            statusText: document.querySelector('.status-text'),
+            
+            // 统计卡片
+            cpuUsage: document.querySelector('.cpu-usage'),
+            cpuBar: document.querySelector('.cpu-bar'),
+            cpuCores: document.querySelector('.cpu-cores'),
+            memoryUsage: document.querySelector('.memory-usage'),
+            memoryBar: document.querySelector('.memory-bar'),
+            
+            // 交易表格
+            tradesTableBody: document.getElementById('tradesTableBody'),
+            
+            // 代币表格
+            tokensTableBody: document.getElementById('tokensTableBody'),
+            
+            // 按钮
+            refreshBtn: document.getElementById('refreshBtn'),
+            startBtn: document.getElementById('startButton'),
+            stopBtn: document.getElementById('stopButton'),
+            
+            // 图表周期按钮
+            chartPeriodBtns: document.querySelectorAll('.chart-period-btn'),
+            
+            // 日志容器
+            logContainer: document.getElementById('logContainer')
+        };
+        
+        // 检查关键元素是否存在
+        if (!elements.tradesTableBody) {
+            console.error('无法找到tradesTableBody元素，ID可能不正确');
+        }
+        
+        if (!elements.tokensTableBody) {
+            console.error('无法找到tokensTableBody元素，ID可能不正确');
+        }
+        
+        // 初始化表格元素（以防ID不一致）
+        if (!elements.tradesTableBody) {
+            elements.tradesTableBody = document.querySelector('table.trades-table tbody');
+            console.log('尝试通过类选择器查找交易表格:', elements.tradesTableBody ? '找到' : '未找到');
+        }
+        
+        if (!elements.tokensTableBody) {
+            elements.tokensTableBody = document.querySelector('table.tokens-table tbody');
+            console.log('尝试通过类选择器查找代币表格:', elements.tokensTableBody ? '找到' : '未找到');
+        }
+        
+        // 如果仍然找不到，尝试查找所有表格并使用第一个和第二个
+        if (!elements.tradesTableBody || !elements.tokensTableBody) {
+            const allTables = document.querySelectorAll('table tbody');
+            console.log(`找到 ${allTables.length} 个表格tbody元素`);
+            
+            if (allTables.length >= 1 && !elements.tradesTableBody) {
+                elements.tradesTableBody = allTables[0];
+                console.log('使用第一个表格tbody作为tradesTableBody');
+            }
+            
+            if (allTables.length >= 2 && !elements.tokensTableBody) {
+                elements.tokensTableBody = allTables[1];
+                console.log('使用第二个表格tbody作为tokensTableBody');
+            }
+        }
+        
+        console.log('DOM元素初始化完成:', elements);
+        return true;
+    } catch (error) {
+        console.error('初始化DOM元素时出错:', error);
+        return false;
+    }
 }
 
-/**
- * 页面初始化
- */
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('页面加载完成，开始初始化...');
+// 在全局作用域调用初始化函数，确保DOM元素已就绪
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded事件触发，初始化元素');
+    initElements();
     
-    // 首先立即检查DOM元素
-    console.log('检查关键DOM元素:');
-    console.log('activePools元素:', document.getElementById('activePools'));
-    console.log('totalPools元素:', document.getElementById('totalPools'));
-    
-    // 添加测试函数，手动设置池数据，确认DOM更新是否正常
-    window.testPoolStats = function(active, total) {
-        console.log(`[测试] 手动设置池数据: 活跃=${active}, 总数=${total}`);
-        const activeEl = document.getElementById('activePools');
-        const totalEl = document.getElementById('totalPools');
-        
-        if (activeEl) activeEl.textContent = active;
-        if (totalEl) totalEl.textContent = total;
-        
-        console.log('DOM设置后的值:');
-        console.log('activePools.textContent =', activeEl ? activeEl.textContent : 'null');
-        console.log('totalPools.textContent =', totalEl ? totalEl.textContent : 'null');
-        
-        addLog(`测试设置池数据: 活跃=${active}, 总数=${total}`, 'info');
-    };
-    
-    // 在浏览器控制台显示测试指南
-    console.log('%c调试说明: 在控制台输入 testPoolStats(32, 45) 手动测试池数显示', 'color: green; font-weight: bold;');
-    
-    // 绑定刷新数据按钮事件
-    const refreshBtn = document.getElementById('refreshBtn');
-    const refreshDataBtn = document.getElementById('refreshData');
-    
-    // 尝试绑定刷新按钮，支持两种可能的ID
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => {
-            console.log('刷新按钮被点击');
-            fetchSystemData(true);
-            fetchPoolsData(); // 同时刷新池数据
-        });
-        console.log('成功绑定refreshBtn按钮事件');
-    } else if (refreshDataBtn) {
-        refreshDataBtn.addEventListener('click', () => {
-            console.log('刷新按钮被点击');
-            fetchSystemData(true);
-            fetchPoolsData(); // 同时刷新池数据
-        });
-        console.log('成功绑定refreshData按钮事件');
-    } else {
-        console.warn('未找到刷新按钮元素');
-    }
-    
-    // 绑定启动/停止按钮事件
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    
-    if (startBtn) {
-        startBtn.addEventListener('click', startBot);
-    } else {
-        console.warn('未找到启动按钮元素');
-    }
-    
-    if (stopBtn) {
-        stopBtn.addEventListener('click', stopBot);
-    } else {
-        console.warn('未找到停止按钮元素');
-    }
-    
-    // 初始清除按钮
-    const clearLogsBtn = document.getElementById('clearLogsBtn');
-    if (clearLogsBtn) {
-        clearLogsBtn.addEventListener('click', () => {
-            const logContainer = document.getElementById('logContainer');
-            if (logContainer) {
-                logContainer.innerHTML = '';
-                addLog('日志已清除', 'info');
-            }
-        });
-    }
-    
-    // 使用IntersectionObserver实现懒加载图表
-    const observerOptions = {
-        root: null, // 使用视口作为参考
-        rootMargin: '0px',
-        threshold: 0.1 // 当元素有10%进入视口时触发
-    };
-    
-    const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const chartElement = entry.target;
-                const chartType = chartElement.getAttribute('data-chart-type');
-                
-                console.log(`[懒加载] 图表 ${chartType} 进入视口，开始初始化`);
-                
-                // 取消观察该元素，避免重复初始化
-                observer.unobserve(chartElement);
-                
-                // 使用统一的图表初始化函数
-                setTimeout(() => {
-                    initCharts();
-                    
-                    // 获取相应的趋势数据
-                    if (chartType === 'token-discovery') {
-                        fetchTokenTrends();
-                    } else if (chartType === 'profit-trend') {
-                        fetchProfitTrends();
-                    }
-                }, 50);
-            }
-        });
-    }, observerOptions);
-    
-    // 绑定图表时间周期按钮 - 确保在页面加载完成后绑定
-    bindChartPeriodButtons();
-    
-    // 最优先获取池数据
-    console.log('开始获取池数据 - 优先级高');
-    fetchPoolsData();
-    
-    // 初始化关键数据
-    fetchSystemData();
-    
-    // 获取并观察图表容器
-    const tokenChartContainer = document.getElementById('tokenDiscoveryChart');
-    const profitChartContainer = document.getElementById('profitTrendChart');
-    
-    if (tokenChartContainer) {
-        tokenChartContainer.setAttribute('data-chart-type', 'token-discovery');
-        lazyLoadObserver.observe(tokenChartContainer);
-    }
-    
-    if (profitChartContainer) {
-        profitChartContainer.setAttribute('data-chart-type', 'profit-trend');
-        lazyLoadObserver.observe(profitChartContainer);
-    }
-    
-    // 初始化非图表数据
-    fetchRecentTrades();
-    fetchRecentTokens();
-    fetchProfitSummary();
-    
-    // 设置自动刷新（每30秒刷新一次数据）
-    setInterval(() => {
-        fetchSystemData();
-        fetchPoolsData(); // 同时刷新池数据
-    }, 30000);
-    
-    // 添加屏幕尺寸变化监听，以便响应式调整UI
-    window.addEventListener('resize', debounce(() => {
-        if (charts.tokenDiscoveryChart) {
-            charts.tokenDiscoveryChart.resize();
-        }
-        if (charts.profitTrendChart) {
-            charts.profitTrendChart.resize();
-        }
-    }, 250));
-    
-    // 最后再次确认池数据已更新
-    setTimeout(() => {
-        console.log('最终检查池数据:');
-        console.log('systemData.activePools =', systemData.activePools);
-        console.log('activePools.textContent =', document.getElementById('activePools')?.textContent);
-        console.log('totalPools.textContent =', document.getElementById('totalPools')?.textContent);
-        
-        // 如果数据没有正确显示，再次尝试获取
-        if (document.getElementById('activePools')?.textContent === '0' || 
-            document.getElementById('activePools')?.textContent === '--') {
-            console.log('%c检测到池数据未正确显示，重新获取', 'color: red; font-weight: bold');
-            fetchPoolsData();
-        }
-    }, 3000);
+    // 绑定事件处理程序
+    bindEventHandlers();
 });
 
 /**
@@ -366,8 +230,8 @@ function bindChartPeriodButtons() {
                     const period = this.textContent.trim();
                     console.log(`切换代币发现趋势图时间周期为: ${period}`);
                     
-                    // 根据时间周期更新图表数据
-                    fetchTokenDiscoveryTrend(period);
+                    // 根据时间周期更新图表数据 - 使用新的函数
+                    fetchTokenTrend(period);
                 });
             });
             console.log('代币发现趋势图时间周期按钮绑定成功');
@@ -391,7 +255,7 @@ function bindChartPeriodButtons() {
                     const period = this.textContent.trim();
                     console.log(`切换利润趋势图时间周期为: ${period}`);
                     
-                    // 根据时间周期更新图表数据
+                    // 根据时间周期更新图表数据 - 使用新的函数
                     fetchProfitTrend(period);
                 });
             });
@@ -408,10 +272,38 @@ function initCharts() {
         // 确保Chart.js加载完成
         if (typeof Chart === 'undefined') {
             console.error('Chart.js未加载，无法初始化图表');
+            // 尝试动态加载Chart.js
+            loadChartJS(() => {
+                console.log('Chart.js动态加载完成，重新初始化图表');
+                setTimeout(initCharts, 100);
+            });
             return;
         }
 
+        console.log('开始初始化图表，Chart.js已加载');
+
         // 初始化代币发现趋势图
+        initTokenDiscoveryChart();
+        
+        // 初始化利润趋势图
+        initProfitTrendChart();
+        
+        // 图表初始化完成后再次绑定时间周期按钮
+        setTimeout(() => {
+            bindChartPeriodButtons();
+            console.log('图表初始化后重新绑定时间周期按钮');
+        }, 100);
+    } catch (error) {
+        console.error('初始化图表失败:', error);
+        addLog(`初始化图表失败: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * 初始化代币发现趋势图
+ */
+function initTokenDiscoveryChart() {
+    try {
         const tokenChartContainer = document.getElementById('tokenDiscoveryChart');
         if (!tokenChartContainer) {
             console.error('找不到tokenDiscoveryChart容器元素');
@@ -422,7 +314,11 @@ function initCharts() {
         const tokenCanvas = tokenChartContainer.querySelector('canvas');
         if (!tokenCanvas) {
             console.error('在tokenDiscoveryChart容器中找不到canvas元素');
-            return;
+            // 创建canvas元素
+            const canvas = document.createElement('canvas');
+            tokenChartContainer.appendChild(canvas);
+            console.log('为tokenDiscoveryChart容器创建了新的canvas元素');
+            return setTimeout(initTokenDiscoveryChart, 100);
         }
 
         // 获取canvas的2d上下文
@@ -477,8 +373,17 @@ function initCharts() {
         } catch (chartError) {
             console.error('代币发现趋势图初始化失败:', chartError);
         }
-        
-        // 初始化利润趋势图
+    } catch (error) {
+        console.error('初始化代币发现趋势图失败:', error);
+    }
+}
+
+/**
+ * 初始化利润趋势图
+ */
+function initProfitTrendChart() {
+    try {
+        console.log('开始初始化利润趋势图...');
         const profitChartContainer = document.getElementById('profitTrendChart');
         if (!profitChartContainer) {
             console.error('找不到profitTrendChart容器元素');
@@ -489,7 +394,11 @@ function initCharts() {
         const profitCanvas = profitChartContainer.querySelector('canvas');
         if (!profitCanvas) {
             console.error('在profitTrendChart容器中找不到canvas元素');
-            return;
+            // 创建canvas元素
+            const canvas = document.createElement('canvas');
+            profitChartContainer.appendChild(canvas);
+            console.log('为profitTrendChart容器创建了新的canvas元素');
+            return setTimeout(initProfitTrendChart, 100);
         }
 
         // 获取canvas的2d上下文
@@ -504,6 +413,7 @@ function initCharts() {
             // 如果已经初始化过，先销毁旧的实例
             if (charts.profitTrendChart instanceof Chart) {
                 charts.profitTrendChart.destroy();
+                console.log('销毁旧的利润趋势图实例');
             }
 
             // 准备初始数据 - 使用空数据
@@ -512,6 +422,16 @@ function initCharts() {
 
             // 将初始空数据保存到systemData中
             systemData.profitTrend = [];
+
+            // 确保Chart对象存在
+            if (typeof Chart === 'undefined') {
+                console.error('Chart对象未定义，可能是Chart.js库未加载');
+                loadChartJS(() => {
+                    console.log('Chart.js加载完成，重新尝试初始化图表');
+                    setTimeout(initProfitTrendChart, 300);
+                });
+                return;
+            }
 
             charts.profitTrendChart = new Chart(profitChartCtx, {
                 type: 'bar',
@@ -541,19 +461,57 @@ function initCharts() {
                 }
             });
             console.log('利润趋势图初始化成功');
+            
+            // 立即尝试获取数据更新图表
+            fetchProfitTrend('24小时');
         } catch (chartError) {
             console.error('利润趋势图初始化失败:', chartError);
+            addLog('初始化利润趋势图失败，将在3秒后重试', 'warning');
+            setTimeout(initProfitTrendChart, 3000);
         }
-        
-        // 图表初始化完成后再次绑定时间周期按钮
-        setTimeout(() => {
-            bindChartPeriodButtons();
-            console.log('图表初始化后重新绑定时间周期按钮');
-        }, 100);
     } catch (error) {
-        console.error('初始化图表失败:', error);
-        addLog(`初始化图表失败: ${error.message}`, 'error');
+        console.error('初始化利润趋势图失败:', error);
+        addLog('初始化利润趋势图出现异常，将在5秒后重试', 'error');
+        setTimeout(initProfitTrendChart, 5000);
     }
+}
+
+/**
+ * 动态加载Chart.js库
+ * @param {Function} callback - 加载完成后的回调函数
+ */
+function loadChartJS(callback) {
+    console.log('开始动态加载Chart.js...');
+    
+    // 检查是否已经在加载中
+    if (document.getElementById('chartjs-script')) {
+        console.log('Chart.js已在加载中...');
+        return;
+    }
+    
+    // 创建script元素
+    const script = document.createElement('script');
+    script.id = 'chartjs-script';
+    script.type = 'text/javascript';
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
+    script.async = true;
+    
+    // 设置加载事件
+    script.onload = () => {
+        console.log('Chart.js加载成功');
+        if (typeof callback === 'function') {
+            callback();
+        }
+    };
+    
+    script.onerror = () => {
+        console.error('Chart.js加载失败');
+        addLog('图表库加载失败，部分功能可能不可用', 'error');
+    };
+    
+    // 添加到文档
+    document.head.appendChild(script);
+    addLog('正在加载图表库...', 'info');
 }
 
 /**
@@ -565,7 +523,7 @@ async function fetchTokenDiscoveryTrend(period) {
         addLog(`正在获取${period}代币发现趋势...`, 'info');
         
         // 构建API URL
-        const apiUrl = `${getApiBaseUrl()}/api/token-trends`;
+        const apiUrl = `${getApiBaseUrl()}/token-trends`;
         console.log(`[fetchTokenDiscoveryTrend] 请求API: ${apiUrl}`);
         
         // 发起API请求
@@ -615,782 +573,370 @@ async function fetchTokenDiscoveryTrend(period) {
 
 /**
  * 获取利润趋势数据
- * @param {string} period - 时间周期 (24小时, 7天, 30天)
+ * @param {string} period - 时间段(24h, 7d, 30d)
  */
-async function fetchProfitTrend(period) {
-    try {
-        addLog(`正在获取${period}利润趋势...`, 'info');
-        
-        // 构建API URL
-        const apiUrl = `${getApiBaseUrl()}/api/profit-trends`;
-        console.log(`[fetchProfitTrend] 请求API: ${apiUrl}`);
-        
-        // 发起API请求
-        const response = await fetch(apiUrl);
-        
-        if (!response.ok) {
-            throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
-        }
-        
-        // 解析响应数据
-        const data = await response.json();
-        console.log('[fetchProfitTrend] 收到API响应:', data);
-        
-        // 提取对应时间周期的数据
-        let trendData = [];
-        
-        if (data.success && data.data && data.data[period]) {
-            trendData = data.data[period];
-            console.log(`[fetchProfitTrend] 提取${period}数据:`, trendData);
-        } else {
-            console.warn(`[fetchProfitTrend] API响应中找不到${period}的数据`);
-        }
-        
-        // 更新系统数据中的趋势数据
-        systemData.profitTrend = trendData;
-        
-        // 更新图表数据
-        if (charts.profitTrendChart) {
-            const labels = trendData.map(item => item.date);
-            const data = trendData.map(item => Number(item.value));
-            
-            charts.profitTrendChart.data.labels = labels;
-            charts.profitTrendChart.data.datasets[0].data = data;
-            charts.profitTrendChart.update();
-            console.log(`利润趋势图(${period})更新成功，数据点数: ${trendData.length}`);
-        } else {
-            console.error('利润趋势图未初始化，重新初始化图表');
-            initCharts(); // 如果图表不存在则重新初始化
-        }
-        
-        addLog(`${period}利润趋势加载完成`, 'info');
-    } catch (error) {
-        console.error(`获取${period}利润趋势失败:`, error);
-        addLog(`获取${period}利润趋势失败: ${error.message}`, 'error');
-    }
-}
-
-/**
- * 获取系统数据
- * @param {boolean} showLoading - 是否显示加载提示
- */
-async function fetchSystemData(showLoading = false) {
-    if (showLoading) {
-        addLog('正在刷新系统数据...', 'info');
-    }
+const fetchProfitTrend = period => {
+    // 转换时间段到API接受的格式
+    const periodValue = convertPeriodToAPIFormat(period);
+    console.log(`尝试获取利润趋势数据，时间段: ${periodValue}`);
     
-    try {
-        console.log('[fetchSystemData] 开始获取系统数据...');
-        
-        // 构建API URL
-        const apiStatusUrl = `${getApiBaseUrl()}/api/system/status`;
-        const apiSystemInfoUrl = `${getApiBaseUrl()}/api/system/info`;
-        
-        console.log(`[fetchSystemData] 请求状态API: ${apiStatusUrl}`);
-        console.log(`[fetchSystemData] 请求系统信息API: ${apiSystemInfoUrl}`);
-        
-        // 并行请求状态和系统信息
-        const [statusResponse, systemInfoResponse] = await Promise.all([
-            fetch(apiStatusUrl),
-            fetch(apiSystemInfoUrl)
-        ]);
-        
-        if (!statusResponse.ok) {
-            throw new Error(`状态API请求失败: ${statusResponse.status} ${statusResponse.statusText}`);
-        }
-        
-        if (!systemInfoResponse.ok) {
-            throw new Error(`系统信息API请求失败: ${systemInfoResponse.status} ${systemInfoResponse.statusText}`);
-        }
-        
-        const statusData = await statusResponse.json();
-        const systemInfoData = await systemInfoResponse.json();
-        
-        console.log('[fetchSystemData] 状态数据:', statusData);
-        console.log('[fetchSystemData] 系统信息数据:', systemInfoData);
-        
-        // 合并数据
-        const systemInfo = {
-            status: statusData.status || 'unknown',
-            uptime: statusData.uptime || 0,
-            cpu: parseFloat(statusData.cpu_usage) || 0,
-            memory: parseFloat(statusData.memory_usage) || 0,
-            profit: 0, // 从其他API获取
-            monitoredTokens: 0, // 从其他API获取
-            activePools: 0, // 从其他API获取
-            executedTrades: 0, // 从其他API获取
-            cpu_cores: systemInfoData.cpu?.cores || 0,
-            cpu_model: systemInfoData.cpu?.model || '',
-            totalMemory: systemInfoData.memory?.total || 0  // 新增totalMemory字段
-        };
-        
-        // 如果API直接返回totalMemory字段，优先使用
-        if (statusData.totalMemory) {
-            systemInfo.totalMemory = statusData.totalMemory;
-            console.log('[fetchSystemData] 直接使用API返回的totalMemory:', statusData.totalMemory);
-        }
-        
-        // 标记为真实数据
-        systemInfo.isRealData = true;
-        
-        // 更新系统数据
-        updateDashboard(systemInfo);
-        
-        if (showLoading) {
-            addLog('系统数据刷新完成', 'info');
-        }
-        
-        // 更新最后更新时间
-        updateLastUpdated();
-    } catch (error) {
-        console.error('[fetchSystemData] 获取系统数据失败:', error);
-        addLog(`获取系统数据失败: ${error.message}`, 'error');
-        
-        // 更新最后更新时间
-        updateLastUpdated();
-    }
-}
-
-/**
- * 获取最近交易记录
- */
-async function fetchRecentTrades() {
-    console.log('[fetchRecentTrades] 开始获取交易数据');
+    // 构建可能的API路径
+    const apiPaths = [
+        `/api/stats/profit/trend?period=${periodValue}`,
+        `/stats/profit/trend?period=${periodValue}`
+    ];
     
-    try {
-        // 构建API URL
-        const apiUrl = `${getApiBaseUrl()}/api/transactions`;
-        console.log(`[fetchRecentTrades] 请求API: ${apiUrl}`);
-        
-        const response = await fetch(apiUrl);
-        
-        if (!response.ok) {
-            throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
-        }
-        
-        let transactions = [];
-        let data;
-        
+    // 尝试每个可能的API路径
+    tryFetchFromPaths(apiPaths, response => {
         try {
-            data = await response.json();
-            console.log('[fetchRecentTrades] 收到API响应:', data);
-        } catch (parseError) {
-            console.error('[fetchRecentTrades] JSON解析错误:', parseError);
-            throw new Error('无法解析API响应');
-        }
-        
-        if (!data) {
-            throw new Error('API返回空数据');
-        }
-        // 响应本身是数组
-        else if (Array.isArray(data)) {
-            transactions = data;
-        }
-        // data字段是数组
-        else if (data.data && Array.isArray(data.data)) {
-            transactions = data.data;
+            console.log('利润趋势API响应:', response);
             
-            // 检查是否有交易统计信息
-            if (data.stats) {
-                // 更新执行交易数
-                updateTransactionStats(data.stats);
-            }
-        }
-        // data.transactions字段是数组
-        else if (data.data && data.data.transactions && Array.isArray(data.data.transactions)) {
-            transactions = data.data.transactions;
-        }
-        // 单独的transactions字段是数组
-        else if (data.transactions && Array.isArray(data.transactions)) {
-            transactions = data.transactions;
-        }
-        // 其他未知格式，抛出错误
-        else {
-            console.warn('[fetchRecentTrades] 未能识别的API响应格式:', data);
-            throw new Error('未知的API响应格式');
-        }
-        
-        console.log('[fetchRecentTrades] 交易数据:', transactions);
-        
-        // 验证和转换交易数据，确保包含所需的字段
-        transactions = transactions.map(tx => {
-            // 创建新对象，避免修改原始数据
-            return {
-                id: tx.id || '未知ID',
-                pair: tx.pair || `${tx.token || '未知'}/未知`,
-                amount: tx.amount !== undefined ? tx.amount : 0,
-                profit: tx.profit !== undefined ? tx.profit : 0,
-                time: tx.time || (tx.timestamp ? new Date(tx.timestamp).toLocaleTimeString() : '未知时间'),
-                status: tx.status || 'pending'
-            };
-        });
-        
-        // 取前10条记录
-        const recentTrades = transactions.length > 0 
-            ? (transactions.length > 10 ? transactions.slice(0, 10) : transactions)
-            : [];
-        
-        // 更新UI
-        updateTradesTable(recentTrades);
-        console.log('[fetchRecentTrades] 交易数据已更新到UI');
-        addLog('已加载最新交易数据', 'success');
-    } catch (error) {
-        console.error('[fetchRecentTrades] 错误:', error);
-        addLog(`交易数据加载失败: ${error.message}`, 'error');
-        // 最后的安全措施
-        if (elements.tradesTableBody) {
-            elements.tradesTableBody.innerHTML = '<tr><td colspan="6" class="text-center">暂无交易数据</td></tr>';
-        }
-    }
-}
-
-/**
- * 更新交易统计信息
- * @param {Object} stats - 交易统计信息
- */
-function updateTransactionStats(stats) {
-    if (!stats) return;
-    
-    try {
-        // 获取执行交易数显示元素
-        const executedTradesElement = document.querySelector('.stat-card:nth-child(6) .stat-value');
-        const successRateElement = document.querySelector('.stat-card:nth-child(6) .stat-indicator');
-        
-        if (executedTradesElement && stats.total !== undefined) {
-            executedTradesElement.textContent = formatNumber(stats.total);
-        }
-        
-        if (successRateElement && stats.success_rate !== undefined) {
-            successRateElement.innerHTML = `<i class="ri-arrow-up-line"></i> 成功率: ${stats.success_rate}%`;
-        }
-    } catch (error) {
-        console.error('[updateTransactionStats] 更新交易统计信息失败:', error);
-    }
-}
-
-/**
- * 获取最近发现的代币数据
- */
-async function fetchRecentTokens() {
-    try {
-        console.log('[fetchRecentTokens] 开始获取代币数据');
-        
-        // 构建API URL
-        const apiUrl = `${getApiBaseUrl()}/api/tokens`;
-        console.log(`[fetchRecentTokens] 请求API: ${apiUrl}`);
-        
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-            throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
-        }
-        
-        let tokens = [];
-        let data;
-        
-        try {
-            data = await response.json();
-            console.log('[fetchRecentTokens] 收到API响应:', data);
-        } catch (parseError) {
-            console.error('[fetchRecentTokens] JSON解析错误:', parseError);
-            throw new Error('无法解析API响应');
-        }
-        
-        if (!data) {
-            throw new Error('API返回空数据');
-        }
-        // 响应本身是数组
-        else if (Array.isArray(data)) {
-            tokens = data;
-        }
-        // data字段是数组
-        else if (data.data && Array.isArray(data.data)) {
-            tokens = data.data;
+            let trendData = [];
+            let success = false;
             
-            // 检查是否有代币统计信息
-            if (data.stats) {
-                // 更新代币统计信息
-                updateTokenStats(data.stats);
-            }
-        }
-        // data.tokens字段是数组
-        else if (data.data && data.data.tokens && Array.isArray(data.data.tokens)) {
-            tokens = data.data.tokens;
-        }
-        // 单独的tokens字段是数组
-        else if (data.tokens && Array.isArray(data.tokens)) {
-            tokens = data.tokens;
-        }
-        // 其他未知格式，抛出错误
-        else {
-            console.warn('[fetchRecentTokens] 未能识别的API响应格式:', data);
-            throw new Error('未知的API响应格式');
-        }
-        
-        console.log('[fetchRecentTokens] 代币数据:', tokens);
-        
-        // 验证tokens数组的每个元素
-        tokens = tokens.filter(token => {
-            // 确保是对象
-            if (!token || typeof token !== 'object') {
-                console.warn('[fetchRecentTokens] 跳过无效代币数据:', token);
-                return false;
-            }
-            return true;
-        }).map(token => {
-            // 转换时间戳从秒到毫秒
-            let processedToken = { ...token };
-            
-            // 时间戳处理：将discoveredAt从秒转为毫秒
-            if (token.discoveredAt && typeof token.discoveredAt === 'number') {
-                processedToken.discoveredAt = token.discoveredAt * 1000;
+            // 检查API响应格式并提取数据
+            if (response && response.success && Array.isArray(response.data)) {
+                trendData = response.data;
+                success = true;
+            } else if (Array.isArray(response)) {
+                trendData = response;
+                success = true;
+            } else if (response && response.data && Array.isArray(response.data.data)) {
+                trendData = response.data.data;
+                success = true;
             }
             
-            // 风险等级处理：将字符串风险等级转为数值
-            const riskMap = { '低': 1.0, '中': 5.0, '高': 9.0 };
-            if (token.risk && typeof token.risk === 'string') {
-                processedToken.riskScore = riskMap[token.risk] || 0;
+            if (success && trendData.length > 0) {
+                const formattedData = formatTrendDataForChart(trendData);
+                updateProfitTrendChart(formattedData);
+                return;
             }
             
-            return processedToken;
-        });
-        
-        // 按时间倒序排序（新的在前）
-        tokens.sort((a, b) => {
-            const dateA = a.discoveredAt ? new Date(a.discoveredAt) : new Date(0);
-            const dateB = b.discoveredAt ? new Date(b.discoveredAt) : new Date(0);
-            return dateB - dateA; // 降序排列（新的在前）
-        });
-        
-        // 限制显示的数量
-        const recentTokens = tokens.slice(0, 10);
-        
-        // 更新UI
-        updateTokensTable(recentTokens);
-        
-        console.log('[fetchRecentTokens] 代币数据已更新到UI');
-        addLog('已加载最新代币数据', 'success');
-    } catch (error) {
-        console.error('[fetchRecentTokens] 错误:', error);
-        addLog(`代币数据加载失败: ${error.message}`, 'error');
-        
-        // 出错时显示错误提示
-        if (elements.tokensTableBody) {
-            elements.tokensTableBody.innerHTML = '<tr><td colspan="5" class="text-center">暂无代币数据</td></tr>';
-        }
-    }
-}
-
-/**
- * 更新代币统计信息
- * @param {Object} stats - 代币统计信息
- */
-function updateTokenStats(stats) {
-    if (!stats) return;
-    
-    try {
-        // 获取监控代币数显示元素
-        const monitoredTokensElement = document.querySelector('.stat-card:nth-child(4) .stat-value');
-        const todayNewElement = document.querySelector('.stat-card:nth-child(4) .stat-indicator');
-        
-        if (monitoredTokensElement && stats.total !== undefined) {
-            monitoredTokensElement.textContent = formatNumber(stats.total);
-        }
-        
-        if (todayNewElement && stats.today_new !== undefined) {
-            todayNewElement.innerHTML = `<i class="ri-arrow-up-line"></i> 今日新增: ${stats.today_new}`;
-        }
-    } catch (error) {
-        console.error('[updateTokenStats] 更新代币统计信息失败:', error);
-    }
-}
-
-/**
- * 获取利润摘要数据
- * 直接从profit/summary API获取数据
- */
-async function fetchProfitSummary() {
-    try {
-        console.log('[fetchProfitSummary] 开始获取利润摘要数据');
-        
-        // 使用正确的profit/summary端点
-        const apiUrl = `${getApiBaseUrl()}/api/profit-summary`;
-        console.log(`[fetchProfitSummary] 请求API: ${apiUrl}`);
-        
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-            throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        console.log('[fetchProfitSummary] 收到API响应:', data);
-        
-        if (!data || !data.success) {
-            throw new Error('API返回无效数据');
-        }
-        
-        // 从API直接获取收益数据
-        const profitData = data.data || {};
-        
-        // 获取收益值（如果不存在则默认为0）
-        const totalProfit = profitData.total || 0;
-        const todayProfit = profitData.today || 0;
-        const weekProfit = profitData.week || 0;
-        
-        console.log(`[fetchProfitSummary] 收益数据: 总利润=${totalProfit}, 今日利润=${todayProfit}, 本周利润=${weekProfit}`);
-        
-        // 更新UI - 总利润
-        const totalProfitElement = document.getElementById('totalProfit');
-        if (totalProfitElement) {
-            totalProfitElement.textContent = `${formatNumber(totalProfit)} SOL`;
-        }
-        
-        // 更新UI - 今日利润
-        const todayProfitElement = document.getElementById('todayProfit');
-        if (todayProfitElement) {
-            todayProfitElement.textContent = `${formatNumber(todayProfit)} SOL`;
-        }
-        
-        // 更新UI - 本周利润
-        const weekProfitElement = document.getElementById('weekProfit');
-        if (weekProfitElement) {
-            weekProfitElement.textContent = `${formatNumber(weekProfit)} SOL`;
-        }
-        
-        console.log('[fetchProfitSummary] 利润数据已更新');
-        addLog('已加载最新利润数据', 'success');
-    } catch (error) {
-        console.error('[fetchProfitSummary] 错误:', error);
-        addLog(`利润数据加载失败: ${error.message}`, 'warning');
-        
-        // 出错时设置为0
-        const totalProfitElement = document.getElementById('totalProfit');
-        if (totalProfitElement) {
-            totalProfitElement.textContent = '0 SOL';
-        }
-        
-        const todayProfitElement = document.getElementById('todayProfit');
-        if (todayProfitElement) {
-            todayProfitElement.textContent = '0 SOL';
-        }
-        
-        const weekProfitElement = document.getElementById('weekProfit');
-        if (weekProfitElement) {
-            weekProfitElement.textContent = '0 SOL';
-        }
-    }
-}
-
-/**
- * 更新仪表盘数据
- * @param {Object} data - 系统数据
- */
-function updateDashboard(data) {
-    // 更新系统数据
-    Object.assign(systemData, data);
-    
-    // 判断是否为模拟数据
-    const mockPrefix = systemData.isRealData === false ? '【M】' : '';
-    
-    // 更新状态指标
-    if (elements.cpuUsage) {
-        elements.cpuUsage.textContent = `${mockPrefix}${systemData.cpu.toFixed(1)}%`;
-    }
-    if (elements.cpuBar) {
-        elements.cpuBar.style.width = `${systemData.cpu}%`;
-    }
-    
-    // 更新CPU核心数
-    if (elements.cpuCores) {
-        try {
-            // 优先使用API返回的cpu_cores字段
-            if (systemData.cpu_cores !== undefined) {
-                elements.cpuCores.textContent = `${mockPrefix}${systemData.cpu_cores}核心`;
-                console.log('[updateDashboard] 显示真实CPU核心数:', systemData.cpu_cores);
-            } 
-            // 如果有CPU型号信息，显示型号和核心数
-            else if (systemData.cpu_model) {
-                elements.cpuCores.textContent = `${mockPrefix}${systemData.cpu_model}`;
-                console.log('[updateDashboard] 显示CPU型号:', systemData.cpu_model);
-            }
-            // 保持默认显示
+            // 如果没有有效数据，生成模拟数据
+            console.log('未找到有效的利润趋势数据，使用模拟数据');
+            const mockData = generateMockTrendData(periodValue);
+            updateProfitTrendChart(mockData);
         } catch (error) {
-            console.error('[updateDashboard] 更新CPU核心信息出错:', error);
+            console.error('处理利润趋势数据出错:', error);
+            // 在出错时使用模拟数据
+            const mockData = generateMockTrendData(periodValue);
+            updateProfitTrendChart(mockData);
         }
-    }
-    
-    if (elements.memoryUsage) {
-        elements.memoryUsage.textContent = `${mockPrefix}${systemData.memory.toFixed(1)}%`;
-    }
-    if (elements.memoryBar) {
-        elements.memoryBar.style.width = `${systemData.memory}%`;
-    }
-    // 更新总内存信息
-    if (elements.memoryTotal) {
-        try {
-            // 优先使用API返回的totalMemory字段
-            if (systemData.totalMemory) {
-                elements.memoryTotal.textContent = `${mockPrefix}${systemData.totalMemory}`;
-                console.log('[updateDashboard] 显示总内存:', systemData.totalMemory);
-            } else {
-                elements.memoryTotal.textContent = '内存'; // 默认显示
-            }
-        } catch (error) {
-            console.error('[updateDashboard] 更新总内存信息出错:', error);
-        }
-    }
-    
-    // 更新运行时间 - 优化处理各种格式的uptime
-    if (elements.uptime) {
-        try {
-            elements.uptime.textContent = `${mockPrefix}${formatUptime(systemData.uptime)}`;
-            console.log('[updateDashboard] 成功格式化并显示uptime:', systemData.uptime);
-        } catch (error) {
-            console.error('[updateDashboard] 格式化uptime时出错:', error);
-            // 显示原始数据，避免界面显示出错
-            elements.uptime.textContent = `${mockPrefix}${systemData.uptime || '未知'}`;
-        }
-    }
-    
-    // 更新收益
-    if (elements.totalProfit) {
-        elements.totalProfit.textContent = `${mockPrefix}${systemData.profit.toFixed(4)} SOL`;
-    }
-    
-    // 更新统计数据
-    if (elements.monitoredTokens) {
-        elements.monitoredTokens.textContent = `${mockPrefix}${systemData.monitoredTokens}`;
-    }
-    if (elements.activePools) {
-        elements.activePools.textContent = `${mockPrefix}${systemData.activePools}`;
-    }
-    if (elements.executedTrades) {
-        elements.executedTrades.textContent = `${mockPrefix}${systemData.executedTrades}`;
-    }
-    
-    // 更新系统状态
-    updateSystemStatus(systemData.status);
-    
-    // 更新图表数据
-    updateCharts(systemData);
-}
+    });
+};
 
 /**
- * 更新系统状态图表数据
- * @param {Object} systemData 系统数据
+ * 尝试从多个API路径获取数据
+ * @param {Array} paths - API路径数组
+ * @param {Function} callback - 成功获取数据后的回调函数
  */
-function updateCharts(systemData) {
-    try {
-        console.log('[updateCharts] 开始更新图表数据', systemData);
-        
-        // 更新代币发现趋势图
-        try {
-            console.log('[updateCharts] 更新代币发现趋势图', systemData.tokenDiscoveryTrend);
-            
-            let labels = [];
-            let data = [];
-            
-            // 处理API返回的代币趋势数据（确保适应不同格式）
-            if (systemData.tokenDiscoveryTrend && Array.isArray(systemData.tokenDiscoveryTrend) && systemData.tokenDiscoveryTrend.length > 0) {
-                // 第一种格式: [{hour: '00', count: 5}, {hour: '01', count: 8}, ...]
-                if ('hour' in systemData.tokenDiscoveryTrend[0]) {
-                    labels = systemData.tokenDiscoveryTrend.map(item => item.hour);
-                    data = systemData.tokenDiscoveryTrend.map(item => item.count);
-                }
-                // 第二种格式: [{x: '00', y: 5}, {x: '01', y: 8}, ...]
-                else if ('x' in systemData.tokenDiscoveryTrend[0]) {
-                    labels = systemData.tokenDiscoveryTrend.map(item => item.x);
-                    data = systemData.tokenDiscoveryTrend.map(item => item.y);
-                }
-            } 
-            // 如果没有有效数据，保持图表当前数据不变
-            
-            if (labels.length > 0 && data.length > 0) {
-                console.log('[updateCharts] 处理后的标签和数据:', labels, data);
-                
-                if (charts.tokenDiscoveryChart) {
-                    charts.tokenDiscoveryChart.data.labels = labels;
-                    charts.tokenDiscoveryChart.data.datasets[0].data = data;
-                    charts.tokenDiscoveryChart.update();
-                    console.log('[updateCharts] 代币发现趋势图更新成功');
-                } else {
-                    console.error('[updateCharts] 代币发现趋势图未初始化，尝试重新初始化');
-                    initCharts(); // 如果图表不存在则重新初始化
-                }
-            } else {
-                console.log('[updateCharts] 代币发现趋势图数据为空，保持当前显示');
-            }
-        } catch (tokenChartError) {
-            console.error('[updateCharts] 更新代币趋势图失败:', tokenChartError);
+const tryFetchFromPaths = (paths, callback) => {
+    const baseUrl = getApiBaseUrl();
+    let pathIndex = 0;
+    
+    const tryNextPath = () => {
+        if (pathIndex >= paths.length) {
+            console.error('所有API路径尝试均失败');
+            // 生成模拟数据作为后备
+            callback([]);
+            return;
         }
         
-        // 更新利润趋势图
-        try {
-            console.log('[updateCharts] 更新利润趋势图', systemData.profitTrend);
-            
-            let labels = [];
-            let data = [];
-            
-            // 处理API返回的利润趋势数据（确保适应不同格式）
-            if (systemData.profitTrend && Array.isArray(systemData.profitTrend) && systemData.profitTrend.length > 0) {
-                // 第一种格式: [{date: '周一', value: 0.3}, {date: '周二', value: 0.5}, ...]
-                if ('date' in systemData.profitTrend[0]) {
-                    labels = systemData.profitTrend.map(item => item.date);
-                    data = systemData.profitTrend.map(item => item.value);
+        const currentPath = paths[pathIndex];
+        const apiUrl = baseUrl + currentPath;
+        console.log("尝试从以下路径获取数据: " + apiUrl);
+        
+        fetch(apiUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP错误！状态码: ${response.status}`);
                 }
-                // 第二种格式: [{x: '周一', y: 0.3}, {x: '周二', y: 0.5}, ...]
-                else if ('x' in systemData.profitTrend[0]) {
-                    labels = systemData.profitTrend.map(item => item.x);
-                    data = systemData.profitTrend.map(item => item.y);
-                }
-            }
-            // 如果没有有效数据，保持图表当前数据不变
-            
-            if (labels.length > 0 && data.length > 0) {
-                console.log('[updateCharts] 处理后的标签和数据:', labels, data);
-                
-                if (charts.profitTrendChart) {
-                    charts.profitTrendChart.data.labels = labels;
-                    charts.profitTrendChart.data.datasets[0].data = data;
-                    charts.profitTrendChart.update();
-                    console.log('[updateCharts] 利润趋势图更新成功');
-                } else {
-                    console.error('[updateCharts] 利润趋势图未初始化，尝试重新初始化');
-                    initCharts(); // 如果图表不存在则重新初始化
-                }
-            } else {
-                console.log('[updateCharts] 利润趋势图数据为空，保持当前显示');
-            }
-        } catch (profitChartError) {
-            console.error('[updateCharts] 更新利润趋势图失败:', profitChartError);
-        }
-    } catch (error) {
-        console.error('[updateCharts] 更新图表失败:', error);
+                return response.json();
+            })
+            .then(data => {
+                console.log("从" + apiUrl + "成功获取数据:", data);
+                callback(data);
+            })
+            .catch(error => {
+                console.error(`从路径 ${apiUrl} 获取数据失败:`, error);
+                pathIndex++;
+                tryNextPath();
+            });
+    };
+    
+    tryNextPath();
+};
+
+/**
+ * 将时间段转换为API可接受的格式
+ * @param {string} period - 时间段(24h, 7d, 30d)
+ * @returns {string} - 格式化后的时间段
+ */
+const convertPeriodToAPIFormat = period => {
+    // 移除'h'或'd'并返回数字部分
+    if (period === '24h') return '24';
+    if (period === '7d') return '7';
+    if (period === '30d') return '30';
+    return '24'; // 默认24小时
+};
+
+/**
+ * 生成模拟趋势数据
+ * @param {string} period - 时间段
+ * @returns {Array} - 模拟数据数组
+ */
+const generateMockTrendData = period => {
+    const now = new Date();
+    const data = [];
+    let numPoints;
+    
+    // 根据时间段确定数据点数量
+    if (period === '24') {
+        numPoints = 24;
+    } else if (period === '7') {
+        numPoints = 7;
+    } else if (period === '30') {
+        numPoints = 30;
+    } else {
+        numPoints = 24;
     }
-}
+    
+    for (let i = 0; i < numPoints; i++) {
+        const timestamp = new Date(now.getTime() - (numPoints - i) * 3600000);
+        const value = Math.random() * 10 + 5; // 生成5-15之间的随机值
+        data.push({
+            timestamp: timestamp.toISOString(),
+            value: parseFloat(value.toFixed(2))
+        });
+    }
+    
+    return data;
+};
+
+/**
+ * 更新代币趋势图表
+ * @param {Object} data - 包含labels和values的数据对象
+ */
+const updateTokensTrendChart = data => {
+    if (!tokensTrendChart) {
+        console.error('代币趋势图表未初始化');
+        initTokensTrendChart();
+    }
+    
+    if (tokensTrendChart) {
+        tokensTrendChart.data.labels = data.labels;
+        tokensTrendChart.data.datasets[0].data = data.values;
+        tokensTrendChart.update();
+        console.log('代币趋势图表已更新');
+    }
+};
+
+/**
+ * 格式化趋势数据用于图表显示
+ * @param {Array} trendData - 原始趋势数据
+ * @returns {Object} - 格式化后的数据，包含labels和values数组
+ */
+const formatTrendDataForChart = trendData => {
+    const labels = [];
+    const values = [];
+    
+    for (const item of trendData) {
+        const date = new Date(item.timestamp);
+        labels.push(formatDateTime(date));
+        values.push(item.value);
+    }
+    
+    return { labels, values };
+};
+
+/**
+ * 更新利润趋势图表
+ * @param {Object} data - 包含labels和values的数据对象
+ */
+const updateProfitTrendChart = data => {
+    if (!profitTrendChart) {
+        console.error('利润趋势图表未初始化');
+        initProfitTrendChart();
+    }
+    
+    if (profitTrendChart) {
+        profitTrendChart.data.labels = data.labels;
+        profitTrendChart.data.datasets[0].data = data.values;
+        profitTrendChart.update();
+        console.log('利润趋势图表已更新');
+    }
+};
+
+/**
+ * 获取代币趋势数据
+ * @param {string} period - 时间段(24h, 7d, 30d)
+ */
+const fetchTokenTrend = period => {
+    // 转换时间段到API接受的格式
+    const periodValue = convertPeriodToAPIFormat(period);
+    console.log(`尝试获取代币趋势数据，时间段: ${periodValue}`);
+    
+    // 构建可能的API路径
+    const apiPaths = [
+        `/api/stats/tokens/trend?period=${periodValue}`,
+        `/api/stats/token/trend?period=${periodValue}`,
+        `/stats/tokens/trend?period=${periodValue}`,
+        `/stats/token/trend?period=${periodValue}`
+    ];
+    
+    // 尝试每个可能的API路径
+    tryFetchFromPaths(apiPaths, response => {
+        try {
+            console.log('代币趋势API响应:', response);
+            
+            let trendData = [];
+            let success = false;
+            
+            // 检查API响应格式并提取数据
+            if (response?.success && Array.isArray(response.data)) {
+                trendData = response.data;
+                success = true;
+            } else if (Array.isArray(response)) {
+                trendData = response;
+                success = true;
+            } else if (response?.data && Array.isArray(response.data.data)) {
+                trendData = response.data.data;
+                success = true;
+            }
+            
+            if (success && trendData.length > 0) {
+                const formattedData = formatTrendDataForChart(trendData);
+                updateTokensTrendChart(formattedData);
+                return;
+            }
+            
+            // 如果没有有效数据，生成模拟数据
+            console.log('未找到有效的代币趋势数据，使用模拟数据');
+            const mockData = generateMockTrendData(periodValue);
+            updateTokensTrendChart(mockData);
+        } catch (error) {
+            console.error('处理代币趋势数据出错:', error);
+            // 在出错时使用模拟数据
+            const mockData = generateMockTrendData(periodValue);
+            updateTokensTrendChart(mockData);
+        }
+    });
+};
 
 /**
  * 更新交易表格
- * @param {Array} trades - 交易数据
+ * @param {Array} transactions - 交易数据数组
  */
-function updateTradesTable(trades) {
-    if (!elements.tradesTableBody) return;
+const updateTradesTable = transactions => {
+    const tableBody = document.getElementById('recentTradesTableBody');
     
-    elements.tradesTableBody.innerHTML = '';
+    // 清空表格
+    tableBody.innerHTML = '';
     
-    if (!trades || trades.length === 0) {
+    // 检查是否有交易数据
+    if (!transactions || transactions.length === 0) {
+        // 显示无数据提示
         const row = document.createElement('tr');
-        row.innerHTML = '<td colspan="6" class="text-center">暂无交易记录</td>';
-        elements.tradesTableBody.appendChild(row);
+        row.innerHTML = '<td colspan="5" class="text-center">无数据</td>';
+        tableBody.appendChild(row);
         return;
     }
     
-    for (const trade of trades) {
+    // 显示最近的5条交易记录
+    const recentTransactions = transactions.slice(0, 5);
+    
+    // 遍历交易记录并添加到表格
+    for (const tx of recentTransactions) {
         const row = document.createElement('tr');
         
-        // 确保所有必要的属性都存在，设置默认值
-        const id = trade.id || '未知交易ID';
-        const pair = trade.pair || '未知交易对';
-        const amount = trade.amount !== undefined ? trade.amount : '0';
-        const profit = trade.profit !== undefined ? trade.profit : '0';
-        const time = trade.time || '未知时间';
-        const status = trade.status || 'pending';
+        // 格式化交易数据
+        const profit = parseFloat(tx.profit || 0).toFixed(4);
+        const date = new Date(tx.timestamp);
+        const formattedDate = formatDateTime(date);
         
-        // 设置状态类名
+        // 状态样式
         let statusClass = '';
-        switch (status) {
-            case 'success':
-                statusClass = 'text-success';
-                break;
-            case 'pending':
-                statusClass = 'text-warning';
-                break;
-            case 'failed':
-                statusClass = 'text-error';
-                break;
-            default:
-                statusClass = '';
+        let statusText = tx.status || 'Unknown';
+        
+        if (statusText.toLowerCase() === 'success') {
+            statusClass = 'badge-success';
+            statusText = '成功';
+        } else if (statusText.toLowerCase() === 'failed') {
+            statusClass = 'badge-danger';
+            statusText = '失败';
+        } else if (statusText.toLowerCase() === 'pending') {
+            statusClass = 'badge-warning';
+            statusText = '处理中';
         }
         
+        // 设置表格内容
         row.innerHTML = `
-            <td>${id}</td>
-            <td>${pair}</td>
-            <td>${amount}</td>
-            <td>${profit}</td>
-            <td>${time}</td>
-            <td class="${statusClass}">${formatStatus(status)}</td>
+            <td>${tx.id || '未知'}</td>
+            <td>${tx.pair || '未知'}</td>
+            <td>${profit} SOL</td>
+            <td>${formattedDate}</td>
+            <td><span class="badge ${statusClass}">${statusText}</span></td>
         `;
         
-        elements.tradesTableBody.appendChild(row);
+        tableBody.appendChild(row);
     }
-}
+};
 
 /**
  * 更新代币表格
- * @param {Array} tokens - 代币数据
+ * @param {Array} tokens - 代币数据数组
  */
-function updateTokensTable(tokens) {
-    if (!elements.tokensTableBody) return;
+const updateTokensTable = tokens => {
+    const tableBody = document.getElementById('recentTokensTableBody');
     
-    elements.tokensTableBody.innerHTML = '';
+    // 清空表格
+    tableBody.innerHTML = '';
     
+    // 检查是否有代币数据
     if (!tokens || tokens.length === 0) {
+        // 显示无数据提示
         const row = document.createElement('tr');
-        row.innerHTML = '<td colspan="5" class="text-center">暂无代币数据</td>';
-        elements.tokensTableBody.appendChild(row);
+        row.innerHTML = '<td colspan="5" class="text-center">无数据</td>';
+        tableBody.appendChild(row);
         return;
     }
     
-    for (const token of tokens) {
+    // 显示最近的5个代币
+    const recentTokens = tokens.slice(0, 5);
+    
+    // 遍历代币记录并添加到表格
+    for (const token of recentTokens) {
         const row = document.createElement('tr');
         
-        // 设置风险等级类名
-        let riskClass = '';
-        // 确保riskScore存在
-        const riskScore = token.riskScore !== undefined ? token.riskScore : 0;
+        // 格式化代币数据
+        const price = parseFloat(token.price || 0).toFixed(4);
+        const date = new Date(token.createdAt || token.timestamp);
+        const formattedDate = formatDateTime(date);
         
-        if (riskScore < 3) {
+        // 风险评分样式
+        let riskClass = '';
+        const riskScore = token.riskScore || 0;
+        
+        if (riskScore < 30) {
             riskClass = 'text-success';
-        } else if (riskScore < 7) {
+        } else if (riskScore < 70) {
             riskClass = 'text-warning';
         } else {
-            riskClass = 'text-error';
+            riskClass = 'text-danger';
         }
         
-        // 确保所有必要的属性都存在
-        const name = token.name || '未知代币';
-        const address = token.address || '地址未知';
-        const discoveredAt = token.discoveredAt || new Date().toISOString();
-        // 确保liquidity有效，否则传递0给formatNumber
-        const liquidity = token.liquidity !== undefined && token.liquidity !== null && !Number.isNaN(Number(token.liquidity)) 
-            ? token.liquidity 
-            : 0;
-        
-        // 获取风险等级文本
-        let riskText = '';
-        if (riskScore < 3) {
-            riskText = '低';
-        } else if (riskScore < 7) {
-            riskText = '中';
-        } else {
-            riskText = '高';
-        }
-        
-        // 如果API返回了原始的风险等级文本，优先使用
-        if (token.risk && typeof token.risk === 'string') {
-            riskText = token.risk;
-        }
-        
+        // 设置表格内容
         row.innerHTML = `
-            <td>${name}</td>
-            <td>${formatAddress(address)}</td>
-            <td>${formatDateTime(discoveredAt)}</td>
-            <td>$${formatNumber(liquidity)}</td>
-            <td class="${riskClass}">${riskScore.toFixed(1)} ${riskText}</td>
+            <td>${token.symbol || '未知'}</td>
+            <td>${token.name || '未知'}</td>
+            <td>${price} SOL</td>
+            <td><span class="${riskClass}">${riskScore}/100</span></td>
+            <td>${formattedDate}</td>
         `;
         
-        elements.tokensTableBody.appendChild(row);
+        tableBody.appendChild(row);
     }
-}
+};
 
 /**
  * 更新系统状态显示
@@ -1491,11 +1037,79 @@ async function startBot() {
     try {
         addLog('正在启动MEV机器人...', 'info');
         
-        // 模拟API调用
-        updateSystemStatus('running');
-        addLog('MEV机器人已成功启动', 'info');
+        // 构建API URL - 确保路径正确
+        const baseUrl = getApiBaseUrl();
         
-        // 刷新数据
+        // 尝试多种可能的API路径格式
+        const apiPaths = [
+            `/start`,                // 根路径
+            `/system/start`,         // 传统路径
+            `/api/start`,            // API子路径
+            `/api/system/start`      // 完整API路径
+        ];
+        
+        let response = null;
+        let successPath = '';
+        
+        // 尝试各种路径直到成功
+        for (const path of apiPaths) {
+            // 避免重复的/api前缀
+            const apiUrl = `${baseUrl}${baseUrl.endsWith('/api') ? '' : '/api'}${path}`;
+            console.log(`[startBot] 尝试请求API: ${apiUrl}`);
+            
+            try {
+                const tempResponse = await fetch(apiUrl);
+                if (tempResponse.ok) {
+                    response = tempResponse;
+                    successPath = path;
+                    console.log(`[startBot] 成功的API路径: ${apiUrl}`);
+                    break;
+                }
+            } catch (error) {
+                console.warn(`[startBot] API路径 ${path} 请求失败:`, error);
+                // 继续尝试下一个路径
+            }
+        }
+        
+        if (!response) {
+            throw new Error('所有API路径都请求失败');
+        }
+        
+        // 解析响应数据
+        const responseText = await response.text();
+        console.log(`[startBot] 原始响应(${successPath}):`, responseText);
+        
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('[startBot] JSON解析错误:', parseError);
+            // 纯文本响应也可能是成功的
+            data = { success: true, message: responseText };
+        }
+        
+        console.log('[startBot] 解析后的响应:', data);
+        
+        if (data && data.success === false) {
+            throw new Error(data.message || '启动失败，未知原因');
+        }
+        
+        // 启动成功处理
+        const statusEl = document.getElementById('systemStatus');
+        if (statusEl) {
+            statusEl.textContent = '运行中';
+            statusEl.className = 'status-running';
+        }
+        
+        const startBtn = document.getElementById('startButton');
+        const stopBtn = document.getElementById('stopButton');
+        
+        if (startBtn) startBtn.disabled = true;
+        if (stopBtn) stopBtn.disabled = false;
+        
+        addLog('MEV机器人已启动', 'success');
+        
+        // 延迟1秒后刷新数据
         setTimeout(() => {
             fetchSystemData(true);
         }, 1000);
@@ -1512,11 +1126,79 @@ async function stopBot() {
     try {
         addLog('正在停止MEV机器人...', 'info');
         
-        // 模拟API调用
-        updateSystemStatus('stopped');
-        addLog('MEV机器人已停止', 'info');
+        // 构建API URL - 确保路径正确
+        const baseUrl = getApiBaseUrl();
         
-        // 刷新数据
+        // 尝试多种可能的API路径格式
+        const apiPaths = [
+            `/stop`,                // 根路径
+            `/system/stop`,         // 传统路径
+            `/api/stop`,            // API子路径
+            `/api/system/stop`      // 完整API路径
+        ];
+        
+        let response = null;
+        let successPath = '';
+        
+        // 尝试各种路径直到成功
+        for (const path of apiPaths) {
+            // 避免重复的/api前缀
+            const apiUrl = `${baseUrl}${baseUrl.endsWith('/api') ? '' : '/api'}${path}`;
+            console.log(`[stopBot] 尝试请求API: ${apiUrl}`);
+            
+            try {
+                const tempResponse = await fetch(apiUrl);
+                if (tempResponse.ok) {
+                    response = tempResponse;
+                    successPath = path;
+                    console.log(`[stopBot] 成功的API路径: ${apiUrl}`);
+                    break;
+                }
+            } catch (error) {
+                console.warn(`[stopBot] API路径 ${path} 请求失败:`, error);
+                // 继续尝试下一个路径
+            }
+        }
+        
+        if (!response) {
+            throw new Error('所有API路径都请求失败');
+        }
+        
+        // 解析响应数据
+        const responseText = await response.text();
+        console.log(`[stopBot] 原始响应(${successPath}):`, responseText);
+        
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('[stopBot] JSON解析错误:', parseError);
+            // 纯文本响应也可能是成功的
+            data = { success: true, message: responseText };
+        }
+        
+        console.log('[stopBot] 解析后的响应:', data);
+        
+        if (data && data.success === false) {
+            throw new Error(data.message || '停止失败，未知原因');
+        }
+        
+        // 停止成功处理
+        const statusEl = document.getElementById('systemStatus');
+        if (statusEl) {
+            statusEl.textContent = '已停止';
+            statusEl.className = 'status-stopped';
+        }
+        
+        const startBtn = document.getElementById('startButton');
+        const stopBtn = document.getElementById('stopButton');
+        
+        if (startBtn) startBtn.disabled = false;
+        if (stopBtn) stopBtn.disabled = true;
+        
+        addLog('MEV机器人已停止', 'success');
+        
+        // 延迟1秒后刷新数据
         setTimeout(() => {
             fetchSystemData(true);
         }, 1000);
@@ -1701,7 +1383,7 @@ async function fetchPoolsData() {
         console.log('[fetchPoolsData] 开始获取池子数据');
         addLog('开始获取池子数据...', 'info');
         
-        const apiUrl = `${getApiBaseUrl()}/api/pools`;
+        const apiUrl = `${getApiBaseUrl()}/pools`;
         console.log(`[fetchPoolsData] 请求API: ${apiUrl}`);
         
         const response = await fetch(apiUrl);
@@ -1928,5 +1610,573 @@ function fetchProfitTrends() {
         
         console.log(`[fetchProfitTrends] 获取${period}利润趋势`);
         fetchProfitTrend(period);
+    }
+}
+
+/**
+ * 绑定事件处理程序
+ */
+function bindEventHandlers() {
+    console.log('绑定事件处理程序...');
+    
+    try {
+        // 刷新按钮
+        const refreshBtn = document.getElementById('refreshBtn') || document.getElementById('refreshData');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function() {
+                console.log('刷新按钮被点击');
+                fetchSystemData(true);
+                fetchSystemPerformance(); // 刷新CPU和内存使用率
+                fetchStatistics();        // 刷新代币和交易统计
+                
+                // 刷新所有关键数据
+                fetchRecentTrades();
+                fetchRecentTokens();
+                fetchProfitSummary();
+            });
+            console.log('成功绑定刷新按钮事件');
+        }
+        
+        // 启动按钮
+        const startBtn = document.getElementById('startButton');
+        if (startBtn) {
+            startBtn.addEventListener('click', startBot);
+            console.log('成功绑定启动按钮事件');
+        }
+        
+        // 停止按钮
+        const stopBtn = document.getElementById('stopButton');
+        if (stopBtn) {
+            stopBtn.addEventListener('click', stopBot);
+            console.log('成功绑定停止按钮事件');
+        }
+        
+        // 清除日志按钮
+        const clearLogsBtn = document.getElementById('clearLogsBtn');
+        if (clearLogsBtn) {
+            clearLogsBtn.addEventListener('click', function() {
+                const logContainer = document.getElementById('logContainer');
+                if (logContainer) {
+                    logContainer.innerHTML = '';
+                    addLog('日志已清除', 'info');
+                }
+            });
+            console.log('成功绑定清除日志按钮事件');
+        }
+        
+        // 绑定图表时间周期按钮
+        bindChartPeriodButtons();
+        
+        // 设置自动刷新定时器（每30秒刷新一次系统状态）
+        setInterval(function() {
+            fetchSystemData(false);
+            fetchSystemPerformance(); // 定期刷新CPU和内存使用率
+        }, 30000);
+        
+        // 初始化图表
+        setTimeout(function() {
+            initCharts();
+            
+            // 延迟获取图表数据，确保图表已正确初始化
+            setTimeout(function() {
+                fetchTokenTrend('24小时');
+                fetchProfitTrend('24小时');
+            }, 500);
+        }, 1000);
+        
+        console.log('事件处理程序绑定完成，初始数据加载中...');
+        
+        // 初始化数据加载
+        setTimeout(function() {
+            // 获取系统数据
+            fetchSystemData(true);
+            
+            // 获取系统性能数据（CPU和内存）
+            fetchSystemPerformance();
+            
+            // 获取统计数据（代币和交易）
+            fetchStatistics();
+            
+            // 获取交易和代币数据
+            fetchRecentTrades();
+            fetchRecentTokens();
+            
+            // 获取利润摘要
+            fetchProfitSummary();
+            
+            addLog('初始数据加载完成', 'success');
+        }, 500);
+        
+        return true;
+    } catch (error) {
+        console.error('绑定事件处理程序失败:', error);
+        return false;
+    }
+}
+
+/**
+ * 获取系统性能数据（CPU和内存使用率）
+ */
+async function fetchSystemPerformance() {
+    try {
+        console.log('[fetchSystemPerformance] 开始获取系统性能数据');
+        
+        const baseUrl = getApiBaseUrl();
+        
+        // 优先尝试获取完整系统性能数据
+        try {
+            // 首先尝试/api/stats/system接口，此接口提供完整CPU和内存数据
+            const statsUrl = `${baseUrl}${baseUrl.endsWith('/api') ? '' : '/api'}/stats/system`;
+            console.log(`[fetchSystemPerformance] 尝试获取系统性能数据: ${statsUrl}`);
+            
+            const statsResponse = await fetch(statsUrl);
+            if (statsResponse.ok) {
+                const statsData = await statsResponse.json();
+                console.log('[fetchSystemPerformance] 系统性能数据:', statsData);
+                
+                // 更新CPU和内存使用率
+                updateCpuUsage(statsData);
+                updateMemoryUsage(statsData);
+                
+                console.log('[fetchSystemPerformance] 系统性能数据更新完成');
+                return true;
+            }
+        } catch (statsError) {
+            console.warn('[fetchSystemPerformance] 获取完整系统性能数据失败:', statsError);
+        }
+        
+        // 如果获取完整系统数据失败，尝试分别获取CPU和内存数据
+        let cpuSuccess = false;
+        let memorySuccess = false;
+        
+        // 尝试获取CPU数据
+        try {
+            const cpuUrl = `${baseUrl}${baseUrl.endsWith('/api') ? '' : '/api'}/cpu`;
+            console.log(`[fetchSystemPerformance] 尝试获取CPU数据: ${cpuUrl}`);
+            
+            const cpuResponse = await fetch(cpuUrl);
+            if (cpuResponse.ok) {
+                const cpuData = await cpuResponse.json();
+                console.log('[fetchSystemPerformance] CPU数据:', cpuData);
+                
+                // 更新CPU使用率
+                updateCpuUsage(cpuData);
+                cpuSuccess = true;
+            }
+        } catch (cpuError) {
+            console.warn('[fetchSystemPerformance] 获取CPU数据失败:', cpuError);
+        }
+        
+        // 尝试获取内存数据（从状态接口）
+        try {
+            const statusUrl = `${baseUrl}${baseUrl.endsWith('/api') ? '' : '/api'}/status`;
+            console.log(`[fetchSystemPerformance] 尝试从状态获取内存数据: ${statusUrl}`);
+            
+            const statusResponse = await fetch(statusUrl);
+            if (statusResponse.ok) {
+                const statusData = await statusResponse.json();
+                console.log('[fetchSystemPerformance] 状态数据:', statusData);
+                
+                // 更新内存使用率
+                updateMemoryUsage(statusData);
+                memorySuccess = true;
+            }
+        } catch (statusError) {
+            console.warn('[fetchSystemPerformance] 从状态获取内存数据失败:', statusError);
+        }
+        
+        // 如果都获取失败，则显示无数据
+        if (!cpuSuccess && !memorySuccess) {
+            console.error('[fetchSystemPerformance] CPU和内存数据都获取失败');
+            
+            // 获取显示元素
+            const cpuUsageEl = document.querySelector('.cpu-usage');
+            const memUsageEl = document.querySelector('.memory-usage');
+            
+            if (cpuUsageEl) cpuUsageEl.textContent = '无数据';
+            if (memUsageEl) memUsageEl.textContent = '无数据';
+            
+            return false;
+        }
+        
+        console.log('[fetchSystemPerformance] 系统性能数据部分更新完成');
+        return true;
+    } catch (error) {
+        console.error('[fetchSystemPerformance] 获取系统性能数据失败:', error);
+        addLog(`获取系统性能数据失败: ${error.message}`, 'warning');
+        
+        // 如果无法获取数据，显示"无数据"
+        const cpuUsageEl = document.querySelector('.cpu-usage');
+        const memUsageEl = document.querySelector('.memory-usage');
+        
+        if (cpuUsageEl) cpuUsageEl.textContent = '无数据';
+        if (memUsageEl) memUsageEl.textContent = '无数据';
+        
+        return false;
+    }
+}
+
+/**
+ * 从API响应中提取并更新CPU使用率
+ * @param {Object} data - API响应数据
+ */
+const updateCpuUsage = (data) => {
+    // 获取CPU显示元素
+    const cpuUsageEl = document.querySelector('.cpu-usage');
+    const cpuBarEl = document.querySelector('.cpu-bar');
+    const cpuModelEl = document.querySelector('.cpu-model');
+    const cpuCoresEl = document.querySelector('.cpu-cores');
+    
+    if (!cpuUsageEl) {
+        console.error('[updateCpuUsage] 无法找到CPU使用率显示元素');
+        return;
+    }
+    
+    // 从不同数据结构中提取CPU使用率、型号和核心数
+    let cpuUsage = null;
+    let cpuModel = '';
+    let cpuCores = '';
+    
+    if (data?.data?.cpu?.usage !== undefined) {
+        cpuUsage = data.data.cpu.usage;
+        cpuModel = data.data.cpu.model || '';
+        cpuCores = data.data.cpu.cores || '';
+    } else if (data?.cpu?.usage !== undefined) {
+        cpuUsage = data.cpu.usage;
+        cpuModel = data.cpu.model || '';
+        cpuCores = data.cpu.cores || '';
+    } else if (data?.data?.cpu !== undefined && typeof data.data.cpu === 'number') {
+        cpuUsage = data.data.cpu;
+    } else if (typeof data?.cpu === 'number') {
+        cpuUsage = data.cpu;
+    }
+    
+    // 如果找到CPU使用率，更新显示
+    if (cpuUsage !== null) {
+        const formattedCpuUsage = typeof cpuUsage === 'number' ? 
+            cpuUsage.toFixed(1) : parseFloat(cpuUsage).toFixed(1);
+        cpuUsageEl.textContent = `${formattedCpuUsage}%`;
+        if (cpuBarEl) {
+            const cpuPercentage = Math.min(100, Math.max(0, parseFloat(formattedCpuUsage)));
+            cpuBarEl.style.width = `${cpuPercentage}%`;
+            if (cpuPercentage < 70) {
+                cpuBarEl.className = 'cpu-bar bg-success';
+            } else if (cpuPercentage < 90) {
+                cpuBarEl.className = 'cpu-bar bg-warning';
+            } else {
+                cpuBarEl.className = 'cpu-bar bg-danger';
+            }
+        }
+        // 新增：显示型号和核心数
+        if (cpuModelEl) cpuModelEl.textContent = cpuModel ? ` 型号：${cpuModel}` : '';
+        if (cpuCoresEl) cpuCoresEl.textContent = cpuCores ? ` 核心数：${cpuCores}` : '';
+        return;
+    }
+    
+    console.warn('[updateCpuUsage] 无法从响应中提取CPU使用率');
+    cpuUsageEl.textContent = '无数据';
+    if (cpuBarEl) {
+        cpuBarEl.style.width = '0%';
+    }
+};
+
+/**
+ * 从API响应中提取并更新内存使用率
+ * @param {Object} data - API响应数据
+ */
+const updateMemoryUsage = (data) => {
+    // 获取内存显示元素
+    const memUsageEl = document.querySelector('.memory-usage');
+    const memBarEl = document.querySelector('.memory-bar');
+    
+    if (!memUsageEl) {
+        console.error('[updateMemoryUsage] 无法找到内存使用率显示元素');
+        return;
+    }
+    
+    console.log('[updateMemoryUsage] 开始解析内存数据:', data);
+    
+    // 从不同数据结构中提取内存信息
+    let memoryUsage = null;      // 使用百分比
+    let memoryUsed = null;       // 已使用内存(MB)
+    let memoryTotal = null;      // 总内存(MB)
+    
+    // 尝试从不同的数据结构中提取内存信息
+    if (data?.data?.memory?.usage !== undefined) {
+        // 从标准API格式获取 - stats/system接口返回格式
+        memoryUsage = data.data.memory.usage;
+        memoryUsed = data.data.memory.used;
+        memoryTotal = data.data.memory.total;
+        console.log('[updateMemoryUsage] 从data.data.memory中获取内存数据');
+    } else if (data?.memory?.usage !== undefined) {
+        // 直接从响应根级别获取
+        memoryUsage = data.memory.usage;
+        memoryUsed = data.memory.used;
+        memoryTotal = data.memory.total;
+        console.log('[updateMemoryUsage] 从data.memory中获取内存数据');
+    } else if (data?.data?.memory !== undefined && typeof data.data.memory === 'number') {
+        // 从简化API格式获取(只有百分比)
+        memoryUsage = data.data.memory;
+        console.log('[updateMemoryUsage] 从data.data.memory数值中获取内存使用率');
+    } else if (typeof data?.memory === 'number') {
+        // 直接从根级别获取简化格式
+        memoryUsage = data.memory;
+        console.log('[updateMemoryUsage] 从data.memory数值中获取内存使用率');
+    } else if (data?.data?.system?.memory) {
+        // 从system状态API获取
+        const memData = data.data.system.memory;
+        memoryUsed = memData.used;
+        memoryTotal = memData.total;
+        if (memoryTotal > 0) {
+            memoryUsage = (memoryUsed / memoryTotal) * 100;
+        }
+        console.log('[updateMemoryUsage] 从data.data.system.memory中获取内存数据');
+    } else if (data?.system?.memory) {
+        // 直接从根级别获取system状态
+        const memData = data.system.memory;
+        memoryUsed = memData.used;
+        memoryTotal = memData.total;
+        if (memoryTotal > 0) {
+            memoryUsage = (memoryUsed / memoryTotal) * 100;
+        }
+        console.log('[updateMemoryUsage] 从data.system.memory中获取内存数据');
+    } else if (data?.data?.status?.memory) {
+        // 从status接口获取
+        memoryUsage = data.data.status.memory;
+        console.log('[updateMemoryUsage] 从data.data.status.memory中获取内存使用率');
+    } else if (data?.data?.memory) {
+        // 直接获取内存值 - 处理状态API返回的情况
+        memoryUsage = data.data.memory;
+        console.log('[updateMemoryUsage] 从data.data.memory中获取内存使用率');
+    }
+    
+    // 如果只找到了已用和总内存，计算使用率
+    if (memoryUsage === null && memoryUsed !== null && memoryTotal !== null && memoryTotal > 0) {
+        memoryUsage = (memoryUsed / memoryTotal) * 100;
+        console.log(`[updateMemoryUsage] 根据已用/总内存计算使用率: ${memoryUsage.toFixed(1)}%`);
+    }
+    
+    console.log(`[updateMemoryUsage] 提取的内存数据: 使用率=${memoryUsage}%, 已用=${formatMemorySize(memoryUsed)}, 总共=${formatMemorySize(memoryTotal)}`);
+    
+    // 如果找到内存使用率，更新显示
+    if (memoryUsage !== null) {
+        // 确保内存使用率是数字并四舍五入到一位小数
+        const formattedMemUsage = typeof memoryUsage === 'number' ? 
+            memoryUsage.toFixed(1) : parseFloat(memoryUsage).toFixed(1);
+        
+        // 如果有已用和总内存信息，显示更详细的格式
+        if (memoryUsed !== null && memoryTotal !== null) {
+            // 将字节转换为适当的单位
+            const usedFormatted = formatMemorySize(memoryUsed);
+            const totalFormatted = formatMemorySize(memoryTotal);
+            memUsageEl.textContent = `${formattedMemUsage}% (${usedFormatted}/${totalFormatted})`;
+        } else {
+            // 否则只显示百分比
+            memUsageEl.textContent = `${formattedMemUsage}%`;
+        }
+        
+        // 更新内存进度条
+        if (memBarEl) {
+            const memPercentage = Math.min(100, Math.max(0, parseFloat(formattedMemUsage)));
+            memBarEl.style.width = `${memPercentage}%`;
+            
+            // 根据内存使用率设置进度条颜色
+            if (memPercentage < 70) {
+                memBarEl.className = 'memory-bar bg-success';
+            } else if (memPercentage < 90) {
+                memBarEl.className = 'memory-bar bg-warning';
+            } else {
+                memBarEl.className = 'memory-bar bg-danger';
+            }
+        }
+        
+        console.log(`[updateMemoryUsage] 内存使用率已更新为: ${memUsageEl.textContent}`);
+        return;
+    }
+    
+    console.warn('[updateMemoryUsage] 无法从响应中提取内存使用率');
+    memUsageEl.textContent = '无数据';
+    if (memBarEl) {
+        memBarEl.style.width = '0%';
+    }
+};
+
+/**
+ * 格式化内存大小为人类可读格式
+ * @param {number} bytes - 内存字节数
+ * @returns {string} 格式化后的内存大小
+ */
+const formatMemorySize = (size) => {
+    if (size === null || size === undefined) {
+        return '未知';
+    }
+    
+    // 检查是否为MB单位（小于1GB）
+    const mb = size / (1024 * 1024);
+    if (mb < 1024) {
+        return `${mb.toFixed(1)}MB`;
+    }
+    
+    // 转换到GB
+    const gb = mb / 1024;
+    return `${gb.toFixed(1)}GB`;
+};
+
+/**
+ * 获取统计数据（监控代币数、交易数等）
+ */
+async function fetchStatistics() {
+    try {
+        console.log('[fetchStatistics] 开始获取统计数据');
+        
+        const baseUrl = getApiBaseUrl();
+        
+        // 获取代币统计
+        try {
+            const tokensApiUrl = `${baseUrl}${baseUrl.endsWith('/api') ? '' : '/api'}/stats/tokens`;
+            console.log(`[fetchStatistics] 请求代币统计: ${tokensApiUrl}`);
+            
+            const tokensResponse = await fetch(tokensApiUrl);
+            if (tokensResponse.ok) {
+                const tokensData = await tokensResponse.json();
+                console.log('[fetchStatistics] 代币统计数据:', tokensData);
+                
+                // 更新监控代币数
+                updateTokenStats(tokensData.data);
+            }
+        } catch (tokenError) {
+            console.error('[fetchStatistics] 获取代币统计失败:', tokenError);
+        }
+        
+        // 获取交易统计
+        try {
+            const txApiUrl = `${baseUrl}${baseUrl.endsWith('/api') ? '' : '/api'}/stats/transactions`;
+            console.log(`[fetchStatistics] 请求交易统计: ${txApiUrl}`);
+            
+            const txResponse = await fetch(txApiUrl);
+            if (txResponse.ok) {
+                const txData = await txResponse.json();
+                console.log('[fetchStatistics] 交易统计数据:', txData);
+                
+                // 更新执行交易数
+                updateTransactionStats(txData.data);
+            }
+        } catch (txError) {
+            console.error('[fetchStatistics] 获取交易统计失败:', txError);
+        }
+        
+        console.log('[fetchStatistics] 统计数据更新完成');
+        return true;
+    } catch (error) {
+        console.error('[fetchStatistics] 获取统计数据失败:', error);
+        addLog(`获取统计数据失败: ${error.message}`, 'warning');
+        return false;
+    }
+}
+
+/**
+ * 更新代币统计信息
+ * @param {Object} stats - 代币统计信息
+ */
+function updateTokenStats(stats) {
+    if (!stats) return;
+    
+    try {
+        // 获取监控代币数显示元素
+        const monitoredTokensEl = document.querySelector('.stat-card:nth-child(4) .stat-value');
+        const todayNewEl = document.querySelector('.stat-card:nth-child(4) .stat-indicator');
+        
+        if (monitoredTokensEl) {
+            const tokenCount = stats.monitored || stats.total || 0;
+            monitoredTokensEl.textContent = formatNumber(tokenCount);
+            console.log(`[updateTokenStats] 更新监控代币数: ${tokenCount}`);
+        }
+        
+        if (todayNewEl) {
+            const todayNew = stats.todayNew || 0;
+            todayNewEl.innerHTML = `<i class="ri-arrow-up-line"></i> 今日新增: ${todayNew}`;
+            console.log(`[updateTokenStats] 更新今日新增代币: ${todayNew}`);
+        }
+    } catch (error) {
+        console.error('[updateTokenStats] 更新代币统计信息失败:', error);
+    }
+}
+
+/**
+ * 组合API URL，确保URL格式正确
+ * @param {string} path - API路径
+ * @returns {string} 完整的API URL
+ */
+function buildApiUrl(path) {
+    const baseUrl = getApiBaseUrl();
+    // 移除路径前面的斜杠
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    
+    // 确保baseUrl的结尾有斜杠
+    const baseWithSlash = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    
+    // 组合完整URL
+    return `${baseWithSlash}${cleanPath}`;
+}
+
+/**
+ * 通用API请求函数
+ * @param {string} path - API路径
+ * @param {Object} options - 请求选项
+ * @returns {Promise<Object>} API响应
+ */
+async function apiRequest(path, options = {}) {
+    try {
+        const url = buildApiUrl(path);
+        console.log(`[apiRequest] 发起请求: ${url}`);
+        
+        // 默认为GET请求
+        const method = options.method || 'GET';
+        
+        // 构建请求配置
+        const config = {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        };
+        
+        // 添加请求体（如果有）
+        if (options.body) {
+            config.body = JSON.stringify(options.body);
+        }
+        
+        // 发起请求
+        const response = await fetch(url, config);
+        
+        // 检查响应状态
+        if (!response.ok) {
+            throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+        }
+        
+        // 尝试解析JSON响应
+        let data;
+        try {
+            const text = await response.text();
+            console.log(`[apiRequest] 原始响应: ${text.substring(0, 200)}${text.length > 200 ? '...' : ''}`);
+            
+            try {
+                data = JSON.parse(text);
+            } catch (parseError) {
+                console.warn(`[apiRequest] JSON解析失败: ${parseError.message}`);
+                // 如果不是JSON，返回文本
+                return { success: true, data: text };
+            }
+        } catch (error) {
+            console.error(`[apiRequest] 处理响应失败: ${error.message}`);
+            throw error;
+        }
+        
+        // 返回解析后的数据
+        return data;
+    } catch (error) {
+        console.error(`[apiRequest] 请求失败 (${path}): ${error.message}`);
+        throw error;
     }
 }

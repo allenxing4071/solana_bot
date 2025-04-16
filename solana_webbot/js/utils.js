@@ -17,12 +17,16 @@ function getApiBaseUrl() {
         window.ENV = {
             API_URL: 'http://localhost:8080/api',
             ENVIRONMENT: 'development',
-            USE_MOCK_DATA: true // 设置为false以使用真实API
+            USE_MOCK_DATA: false
         };
     }
     
+    // 返回API地址，如果不存在则使用默认值
     return window.ENV.API_URL || 'http://localhost:8080/api';
 }
+
+// 使用不同的名称暴露到全局作用域，避免命名冲突
+window.utilsGetApiBaseUrl = getApiBaseUrl;
 
 // 设置API基础URL
 const API_BASE_URL = getApiBaseUrl();
@@ -148,7 +152,7 @@ async function fetchData(endpoint, options = {}) {
         if (!window.ENV) {
             console.warn('[fetchData] 环境变量未定义，初始化默认值');
             window.ENV = {
-                API_URL: 'http://localhost:8080',
+                API_URL: 'http://localhost:8080/api',
                 ENVIRONMENT: 'development',
                 USE_MOCK_DATA: false // 确保不使用模拟数据
             };
@@ -160,22 +164,10 @@ async function fetchData(endpoint, options = {}) {
         // 确保endpoint以/开头
         const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
         
-        console.log(`[fetchData] 请求API: ${apiBaseUrl}${formattedEndpoint}, USE_MOCK_DATA=${window.ENV.USE_MOCK_DATA}`);
+        console.log(`[fetchData] 请求API: ${apiBaseUrl}${formattedEndpoint}`);
         
-        // 设置默认选项
-        const defaultOptions = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            timeout: 5000 // 5秒超时
-        };
-        
-        // 合并选项
-        const mergedOptions = { ...defaultOptions, ...options };
-        
-        // 发送请求
-        const response = await fetch(`${apiBaseUrl}${formattedEndpoint}`, mergedOptions);
+        // 完全简化请求，不设置任何额外选项，避免CORS问题
+        const response = await fetch(`${apiBaseUrl}${formattedEndpoint}`);
         
         // 检查响应状态
         if (!response.ok) {
@@ -185,75 +177,122 @@ async function fetchData(endpoint, options = {}) {
         // 解析JSON响应
         const data = await response.json();
         
-        console.log(`[fetchData] 响应数据 (${formattedEndpoint}):`, data);
+        console.log(`[fetchData] 响应数据:`, data);
         
         // 确保响应始终是统一格式
         // 如果API返回的不是标准格式，进行适配
         if (!Object.prototype.hasOwnProperty.call(data, 'success')) {
             return {
                 success: true,
-                data: data
+                data
             };
         }
         
         return data;
     } catch (error) {
-        console.error(`[fetchData] 请求失败 ${endpoint}:`, error);
-        
-        // 返回错误信息
+        console.error(`[fetchData] API请求失败 (${endpoint}):`, error);
+        // 返回统一的错误格式
         return {
             success: false,
-            error: error.message,
-            data: null
+            error: error.message || '未知错误'
         };
     }
 }
 
 /**
- * 检查API服务是否正常运行
+ * 检查API状态
  * @returns {Promise<boolean>} API是否可用
  */
 async function checkApiStatus() {
-  try {
-    console.log('[checkApiStatus] 开始检查API状态...');
-    const apiUrl = getApiBaseUrl();
-    
-    // 使用状态检查接口
-    const statusEndpoint = `${apiUrl}/status`;
-    console.log(`[checkApiStatus] 请求状态检查: ${statusEndpoint}`);
-    
-    // 设置超时，避免长时间等待
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
-    
-    const response = await fetch(statusEndpoint, {
-      signal: controller.signal,
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache'
-      }
-    });
-    
-    clearTimeout(timeoutId);
-    
-    // 如果服务器响应正常
-    if (response.ok) {
-      console.log('[checkApiStatus] API服务正常运行');
-      return true;
+    try {
+        const apiUrl = getApiBaseUrl();
+        console.log(`检查API状态: ${apiUrl}/health`);
+        const response = await fetch(`${apiUrl}/health?t=${Date.now()}`);
+        if (response.ok) {
+            const data = await response.json();
+            console.log('API状态:', data);
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('API检查失败:', error);
+        return false;
     }
-    
-    console.warn(`[checkApiStatus] API服务响应异常: ${response.status} ${response.statusText}`);
-    return false;
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error('[checkApiStatus] API请求超时');
-    } else {
-      console.error('[checkApiStatus] API健康检查失败:', error);
-    }
-    return false;
-  }
 }
+
+/**
+ * 检查API状态并显示诊断结果
+ * @returns {Promise<boolean>} API是否可用
+ */
+async function checkAndDiagnoseApi() {
+    console.group('API连接诊断');
+    
+    try {
+        const apiUrl = getApiBaseUrl();
+        console.log('使用API基础URL:', apiUrl);
+        
+        // 测试健康检查端点
+        console.log('尝试访问健康检查端点...');
+        let healthResult = false;
+        
+        try {
+            const healthResponse = await fetch(`${apiUrl}/health?t=${Date.now()}`);
+            if (healthResponse.ok) {
+                const healthData = await healthResponse.json();
+                console.log('健康检查响应:', healthData);
+                healthResult = true;
+            } else {
+                console.warn(`健康检查失败: ${healthResponse.status} ${healthResponse.statusText}`);
+            }
+        } catch (healthError) {
+            console.error('健康检查请求失败:', healthError);
+        }
+        
+        // 测试状态端点
+        console.log('尝试访问状态端点...');
+        let statusResult = false;
+        
+        try {
+            const statusResponse = await fetch(`${apiUrl}/status?t=${Date.now()}`);
+            if (statusResponse.ok) {
+                const statusData = await statusResponse.json();
+                console.log('状态检查响应:', statusData);
+                statusResult = true;
+            } else {
+                console.warn(`状态检查失败: ${statusResponse.status} ${statusResponse.statusText}`);
+            }
+        } catch (statusError) {
+            console.error('状态检查请求失败:', statusError);
+        }
+        
+        // 诊断结果
+        if (healthResult && statusResult) {
+            console.log('✅ API连接正常: 健康检查和状态端点均可访问');
+            console.groupEnd();
+            return true;
+        } else if (healthResult) {
+            console.warn('⚠️ API部分可用: 健康检查正常，但状态端点不可访问');
+            console.groupEnd();
+            return true;
+        } else {
+            console.error('❌ API连接失败: 无法访问任何API端点');
+            console.log('可能的原因:');
+            console.log('1. API服务未启动（启动命令: npm run api:dev）');
+            console.log('2. API地址或端口配置错误（当前URL: ' + apiUrl + '）');
+            console.log('3. API服务有编译错误（查看控制台错误信息）');
+            console.log('4. CORS策略阻止了请求（在API服务器配置CORS）');
+            console.groupEnd();
+            return false;
+        }
+    } catch (error) {
+        console.error('API诊断过程中发生错误:', error);
+        console.groupEnd();
+        return false;
+    }
+}
+
+// 暴露诊断函数
+window.checkAndDiagnoseApi = checkAndDiagnoseApi;
 
 /**
  * 格式化运行时间
@@ -290,7 +329,7 @@ function formatUptime(uptime) {
  */
 async function initSystemStatus() {
   try {
-    const data = await fetchData('/api/status');
+    const data = await fetchData('/status');
     if (!data || !data.success) {
       console.error('[initSystemStatus] 无法获取系统状态数据');
       return;

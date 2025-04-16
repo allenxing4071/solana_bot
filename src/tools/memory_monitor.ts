@@ -9,14 +9,11 @@
  */
 
 import os from 'node:os';
-import * as v8 from 'v8';
-import filesize from 'filesize';
-import path from 'node:path';
 import fs from 'node:fs/promises';
-import createLogger from '../core/logger';
-
-// 创建专用日志记录器
-const logger = createLogger('MemoryMonitor');
+import path from 'node:path';
+import * as v8 from 'node:v8';
+import filesize from 'filesize';
+import logger from '../core/logger';
 
 // 工具名称
 const TOOL_NAME = 'MemoryMonitor';
@@ -408,6 +405,37 @@ class MemoryMonitor {
       lastGcFreedMemory: this.lastGcFreedMemory
     };
   }
+
+  /**
+   * 处理日志数据
+   * @param data 日志数据内容
+   */
+  private handleLogData(data: Record<string, unknown>): void {
+    // ... existing code ...
+  }
+
+  /**
+   * 解析内存指标
+   * @param value 原始值
+   * @returns 解析后的数值(MB)
+   */
+  private parseMemoryMetric(value: string): number {
+    if (!value) return 0;
+    
+    const match = value.match(/(\d+(\.\d+)?)([kKmMgGtT])?[bB]?/);
+    if (!match) return 0;
+    
+    const num = Number.parseFloat(match[1]);
+    const unit = (match[3] || '').toUpperCase();
+    
+    switch (unit) {
+      case 'K': return num / 1024;
+      case 'M': return num;
+      case 'G': return num * 1024;
+      case 'T': return num * 1024 * 1024;
+      default: return num / (1024 * 1024); // 假设是字节
+    }
+  }
 }
 
 /**
@@ -416,7 +444,7 @@ class MemoryMonitor {
  * @returns 格式化后的字符串
  */
 function formatSize(size: number): string {
-  return filesize(size) as string;
+  return filesize.filesize(size) as string;
 }
 
 /**

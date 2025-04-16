@@ -77,10 +77,10 @@ const MODULE_NAME = 'WalletManager';
 class WalletManager {
   // 主交易钱包
   // 就像船长的主要保险箱
-  private tradingWallet: Keypair;
+  private tradingWallet!: Keypair;
   // 区块链连接
   // 就像与海港的通信设备
-  private connection: Connection;
+  private connection!: Connection;
   
   /**
    * 构造函数
@@ -103,10 +103,11 @@ class WalletManager {
       this.loadWalletFromConfig(privateKey);
       // 初始化连接
       // 就像设置海港通信设备
-      this.connection = rpcService.getConnection();
-      if (!this.connection) {
+      const connection = rpcService.getConnection();
+      if (!connection) {
         throw new Error('RPC连接未初始化');
       }
+      this.connection = connection;
       
       logger.info('钱包管理器初始化完成', MODULE_NAME);
     } catch (error) {

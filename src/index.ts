@@ -46,6 +46,7 @@ import { EventType } from './core/types';
 import type { SystemEvent, PoolInfo } from './core/types';
 import type { Service, RPCService, RiskManager, PerformanceMonitor } from './core/service';
 import traderModule from './modules/trader/trader_module';
+import { safeOn } from './core/typed_events';
 
 // 定义警报接口
 interface Alert {
@@ -163,55 +164,49 @@ class Application {
   }
   
   /**
-   * 设置事件监听器
-   * 处理系统内部事件
+   * 设置所有事件监听器
    */
   private setupEventListeners(): void {
-    // 监听池子监控器的新池子事件
+    // 获取服务对象
     const poolMonitorObj = asService(poolMonitor);
     const traderModuleObj = asService(traderModule);
     const performanceMonitorObj = asService(performanceMonitor);
 
-    if (poolMonitorObj.on && traderModuleObj.handleNewPool) {
-      poolMonitorObj.on('newPool', (poolInfo: PoolInfo) => {
-        traderModuleObj.handleNewPool?.(poolInfo);
-      });
-    }
+    // 使用类型安全的事件监听器
+    safeOn<PoolInfo>(poolMonitorObj, 'newPool', (poolInfo: PoolInfo) => {
+      traderModuleObj.handleNewPool?.(poolInfo);
+    });
     
     // 监听系统事件
-    if (traderModuleObj.on) {
-      traderModuleObj.on('event', (event: SystemEvent) => {
-        // 处理交易模块发出的事件
-        switch (event.type) {
-          case EventType.TRADE_EXECUTED:
-            // 交易执行事件
-            logger.info('交易已执行', MODULE_NAME, { event });
-            break;
-            
-          case EventType.POSITION_UPDATED:
-            // 持仓更新事件
-            logger.info('持仓已更新', MODULE_NAME, { event });
-            break;
-            
-          case EventType.ERROR_OCCURRED:
-            // 错误事件
-            logger.error('发生错误', MODULE_NAME, { event });
-            break;
-        }
-      });
-    }
+    safeOn<SystemEvent>(traderModuleObj, 'event', (event: SystemEvent) => {
+      // 处理交易模块发出的事件
+      switch (event.type) {
+        case EventType.TRADE_EXECUTED:
+          // 交易执行事件
+          logger.info('交易已执行', MODULE_NAME, { event });
+          break;
+          
+        case EventType.POSITION_UPDATED:
+          // 持仓更新事件
+          logger.info('持仓已更新', MODULE_NAME, { event });
+          break;
+          
+        case EventType.ERROR_OCCURRED:
+          // 错误事件
+          logger.error('发生错误', MODULE_NAME, { event });
+          break;
+      }
+    });
     
     // 监听性能监控系统警报
-    if (performanceMonitorObj.on) {
-      performanceMonitorObj.on('alert', (alert: Alert) => {
-        logger.warn(`性能警报: ${alert.message}`, MODULE_NAME, {
-          level: alert.level,
-          metric: alert.metric,
-          value: alert.value,
-          threshold: alert.threshold
-        });
+    safeOn<Alert>(performanceMonitorObj, 'alert', (alert: Alert) => {
+      logger.warn(`性能警报: ${alert.message}`, MODULE_NAME, {
+        level: alert.level,
+        metric: alert.metric,
+        value: alert.value,
+        threshold: alert.threshold
       });
-    }
+    });
   }
 
   /**

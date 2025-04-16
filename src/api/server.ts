@@ -13,6 +13,7 @@ import systemRoutes from './routes/system_routes';
 import poolRoutes from './routes/pool_routes';
 import transactionRoutes from './routes/transaction_routes';
 import settingsRoutes from './routes/settings_routes';
+import statsRoutes from './routes/stats_routes';
 import setupAPIMonitorRoute from './api-monitor'; // 使用TypeScript版本的API监控模块
 
 // 模块名称
@@ -53,7 +54,23 @@ class ApiServer {
     this.app.use(cors({
       origin: '*', // 允许所有来源
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization']
+      allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'cache-control', 
+        'pragma', 
+        'user-agent', 
+        'x-requested-with', 
+        'x-access-token',
+        'access-control-allow-origin',
+        'origin',
+        'accept',
+        'x-timestamp',
+        'x-api-key'
+      ],
+      exposedHeaders: ['Content-Length', 'Content-Type'],
+      credentials: true,
+      maxAge: 86400 // 预检请求结果缓存1天
     }));
     
     // 提供静态文件 - 使用简化版API服务器相同的静态文件目录
@@ -88,7 +105,7 @@ class ApiServer {
     this.app.use('/api/tokens', tokenRoutes);
     
     // 使用系统路由模块处理系统相关请求
-    this.app.use('/api/system', systemRoutes);
+    this.app.use('/api', systemRoutes);
     
     // 使用池路由模块处理池相关请求
     this.app.use('/api/pools', poolRoutes);
@@ -99,12 +116,18 @@ class ApiServer {
     // 使用设置路由模块处理设置相关请求
     this.app.use('/api/settings', settingsRoutes);
     
+    // 使用统计路由模块处理统计相关请求
+    this.app.use('/api/stats', statsRoutes);
+    
     // 设置API监控页面路由
     setupAPIMonitorRoute(this.app);
     
+    // 添加模拟数据路由（用于API监控页面）
+    this.setupMockDataRoutes();
+    
     // 增加根路由，提供前端页面
     this.app.get('/', (_req, res) => {
-      res.sendFile('index.html', { root: 'public' });
+      res.sendFile('index.html', { root: path.resolve(process.cwd(), 'solana_webbot') });
     });
     
     // 错误处理中间件
@@ -114,6 +137,79 @@ class ApiServer {
         error: {
           message: err.message || '服务器内部错误'
         }
+      });
+    });
+  }
+
+  /**
+   * 设置模拟数据路由
+   * 这些路由仅用于API监控页面显示，提供示例数据
+   */
+  private setupMockDataRoutes(): void {
+    // 利润汇总API
+    this.app.get('/api/profit/summary', (_req, res) => {
+      res.json({
+        success: true,
+        isMockData: true,  // 明确标识这是模拟数据
+        data: {
+          totalProfit: 158.56,
+          dailyProfit: 12.34,
+          weeklyProfit: 67.89,
+          monthlyProfit: 158.56,
+          bestTrade: {
+            token: "SOL",
+            profit: 8.56,
+            date: new Date().toISOString()
+          }
+        }
+      });
+    });
+
+    // 代币趋势API
+    this.app.get('/api/token-trends', (_req, res) => {
+      const data = [];
+      const now = Date.now();
+      for (let i = 0; i < 24; i++) {
+        data.push({
+          time: new Date(now - i * 3600000).toISOString(),
+          count: Math.floor(Math.random() * 10) + 5
+        });
+      }
+      res.json({
+        success: true,
+        isMockData: true,  // 明确标识这是模拟数据
+        data: data.reverse()
+      });
+    });
+
+    // 利润趋势API
+    this.app.get('/api/profit-trends', (_req, res) => {
+      const data = [];
+      const now = Date.now();
+      for (let i = 0; i < 24; i++) {
+        data.push({
+          time: new Date(now - i * 3600000).toISOString(),
+          value: (Math.random() * 2 + 0.5).toFixed(2)
+        });
+      }
+      res.json({
+        success: true,
+        isMockData: true,  // 明确标识这是模拟数据
+        data: data.reverse()
+      });
+    });
+
+    // 系统日志API
+    this.app.get('/api/logs', (_req, res) => {
+      res.json({
+        success: true,
+        isMockData: true,  // 明确标识这是模拟数据
+        data: [
+          { time: new Date().toISOString(), level: "info", message: "系统正常运行中" },
+          { time: new Date(Date.now() - 300000).toISOString(), level: "info", message: "发现新代币: TEST" },
+          { time: new Date(Date.now() - 600000).toISOString(), level: "warning", message: "API请求限流" },
+          { time: new Date(Date.now() - 900000).toISOString(), level: "info", message: "完成交易: SOL -> USDC" }
+        ]
       });
     });
   }

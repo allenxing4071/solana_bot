@@ -105,8 +105,8 @@ const htmlContent = `<!DOCTYPE html>
         <div class="api-section">
             <div class="api-title">
                 <h2>系统状态</h2>
-                <span class="api-url">/api/system/status</span>
-                <button class="refresh-btn" onclick="fetchData('system-status', '/api/system/status')">刷新</button>
+                <span class="api-url">/api/status</span>
+                <button class="refresh-btn" onclick="fetchData('system-status', '/api/status')">刷新</button>
             </div>
             <div class="status" id="system-status-status"></div>
             <pre id="system-status"></pre>
@@ -145,8 +145,8 @@ const htmlContent = `<!DOCTYPE html>
         <div class="api-section">
             <div class="api-title">
                 <h2>内存监控数据</h2>
-                <span class="api-url">/api/memory_stats.json</span>
-                <button class="refresh-btn" onclick="fetchData('memory', '/api/memory_stats.json')">刷新</button>
+                <span class="api-url">/api/memory</span>
+                <button class="refresh-btn" onclick="fetchData('memory', '/api/memory')">刷新</button>
             </div>
             <div class="status" id="memory-status"></div>
             <pre id="memory"></pre>
@@ -211,14 +211,20 @@ const htmlContent = `<!DOCTYPE html>
                 
                 try {
                     const data = await response.json();
-                    statusElement.textContent = \`\${statusText} - 成功\`;
+                    statusElement.textContent = \`\${statusText} - 获取成功\`;
                     statusElement.className = "status success";
+                    
+                    // 检查是否为模拟数据，如果是则添加标记
+                    if (data.isMockData) {
+                        statusElement.textContent += " 【模拟数据】";
+                        statusElement.style.color = "#ff9800"; // 模拟数据使用橙色标记
+                    }
+                    
                     dataElement.innerHTML = formatJSON(data);
-                } catch (jsonError) {
-                    const text = await response.text();
-                    statusElement.textContent = \`\${statusText} - 解析JSON失败\`;
+                } catch (error) {
+                    statusElement.textContent = \`请求失败: \${error.message}\`;
                     statusElement.className = "status error";
-                    dataElement.textContent = text || "返回数据为空";
+                    dataElement.textContent = "请求出错";
                 }
             } catch (error) {
                 statusElement.textContent = \`请求失败: \${error.message}\`;
@@ -229,11 +235,11 @@ const htmlContent = `<!DOCTYPE html>
         
         // 页面加载时获取所有数据
         window.onload = function() {
-            fetchData('system-status', '/api/system/status');
+            fetchData('system-status', '/api/status');
             fetchData('tokens', '/api/tokens');
             fetchData('transactions', '/api/transactions');
             fetchData('pools', '/api/pools');
-            fetchData('memory', '/api/memory_stats.json');
+            fetchData('memory', '/api/memory');
             fetchData('api-status', '/api/status');
         };
     </script>
@@ -241,27 +247,11 @@ const htmlContent = `<!DOCTYPE html>
 </html>`;
 
 /**
- * 设置API监控路由
- * @param app - Express应用实例
+ * 设置API监控页面路由
+ * 为API服务器添加API监控页面路由
+ * @param app Express应用实例
  */
 function setupAPIMonitorRoute(app: Application): void {
-  // 将API监控页面写入到文件系统 (可选)
-  const monitorPagePath = path.join(__dirname, '..', '..', 'public', 'api-monitor.html');
-  try {
-    // 确保public目录存在
-    const publicDir = path.join(__dirname, '..', '..', 'public');
-    if (!fs.existsSync(publicDir)) {
-      fs.mkdirSync(publicDir, { recursive: true });
-      console.log(`[API监控] 创建了目录: ${publicDir}`);
-    }
-    
-    // 写入监控页面
-    fs.writeFileSync(monitorPagePath, htmlContent);
-    console.log(`[API监控] 页面已写入: ${monitorPagePath}`);
-  } catch (error) {
-    console.error(`[API监控] 无法写入监控页面: ${error instanceof Error ? error.message : String(error)}`);
-  }
-  
   // 添加API监控页面路由
   app.get('/api-monitor', (_req: Request, res: Response) => {
     res.setHeader('Content-Type', 'text/html');

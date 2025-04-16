@@ -86,6 +86,12 @@ class TraderModule extends node_events_1.EventEmitter {
         // 初始化事件发射器
         // 就像安装与其他部门通信的设备
         super();
+        this.walletManager = {};
+        this.transactionBuilder = {};
+        this.tokenValidator = {};
+        this.riskManager = {};
+        this.opportunityDetector = {};
+        this.strategyManager = {};
         this.isRunning = false;
         this.isExecuting = false;
         this.activeOpportunities = new Map();
@@ -899,7 +905,8 @@ class TraderModule extends node_events_1.EventEmitter {
             this.addToPriceCheckQueue(position.token.mint, async (price) => {
                 // 计算价值变化
                 // 就像计算这批鱼的价值变化
-                const oldValueUsd = position.currentPrice * Number(position.amount);
+                const currentPrice = position.currentPrice || 0;
+                const oldValueUsd = currentPrice * Number(position.amount);
                 const newValueUsd = price * Number(position.amount);
                 const changePercent = ((newValueUsd - oldValueUsd) / oldValueUsd) * 100;
                 // 更新持仓价格

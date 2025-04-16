@@ -79,8 +79,7 @@ declare class Application {
      */
     private setupProcessHandlers;
     /**
-     * 设置事件监听器
-     * 处理系统内部事件
+     * 设置所有事件监听器
      */
     private setupEventListeners;
     /**

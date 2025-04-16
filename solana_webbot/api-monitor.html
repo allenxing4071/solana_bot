@@ -94,8 +94,8 @@
         <div class="api-section">
             <div class="api-title">
                 <h2>系统状态</h2>
-                <span class="api-url">/api/system/status</span>
-                <button class="refresh-btn" onclick="fetchData('system-status', '/api/system/status')">刷新</button>
+                <span class="api-url">/api/status</span>
+                <button class="refresh-btn" onclick="fetchData('system-status', '/api/status')">刷新</button>
             </div>
             <div class="status" id="system-status-status"></div>
             <pre id="system-status"></pre>
@@ -194,8 +194,8 @@
         <div class="api-section">
             <div class="api-title">
                 <h2>内存监控数据</h2>
-                <span class="api-url">/api/memory_stats.json</span>
-                <button class="refresh-btn" onclick="fetchData('memory', '/api/memory_stats.json')">刷新</button>
+                <span class="api-url">/api/memory</span>
+                <button class="refresh-btn" onclick="fetchData('memory', '/api/memory')">刷新</button>
             </div>
             <div class="status" id="memory-status"></div>
             <pre id="memory"></pre>
@@ -214,7 +214,7 @@
 
     <script>
         // 自动使用当前主机地址作为基础URL
-        const baseUrl = `http://${window.location.hostname}:8080`;
+        const baseUrl = 'http://localhost:8080';
         
         // 格式化JSON并高亮显示
         function formatJSON(json) {
@@ -258,27 +258,27 @@
                     return;
                 }
                 
-                try {
-                    const data = await response.json();
-                    statusElement.textContent = `${statusText} - 成功`;
-                    statusElement.className = "status success";
-                    dataElement.innerHTML = formatJSON(data);
-                } catch (jsonError) {
-                    const text = await response.text();
-                    statusElement.textContent = `${statusText} - 解析JSON失败`;
-                    statusElement.className = "status error";
-                    dataElement.textContent = text || "返回数据为空";
+                const data = await response.json();
+                statusElement.textContent = `${statusText} - 获取成功`;
+                statusElement.className = "status success";
+                
+                // 检查是否为模拟数据，如果是则添加标记
+                if (data.isMockData) {
+                    statusElement.textContent += " 【模拟数据】";
+                    statusElement.style.color = "#ff9800"; // 模拟数据使用橙色标记
                 }
+                
+                dataElement.innerHTML = formatJSON(data);
             } catch (error) {
                 statusElement.textContent = `请求失败: ${error.message}`;
                 statusElement.className = "status error";
-                dataElement.textContent = "无法连接到API服务器";
+                dataElement.textContent = "请求出错";
             }
         }
         
         // 页面加载时获取所有数据
         window.onload = function() {
-            fetchData('system-status', '/api/system/status');
+            fetchData('system-status', '/api/status');
             fetchData('profit-summary', '/api/profit/summary');
             fetchData('token-trends', '/api/token-trends');
             fetchData('profit-trends', '/api/profit-trends');
@@ -288,7 +288,7 @@
             fetchData('transactions', '/api/transactions');
             fetchData('pools', '/api/pools');
             fetchData('logs', '/api/logs');
-            fetchData('memory', '/api/memory_stats.json');
+            fetchData('memory', '/api/memory');
             fetchData('api-status', '/api/status');
         };
     </script>

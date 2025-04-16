@@ -117,10 +117,11 @@ class WalletManager {
             this.loadWalletFromConfig(privateKey);
             // 初始化连接
             // 就像设置海港通信设备
-            this.connection = rpc_service_1.default.getConnection();
-            if (!this.connection) {
+            const connection = rpc_service_1.default.getConnection();
+            if (!connection) {
                 throw new Error('RPC连接未初始化');
             }
+            this.connection = connection;
             logger_1.default.info('钱包管理器初始化完成', MODULE_NAME);
         }
         catch (error) {

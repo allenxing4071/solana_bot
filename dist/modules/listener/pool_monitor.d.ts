@@ -59,6 +59,17 @@ declare class PoolMonitor extends EventEmitter {
     private knownPools;
     private subscriptions;
     /**
+     * 检查监控器是否处于活动状态
+     *
+     * 【比喻解释】
+     * 这就像查看探测雷达的工作状态灯：
+     * - 绿灯亮起表示系统正在运行
+     * - 红灯表示系统当前已关闭
+     *
+     * @returns {boolean} 监控器是否正在运行
+     */
+    isActive(): boolean;
+    /**
      * 构造函数
      * 初始化池子监听器并加载配置
      *
@@ -236,6 +247,13 @@ declare class PoolMonitor extends EventEmitter {
      * @param dexName DEX名称
      */
     getPoolCountByDex(dexName: DexType): number;
+    /**
+     * 获取所有被监控的代币
+     * 返回一个代币集合
+     *
+     * @returns {string[]} 被监控的代币地址列表
+     */
+    getMonitoredTokens(): string[];
 }
 export declare const poolMonitor: PoolMonitor;
 export default poolMonitor;

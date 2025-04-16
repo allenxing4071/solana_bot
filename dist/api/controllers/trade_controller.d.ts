@@ -1,3 +1,4 @@
+import type { Request, Response } from 'express';
 /**
  * 获取交易历史记录
  * @param req 请求对象

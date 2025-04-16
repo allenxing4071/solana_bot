@@ -74,7 +74,7 @@ async function checkApiStatus() {
     const apiUrl = getApiBaseUrl();
     
     // 尝试调用健康检查接口
-    const healthEndpoint = `${apiUrl}/health`;
+    const healthEndpoint = `${apiUrl}/system/status`;
     console.log(`[checkApiStatus] 请求健康检查: ${healthEndpoint}`);
     
     // 设置超时，避免长时间等待
@@ -195,62 +195,38 @@ async function loadMemoryStats() {
   
   try {
     // 从API获取内存数据
-    const url = `${getApiBaseUrl()}/api/memory_stats.json?t=${Date.now()}`;
+    const url = `${getApiBaseUrl()}/api/system/memory?t=${Date.now()}`;
     console.log(`从API获取内存数据: ${url}`);
     
     try {
       // 发送API请求获取数据
-      console.log('开始发送fetch请求...');
       const response = await fetch(url);
-      console.log('API响应状态:', response.status, response.statusText);
-      
       if (!response.ok) {
         throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
       }
       
-      console.log('开始解析JSON响应...');
       const jsonResponse = await response.json();
-      console.log('JSON响应解析完成:', jsonResponse);
+      console.log('已获取内存统计数据:', jsonResponse);
       
-      // 提取真正的数据对象(处理可能的嵌套结构)
-      let actualData;
-      
+      // 提取数据对象
+      let memoryData;
       if (jsonResponse.success === true && jsonResponse.data) {
-        console.log('检测到标准API响应格式，提取data对象');
-        actualData = jsonResponse.data;
+        memoryData = jsonResponse.data;
       } else {
-        console.log('直接使用响应数据');
-        actualData = jsonResponse;
+        memoryData = jsonResponse;
       }
       
-      // 保存到全局变量
-      memoryData = actualData;
-      console.log('最终使用的内存数据:', memoryData);
-      
-      // 检查数据完整性
-      if (!memoryData.totalMemory || !memoryData.heapMemory) {
-        console.error('数据不完整，缺少totalMemory或heapMemory');
-        console.log('数据结构:', JSON.stringify(memoryData).slice(0, 200) + '...');
-      }
-      
-      // 更新UI
-      console.log('开始更新UI...');
+      // 更新内存统计UI
       updateMemoryUI(memoryData);
-      
-      // 同时更新系统状态信息
-      loadSystemStatus();
-      
       return true;
     } catch (apiError) {
       console.error('API请求或解析失败:', apiError);
-      console.error('错误详情:', apiError.stack || '无堆栈信息');
-      showNotification('错误', `内存数据加载失败: ${apiError.message}`, 'error');
+      showNotification('错误', `无法获取内存数据: ${apiError.message}`, 'error');
       return false;
     }
   } catch (error) {
     console.error('加载内存统计数据失败:', error);
-    console.error('错误详情:', error.stack || '无堆栈信息');
-    showNotification('错误', '内存数据加载过程中发生未知错误', 'error');
+    showNotification('错误', `加载失败: ${error.message}`, 'error');
     return false;
   }
 }

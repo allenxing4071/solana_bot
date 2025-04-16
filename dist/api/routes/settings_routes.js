@@ -46,19 +46,16 @@ const router = express_1.default.Router();
 /**
  * @route   GET /api/settings
  * @desc    获取系统设置
- * @access  Public
  */
 router.get('/', settingsController.getSettings);
 /**
  * @route   POST /api/settings
  * @desc    保存系统设置
- * @access  Public
  */
 router.post('/', settingsController.saveSettings);
 /**
  * @route   POST /api/settings/apply
  * @desc    应用系统设置
- * @access  Public
  */
 router.post('/apply', settingsController.applySettings);
 exports.default = router;

@@ -41,6 +41,7 @@ const risk_manager_1 = __importDefault(require("./modules/risk/risk_manager"));
 const performance_monitor_1 = __importDefault(require("./modules/monitor/performance_monitor"));
 const server_1 = __importDefault(require("./api/server"));
 const trader_module_1 = __importDefault(require("./modules/trader/trader_module"));
+const typed_events_1 = require("./core/typed_events");
 // 类型断言
 const asService = (obj) => obj;
 const asRPCService = (obj) => obj;
@@ -138,50 +139,44 @@ class Application {
         });
     }
     /**
-     * 设置事件监听器
-     * 处理系统内部事件
+     * 设置所有事件监听器
      */
     setupEventListeners() {
-        // 监听池子监控器的新池子事件
+        // 获取服务对象
         const poolMonitorObj = asService(pool_monitor_1.default);
         const traderModuleObj = asService(trader_module_1.default);
         const performanceMonitorObj = asService(performance_monitor_1.default);
-        if (poolMonitorObj.on && traderModuleObj.handleNewPool) {
-            poolMonitorObj.on('newPool', (poolInfo) => {
-                traderModuleObj.handleNewPool?.(poolInfo);
-            });
-        }
+        // 使用类型安全的事件监听器
+        (0, typed_events_1.safeOn)(poolMonitorObj, 'newPool', (poolInfo) => {
+            traderModuleObj.handleNewPool?.(poolInfo);
+        });
         // 监听系统事件
-        if (traderModuleObj.on) {
-            traderModuleObj.on('event', (event) => {
-                // 处理交易模块发出的事件
-                switch (event.type) {
-                    case "trade_executed" /* EventType.TRADE_EXECUTED */:
-                        // 交易执行事件
-                        logger_1.default.info('交易已执行', MODULE_NAME, { event });
-                        break;
-                    case "position_updated" /* EventType.POSITION_UPDATED */:
-                        // 持仓更新事件
-                        logger_1.default.info('持仓已更新', MODULE_NAME, { event });
-                        break;
-                    case "error_occurred" /* EventType.ERROR_OCCURRED */:
-                        // 错误事件
-                        logger_1.default.error('发生错误', MODULE_NAME, { event });
-                        break;
-                }
-            });
-        }
+        (0, typed_events_1.safeOn)(traderModuleObj, 'event', (event) => {
+            // 处理交易模块发出的事件
+            switch (event.type) {
+                case "trade_executed" /* EventType.TRADE_EXECUTED */:
+                    // 交易执行事件
+                    logger_1.default.info('交易已执行', MODULE_NAME, { event });
+                    break;
+                case "position_updated" /* EventType.POSITION_UPDATED */:
+                    // 持仓更新事件
+                    logger_1.default.info('持仓已更新', MODULE_NAME, { event });
+                    break;
+                case "error_occurred" /* EventType.ERROR_OCCURRED */:
+                    // 错误事件
+                    logger_1.default.error('发生错误', MODULE_NAME, { event });
+                    break;
+            }
+        });
         // 监听性能监控系统警报
-        if (performanceMonitorObj.on) {
-            performanceMonitorObj.on('alert', (alert) => {
-                logger_1.default.warn(`性能警报: ${alert.message}`, MODULE_NAME, {
-                    level: alert.level,
-                    metric: alert.metric,
-                    value: alert.value,
-                    threshold: alert.threshold
-                });
+        (0, typed_events_1.safeOn)(performanceMonitorObj, 'alert', (alert) => {
+            logger_1.default.warn(`性能警报: ${alert.message}`, MODULE_NAME, {
+                level: alert.level,
+                metric: alert.metric,
+                value: alert.value,
+                threshold: alert.threshold
             });
-        }
+        });
     }
     /**
      * 启动应用程序
@@ -202,7 +197,7 @@ class Application {
         }
         catch (error) {
             this.setSystemStatus(SystemStatus.ERROR);
-            logger_1.default.error('启动失败', MODULE_NAME, error);
+            logger_1.default.error('启动失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
             throw error;
         }
     }
@@ -237,7 +232,7 @@ class Application {
                         logger_1.default.info(`已关闭服务: ${service.constructor.name}`, MODULE_NAME);
                     }
                     catch (error) {
-                        logger_1.default.error(`关闭服务失败: ${service.constructor.name}`, MODULE_NAME, error);
+                        logger_1.default.error(`关闭服务失败: ${service.constructor.name}`, MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
                     }
                 }
             }
@@ -246,7 +241,7 @@ class Application {
         }
         catch (error) {
             this.setSystemStatus(SystemStatus.ERROR);
-            logger_1.default.error('关闭失败', MODULE_NAME, error);
+            logger_1.default.error('关闭失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
             throw error;
         }
     }
@@ -332,7 +327,7 @@ class Application {
             logger_1.default.info('所有系统模块初始化完成', MODULE_NAME);
         }
         catch (error) {
-            logger_1.default.error('系统模块初始化失败', MODULE_NAME, error);
+            logger_1.default.error('系统模块初始化失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
             throw error;
         }
     }
@@ -362,7 +357,7 @@ class Application {
             logger_1.default.info('所有业务逻辑已启动', MODULE_NAME);
         }
         catch (error) {
-            logger_1.default.error('业务逻辑启动失败', MODULE_NAME, error);
+            logger_1.default.error('业务逻辑启动失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
             throw error;
         }
     }
@@ -371,7 +366,7 @@ class Application {
 const app = new Application();
 // 启动应用程序并处理错误
 app.start().catch(error => {
-    logger_1.default.error('应用程序启动失败', MODULE_NAME, { error: error instanceof Error ? error.toString() : String(error) });
+    logger_1.default.error('应用程序启动失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
     process.exit(1);
 });
 // 导出应用程序实例

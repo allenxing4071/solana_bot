@@ -1058,7 +1058,8 @@ export class TraderModule extends EventEmitter {
       this.addToPriceCheckQueue(position.token.mint, async (price) => {
         // 计算价值变化
         // 就像计算这批鱼的价值变化
-        const oldValueUsd = position.currentPrice * Number(position.amount);
+        const currentPrice = position.currentPrice || 0;
+        const oldValueUsd = currentPrice * Number(position.amount);
         const newValueUsd = price * Number(position.amount);
         const changePercent = ((newValueUsd - oldValueUsd) / oldValueUsd) * 100;
         

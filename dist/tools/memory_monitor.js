@@ -46,13 +46,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_os_1 = __importDefault(require("node:os"));
-const v8 = __importStar(require("v8"));
-const filesize_1 = __importDefault(require("filesize"));
-const node_path_1 = __importDefault(require("node:path"));
 const promises_1 = __importDefault(require("node:fs/promises"));
-const logger_1 = __importDefault(require("../core/logger"));
-// 创建专用日志记录器
-const logger = (0, logger_1.default)('MemoryMonitor');
+const node_path_1 = __importDefault(require("node:path"));
+const v8 = __importStar(require("node:v8"));
+const filesize_1 = __importDefault(require("filesize"));
 // 工具名称
 const TOOL_NAME = 'MemoryMonitor';
 // 报告保存目录
@@ -337,6 +334,34 @@ class MemoryMonitor {
             lastGcFreedMemory: this.lastGcFreedMemory
         };
     }
+    /**
+     * 处理日志数据
+     * @param data 日志数据内容
+     */
+    handleLogData(data) {
+        // ... existing code ...
+    }
+    /**
+     * 解析内存指标
+     * @param value 原始值
+     * @returns 解析后的数值(MB)
+     */
+    parseMemoryMetric(value) {
+        if (!value)
+            return 0;
+        const match = value.match(/(\d+(\.\d+)?)([kKmMgGtT])?[bB]?/);
+        if (!match)
+            return 0;
+        const num = Number.parseFloat(match[1]);
+        const unit = (match[3] || '').toUpperCase();
+        switch (unit) {
+            case 'K': return num / 1024;
+            case 'M': return num;
+            case 'G': return num * 1024;
+            case 'T': return num * 1024 * 1024;
+            default: return num / (1024 * 1024); // 假设是字节
+        }
+    }
 }
 /**
  * 格式化大小为可读字符串
@@ -344,7 +369,7 @@ class MemoryMonitor {
  * @returns 格式化后的字符串
  */
 function formatSize(size) {
-    return (0, filesize_1.default)(size);
+    return filesize_1.default.filesize(size);
 }
 /**
  * 主函数

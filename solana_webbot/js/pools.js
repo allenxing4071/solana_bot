@@ -133,8 +133,10 @@ async function loadPoolsData() {
     showLoading(true);
     
     // 从API获取流动性池数据
-    const url = `${getApiBaseUrl()}/api/pools?t=${Date.now()}`;
-    console.log(`从API获取流动性池数据: ${url}`);
+    const url = `${getApiBaseUrl()}/pools?t=${Date.now()}`;
+    console.log(`[fetchPools] 开始获取流动性池子数据`);
+    console.log(`[fetchPools] 请求URL: ${url}`);
+    addLog('开始获取流动性池子数据...', 'info');
     
     const response = await fetch(url);
     if (!response.ok) {
@@ -292,9 +294,10 @@ function transformPoolsData(rawPools) {
  */
 async function loadSystemStatus() {
   try {
-    // 从API获取系统状态
-    const url = `${getApiBaseUrl()}/system/status?t=${Date.now()}`;
-    console.log(`从API获取系统状态: ${url}`);
+    console.log('[loadSystemStatus] 开始获取系统状态');
+    
+    const url = `${getApiBaseUrl()}/status?t=${Date.now()}`;
+    console.log(`[loadSystemStatus] 请求API: ${url}`);
     
     const response = await fetch(url);
     if (!response.ok) {
@@ -602,8 +605,8 @@ async function showPoolDetails(poolId) {
     // 如果在当前数据中没有找到，尝试从API获取详情
     if (!pool) {
       // 从API获取池子详情
-      const url = `${getApiBaseUrl()}/api/pools/detail/${poolId}?t=${Date.now()}`;
-      console.log(`从API获取池子详情: ${url}`);
+      const url = `${getApiBaseUrl()}/pools/detail/${poolId}?t=${Date.now()}`;
+      console.log(`请求池子详情: ${url}`);
       
       const response = await fetch(url);
       if (!response.ok) {
@@ -815,8 +818,9 @@ function initEventListeners() {
   if (elements.startBtn) {
     elements.startBtn.addEventListener('click', async () => {
       try {
-        // 调用启动系统API
-        const url = `${getApiBaseUrl()}/api/system/start`;
+        // 启动系统
+        const url = `${getApiBaseUrl()}/start?t=${Date.now()}`;
+        console.log(`启动系统: ${url}`);
         const response = await fetch(url, { method: 'POST' });
         
         if (response.ok) {
@@ -837,8 +841,9 @@ function initEventListeners() {
   if (elements.stopBtn) {
     elements.stopBtn.addEventListener('click', async () => {
       try {
-        // 调用停止系统API
-        const url = `${getApiBaseUrl()}/api/system/stop`;
+        // 停止系统
+        const url = `${getApiBaseUrl()}/stop?t=${Date.now()}`;
+        console.log(`停止系统: ${url}`);
         const response = await fetch(url, { method: 'POST' });
         
         if (response.ok) {

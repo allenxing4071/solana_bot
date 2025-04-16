@@ -790,6 +790,27 @@ class PoolMonitor extends EventEmitter {
     
     return count;
   }
+
+  /**
+   * 获取所有被监控的代币
+   * 返回一个代币集合
+   * 
+   * @returns {string[]} 被监控的代币地址列表
+   */
+  getMonitoredTokens(): string[] {
+    // 存储所有代币的集合（使用Set避免重复）
+    const tokenSet = new Set<string>();
+    
+    // 遍历所有已知的池子
+    this.knownPools.forEach(pool => {
+      // 添加池子中的代币到集合
+      if (pool.tokenAMint) tokenSet.add(pool.tokenAMint.toString());
+      if (pool.tokenBMint) tokenSet.add(pool.tokenBMint.toString());
+    });
+    
+    // 转换为数组并返回
+    return Array.from(tokenSet);
+  }
 }
 
 // 创建并导出单例

@@ -67,6 +67,19 @@ const MODULE_NAME = 'PoolMonitor';
  */
 class PoolMonitor extends node_events_1.EventEmitter {
     /**
+     * 检查监控器是否处于活动状态
+     *
+     * 【比喻解释】
+     * 这就像查看探测雷达的工作状态灯：
+     * - 绿灯亮起表示系统正在运行
+     * - 红灯表示系统当前已关闭
+     *
+     * @returns {boolean} 监控器是否正在运行
+     */
+    isActive() {
+        return this.isRunning;
+    }
+    /**
      * 构造函数
      * 初始化池子监听器并加载配置
      *
@@ -650,6 +663,26 @@ class PoolMonitor extends node_events_1.EventEmitter {
             }
         }
         return count;
+    }
+    /**
+     * 获取所有被监控的代币
+     * 返回一个代币集合
+     *
+     * @returns {string[]} 被监控的代币地址列表
+     */
+    getMonitoredTokens() {
+        // 存储所有代币的集合（使用Set避免重复）
+        const tokenSet = new Set();
+        // 遍历所有已知的池子
+        this.knownPools.forEach(pool => {
+            // 添加池子中的代币到集合
+            if (pool.tokenAMint)
+                tokenSet.add(pool.tokenAMint.toString());
+            if (pool.tokenBMint)
+                tokenSet.add(pool.tokenBMint.toString());
+        });
+        // 转换为数组并返回
+        return Array.from(tokenSet);
     }
 }
 // 创建并导出单例

@@ -133,7 +133,9 @@ class TokenValidator {
                     }
                 }
                 catch (error) {
-                    logger_1.default.error(`无法解析白名单文件 ${whitelistPath}`, MODULE_NAME, error);
+                    logger_1.default.error(`无法解析白名单文件 ${whitelistPath}`, MODULE_NAME, {
+                        error: error instanceof Error ? error.message : String(error)
+                    });
                     this.loadWhitelist([]);
                 }
             }
@@ -160,7 +162,9 @@ class TokenValidator {
                     }
                 }
                 catch (error) {
-                    logger_1.default.error(`无法解析黑名单文件 ${blacklistPath}`, MODULE_NAME, error);
+                    logger_1.default.error(`无法解析黑名单文件 ${blacklistPath}`, MODULE_NAME, {
+                        error: error instanceof Error ? error.message : String(error)
+                    });
                     this.loadBlacklist([], []);
                 }
             }
@@ -182,7 +186,9 @@ class TokenValidator {
             });
         }
         catch (error) {
-            logger_1.default.error('加载代币列表时出错', MODULE_NAME, error);
+            logger_1.default.error('加载代币列表时出错', MODULE_NAME, {
+                error: error instanceof Error ? error.message : String(error)
+            });
             // 确保即使出错也有空的列表
             this.whitelist.clear();
             this.blacklist.clear();
@@ -346,7 +352,9 @@ class TokenValidator {
                     }
                 }
                 catch (error) {
-                    logger_1.default.warn(`获取代币 ${mintAddress} 元数据失败`, MODULE_NAME, error);
+                    logger_1.default.warn(`获取代币 ${mintAddress} 元数据失败`, MODULE_NAME, {
+                        error: error instanceof Error ? error.message : String(error)
+                    });
                     result.isValid = false;
                     result.reason = '获取代币元数据时出错';
                     return result;
@@ -394,7 +402,9 @@ class TokenValidator {
             return enrichedToken;
         }
         catch (error) {
-            logger_1.default.warn(`丰富代币 ${token.mint.toBase58()} 信息时出错`, MODULE_NAME, error);
+            logger_1.default.warn(`丰富代币 ${token.mint.toBase58()} 信息时出错`, MODULE_NAME, {
+                error: error instanceof Error ? error.message : String(error)
+            });
             return token; // 返回原始代币信息
         }
     }

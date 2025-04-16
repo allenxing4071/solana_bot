@@ -9,17 +9,14 @@
  */
 
 import os from 'node:os';
-import * as v8 from 'v8';
+import * as v8 from 'node:v8';
 import filesize from 'filesize';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import createLogger from '../core/logger';
+import logger from '../core/logger';
 
-// 创建专用日志记录器
-const logger = createLogger('MemoryReport');
-
-// 工具名称
-const TOOL_NAME = 'MemoryReport';
+// 工具名称常量
+const MODULE_NAME = 'MemoryReport';
 
 // 报告保存目录
 const REPORTS_DIR = path.join(process.cwd(), 'reports');
@@ -57,7 +54,7 @@ interface MemoryStats {
  * @returns 格式化后的字符串
  */
 function formatSize(size: number): string {
-  return filesize(size) as string;
+  return filesize.filesize(size) as string;
 }
 
 /**
@@ -157,13 +154,17 @@ function getMemoryHealthStatus(stats: MemoryStats): string {
   
   if (usageTrend < 30) {
     return '良好 - 内存使用处于安全水平';
-  } else if (usageTrend < 60) {
+  } 
+  
+  if (usageTrend < 60) {
     return '正常 - 内存使用在合理范围内';
-  } else if (usageTrend < 80) {
+  } 
+  
+  if (usageTrend < 80) {
     return '警告 - 内存使用较高，建议关注';
-  } else {
-    return '危险 - 内存使用接近上限，建议优化';
-  }
+  } 
+  
+  return '危险 - 内存使用接近上限，建议优化';
 }
 
 /**
@@ -209,7 +210,7 @@ async function main() {
     const filepath = await saveReportToFile(report);
     
     // 输出报告
-    console.log('\n' + report + '\n');
+    console.log(`\n${report}\n`);
     
     console.log(`报告已保存到: ${filepath}`);
     

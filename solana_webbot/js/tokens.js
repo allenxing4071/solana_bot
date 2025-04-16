@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       showLoading();
       
       // 从API获取代币数据
-      const url = `${getApiBaseUrl()}/api/tokens?t=${Date.now()}`;
+      const url = `${getApiBaseUrl()}/tokens?t=${Date.now()}`;
       console.log(`从API获取代币数据: ${url}`);
       
       const response = await fetch(url);
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   async function loadSystemStatus() {
     try {
       // 从API获取系统状态
-      const url = `${getApiBaseUrl()}/api/system/status?t=${Date.now()}`;
+      const url = `${getApiBaseUrl()}/status?t=${Date.now()}`;
       console.log(`从API获取系统状态: ${url}`);
       
       const response = await fetch(url);
@@ -205,9 +205,9 @@ document.addEventListener('DOMContentLoaded', async function() {
       
       // 构造状态数据对象
       const statusData = {
-        status: data.status === 'running' ? '运行中' : '已停止',
-        uptime: data.uptime,
-        currentTime: new Date().toISOString()
+        status: data.data.status === 'running' ? '运行中' : '已停止',
+        uptime: data.data.uptime,
+        currentTime: data.data.currentTime || new Date().toISOString()
       };
       
       // 更新系统状态UI
@@ -802,7 +802,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       startBtn.addEventListener('click', async () => {
         try {
           // 调用启动系统API
-          const url = `${getApiBaseUrl()}/api/system/start`;
+          const url = `${getApiBaseUrl()}/start`;
           const response = await fetch(url, { method: 'POST' });
           
           if (response.ok) {
@@ -825,7 +825,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       stopBtn.addEventListener('click', async () => {
         try {
           // 调用停止系统API
-          const url = `${getApiBaseUrl()}/api/system/stop`;
+          const url = `${getApiBaseUrl()}/stop`;
           const response = await fetch(url, { method: 'POST' });
           
           if (response.ok) {
@@ -923,5 +923,24 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 隐藏加载状态
   function hideLoading() {
     // 加载状态由内容替换，不需要特别处理
+  }
+
+  /**
+   * 获取API基础URL
+   * @returns {string} API基础URL
+   */
+  function getApiBaseUrl() {
+    // 确保环境变量对象存在
+    if (!window.ENV) {
+      console.warn('[getApiBaseUrl] 环境变量未定义，使用默认API URL');
+      window.ENV = {
+        API_URL: 'http://localhost:8080/api',
+        ENVIRONMENT: 'development',
+        USE_MOCK_DATA: false
+      };
+    }
+    
+    // 返回API地址，如果不存在则使用默认值
+    return window.ENV.API_URL || 'http://localhost:8080/api';
   }
 }); 

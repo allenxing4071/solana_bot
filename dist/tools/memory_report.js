@@ -46,15 +46,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_os_1 = __importDefault(require("node:os"));
-const v8 = __importStar(require("v8"));
+const v8 = __importStar(require("node:v8"));
 const filesize_1 = __importDefault(require("filesize"));
 const node_path_1 = __importDefault(require("node:path"));
 const promises_1 = __importDefault(require("node:fs/promises"));
-const logger_1 = __importDefault(require("../core/logger"));
-// 创建专用日志记录器
-const logger = (0, logger_1.default)('MemoryReport');
-// 工具名称
-const TOOL_NAME = 'MemoryReport';
+// 工具名称常量
+const MODULE_NAME = 'MemoryReport';
 // 报告保存目录
 const REPORTS_DIR = node_path_1.default.join(process.cwd(), 'reports');
 /**
@@ -63,7 +60,7 @@ const REPORTS_DIR = node_path_1.default.join(process.cwd(), 'reports');
  * @returns 格式化后的字符串
  */
 function formatSize(size) {
-    return (0, filesize_1.default)(size);
+    return filesize_1.default.filesize(size);
 }
 /**
  * 收集内存使用统计
@@ -155,15 +152,13 @@ function getMemoryHealthStatus(stats) {
     if (usageTrend < 30) {
         return '良好 - 内存使用处于安全水平';
     }
-    else if (usageTrend < 60) {
+    if (usageTrend < 60) {
         return '正常 - 内存使用在合理范围内';
     }
-    else if (usageTrend < 80) {
+    if (usageTrend < 80) {
         return '警告 - 内存使用较高，建议关注';
     }
-    else {
-        return '危险 - 内存使用接近上限，建议优化';
-    }
+    return '危险 - 内存使用接近上限，建议优化';
 }
 /**
  * 保存报告到文件
@@ -199,7 +194,7 @@ async function main() {
         // 保存报告
         const filepath = await saveReportToFile(report);
         // 输出报告
-        console.log('\n' + report + '\n');
+        console.log(`\n${report}\n`);
         console.log(`报告已保存到: ${filepath}`);
     }
     catch (error) {

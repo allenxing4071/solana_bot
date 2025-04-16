@@ -65,6 +65,19 @@ interface JitoConfig {
     authKeypair: string | null;
 }
 /**
+ * API服务配置
+ */
+declare const apiConfig: {
+    port: number;
+    useMockData: boolean;
+    cors: {
+        origin: string;
+        methods: string[];
+        allowedHeaders: string[];
+    };
+    staticDir: string;
+};
+/**
  * 完整配置接口
  */
 export interface AppConfig {
@@ -77,6 +90,7 @@ export interface AppConfig {
     notification: NotificationConfig;
     logging: LoggingConfig;
     jitoMev: JitoConfig;
+    api: typeof apiConfig;
 }
 export declare const appConfig: {
     network: NetworkConfig;
@@ -88,5 +102,15 @@ export declare const appConfig: {
     notification: NotificationConfig;
     logging: LoggingConfig;
     jitoMev: JitoConfig;
+    api: {
+        port: number;
+        useMockData: boolean;
+        cors: {
+            origin: string;
+            methods: string[];
+            allowedHeaders: string[];
+        };
+        staticDir: string;
+    };
 };
 export default appConfig;

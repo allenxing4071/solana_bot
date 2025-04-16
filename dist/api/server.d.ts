@@ -25,6 +25,11 @@ declare class ApiServer {
      */
     private setupRoutes;
     /**
+     * 设置模拟数据路由
+     * 这些路由仅用于API监控页面显示，提供示例数据
+     */
+    private setupMockDataRoutes;
+    /**
      * 启动服务器
      */
     start(): Promise<void>;

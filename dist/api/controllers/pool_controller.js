@@ -13,6 +13,8 @@ const pool_monitor_1 = __importDefault(require("../../modules/listener/pool_moni
 const logger_1 = __importDefault(require("../../core/logger"));
 // 模块名称
 const MODULE_NAME = 'PoolController';
+// 使用模拟数据标志 - 改为默认使用真实数据
+const USE_MOCK_DATA = false;
 /**
  * 获取所有流动性池
  * @param req 请求对象
@@ -85,9 +87,7 @@ const getAllPools = async (req, res) => {
         });
     }
     catch (error) {
-        logger_1.default.error('获取流动性池失败', MODULE_NAME, {
-            error: error instanceof Error ? error.message : String(error)
-        });
+        logger_1.default.error(`获取流动性池失败: ${error instanceof Error ? error.message : String(error)}`, MODULE_NAME);
         res.status(500).json({
             success: false,
             error: '获取流动性池失败'
@@ -114,6 +114,7 @@ exports.getAllPools = getAllPools;
 const getPoolDetails = async (req, res) => {
     try {
         const { address } = req.params;
+        logger_1.default.info(`获取流动性池详情: ${address}`, MODULE_NAME);
         if (!address) {
             res.status(400).json({
                 success: false,
@@ -149,9 +150,7 @@ const getPoolDetails = async (req, res) => {
         });
     }
     catch (error) {
-        logger_1.default.error('获取流动性池详情失败', MODULE_NAME, {
-            error: error instanceof Error ? error.message : String(error)
-        });
+        logger_1.default.error(`获取流动性池详情失败: ${error instanceof Error ? error.message : String(error)}`, MODULE_NAME);
         res.status(500).json({
             success: false,
             error: '获取流动性池详情失败'

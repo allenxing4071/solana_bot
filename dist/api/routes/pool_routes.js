@@ -46,31 +46,26 @@ const router = express_1.default.Router();
 /**
  * @route   GET /api/pools
  * @desc    获取所有流动性池
- * @access  Public
  */
 router.get('/', poolController.getAllPools);
 /**
  * @route   GET /api/pools/:address
  * @desc    获取单个流动性池详情
- * @access  Public
  */
 router.get('/:address', poolController.getPoolDetails);
 /**
  * @route   GET /api/pools/dex/:dexName
  * @desc    获取指定DEX的所有流动性池
- * @access  Public
  */
 router.get('/dex/:dexName', poolController.getPoolsByDex);
 /**
  * @route   GET /api/pools/token/:mint
  * @desc    获取包含指定代币的所有流动性池
- * @access  Public
  */
 router.get('/token/:mint', poolController.getPoolsByToken);
 /**
  * @route   GET /api/pools/stats
  * @desc    获取流动性池统计信息
- * @access  Public
  */
 router.get('/stats', poolController.getPoolStats);
 exports.default = router;

@@ -282,57 +282,54 @@
         initializeDashboard();
     });
     
-    // 初始化仪表板并调用API获取数据
+    // 初始化仪表盘
     function initializeDashboard() {
-        console.log('初始化仪表板...');
+        // 定义elements对象
+        const elements = {
+            // 系统状态
+            systemStatus: document.getElementById('systemStatus'),
+            cpuUsage: document.getElementById('cpuUsage'),
+            memoryUsage: document.getElementById('memoryUsage'),
+            uptime: document.getElementById('uptime'),
+            profit: document.getElementById('profit'),
+            todayProfit: document.getElementById('todayProfit'),
+            weeklyProfit: document.getElementById('weeklyProfit'),
+            activePools: document.getElementById('activePools'),
+            totalPools: document.getElementById('totalPools'),
+            monitoredTokens: document.getElementById('monitoredTokens'),
+            todayNewTokens: document.getElementById('todayNewTokens'),
+            executedTrades: document.getElementById('executedTrades'),
+            successRate: document.getElementById('successRate'),
+            
+            // 交易表格
+            tradesTable: document.getElementById('tradesTable'),
+            tradesTableBody: document.getElementById('tradesTableBody'),
+            
+            // 代币表格
+            tokensTable: document.getElementById('tokensTable'),
+            tokensTableBody: document.getElementById('tokensTableBody'),
+            
+            // 图表容器
+            profitChart: document.getElementById('profitChart'),
+            tokenChart: document.getElementById('tokenChart')
+        };
         
-        // 检查API连接并弹出提示
-        if (typeof checkApiStatus === 'function') {
-            checkApiStatus();
-        } else {
-            console.error('checkApiStatus函数未定义，请检查utils.js是否正确加载');
-        }
+        // 初始化系统状态
+        initSystemStatus(elements);
         
-        // 检查必要DOM元素
-        if (!elements || !elements.tradesTableBody) {
-            console.warn('仪表板DOM元素未准备好，尝试重新初始化...');
-            setTimeout(initElements, 500);
-        }
+        // 初始化交易表格
+        initTradesTable(elements);
         
-        // 获取系统数据
-        setTimeout(function() {
-            console.log('获取初始数据...');
-            
-            // 获取系统状态
-            fetchSystemData(true);
-            
-            // 获取交易数据
-            if (typeof fetchRecentTrades === 'function') {
-                fetchRecentTrades();
-            } else {
-                console.error('fetchRecentTrades函数未定义');
-            }
-            
-            // 获取代币数据
-            if (typeof fetchRecentTokens === 'function') {
-                fetchRecentTokens();
-            } else {
-                console.error('fetchRecentTokens函数未定义');
-            }
-            
-            // 获取利润摘要
-            if (typeof fetchProfitSummary === 'function') {
-                fetchProfitSummary();
-            } else {
-                console.error('fetchProfitSummary函数未定义');
-            }
-            
-            // 设置数据刷新定时器
-            setInterval(function() {
-                fetchSystemData(false);
-            }, 30000); // 每30秒刷新一次
-            
-        }, 1000); // 延迟1秒等待页面完全加载
+        // 初始化代币表格
+        initTokensTable(elements);
+        
+        // 初始化图表
+        initCharts(elements);
+        
+        // 设置定时刷新
+        setInterval(() => {
+            refreshDashboard(elements);
+        }, 5000);
     }
   </script>
 </body>

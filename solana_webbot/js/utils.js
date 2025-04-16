@@ -10,20 +10,28 @@
  * 获取API基础URL
  * @returns {string} API基础URL
  */
-function getApiBaseUrl() {
-    // 确保环境变量对象存在
-    if (!window.ENV) {
-        console.warn('[getApiBaseUrl] 环境变量未定义，使用默认API URL');
-        window.ENV = {
-            API_URL: 'http://localhost:8080/api',
-            ENVIRONMENT: 'development',
-            USE_MOCK_DATA: false
-        };
+const getApiBaseUrl = () => {
+    // 首先尝试从全局环境变量中获取
+    if (window?.ENV?.API_URL) {
+        // 如果有端口，拼接端口
+        let baseUrl = window.ENV.API_URL;
+        if (window?.ENV?.API_PORT) {
+            // 确保URL不以/结尾
+            baseUrl = baseUrl.replace(/\/$/, '');
+            baseUrl += `:${window.ENV.API_PORT}`;
+        }
+        
+        console.log(`[getApiBaseUrl] 从ENV获取API地址: ${baseUrl}`);
+        return baseUrl;
     }
     
-    // 返回API地址，如果不存在则使用默认值
-    return window.ENV.API_URL || 'http://localhost:8080/api';
-}
+    // 尝试从当前URL推断
+    const currentUrl = window.location.origin;
+    const apiUrl = currentUrl.replace(':8082', ':8080');
+    
+    console.log(`[getApiBaseUrl] 根据当前地址推断API地址: ${apiUrl}`);
+    return apiUrl;
+};
 
 // 使用不同的名称暴露到全局作用域，避免命名冲突
 window.utilsGetApiBaseUrl = getApiBaseUrl;
@@ -152,7 +160,7 @@ async function fetchData(endpoint, options = {}) {
         if (!window.ENV) {
             console.warn('[fetchData] 环境变量未定义，初始化默认值');
             window.ENV = {
-                API_URL: 'http://localhost:8080/api',
+                API_URL: 'http://localhost:8080',
                 ENVIRONMENT: 'development',
                 USE_MOCK_DATA: false // 确保不使用模拟数据
             };
@@ -161,8 +169,11 @@ async function fetchData(endpoint, options = {}) {
         // 获取API基础URL
         const apiBaseUrl = getApiBaseUrl();
         
-        // 确保endpoint以/开头
-        const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+        // 确保endpoint以/开头，并且添加/api前缀（如果尚未添加）
+        let formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+        if (!formattedEndpoint.startsWith('/api/')) {
+            formattedEndpoint = `/api${formattedEndpoint}`;
+        }
         
         console.log(`[fetchData] 请求API: ${apiBaseUrl}${formattedEndpoint}`);
         
@@ -191,10 +202,9 @@ async function fetchData(endpoint, options = {}) {
         return data;
     } catch (error) {
         console.error(`[fetchData] API请求失败 (${endpoint}):`, error);
-        // 返回统一的错误格式
         return {
             success: false,
-            error: error.message || '未知错误'
+            error: error.message
         };
     }
 }
@@ -203,22 +213,26 @@ async function fetchData(endpoint, options = {}) {
  * 检查API状态
  * @returns {Promise<boolean>} API是否可用
  */
-async function checkApiStatus() {
+const checkApiStatus = async () => {
     try {
-        const apiUrl = getApiBaseUrl();
-        console.log(`检查API状态: ${apiUrl}/health`);
-        const response = await fetch(`${apiUrl}/health?t=${Date.now()}`);
-        if (response.ok) {
-            const data = await response.json();
-            console.log('API状态:', data);
-            return true;
+        console.log('[checkApiStatus] 开始检查API状态...');
+        const apiUrl = `${getApiBaseUrl()}/api/status`;
+        console.log(`[checkApiStatus] 请求状态检查: ${apiUrl}`);
+        
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return false;
+        
+        const data = await response.json();
+        console.log('[checkApiStatus] API响应:', data);
+        
+        return data?.success || false;
     } catch (error) {
-        console.error('API检查失败:', error);
+        console.error('[checkApiStatus] API健康检查失败:', error);
         return false;
     }
-}
+};
 
 /**
  * 检查API状态并显示诊断结果

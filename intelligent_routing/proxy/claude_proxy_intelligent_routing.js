@@ -3,6 +3,10 @@
 const express = require('express');
 const axios = require('axios');
 const dotenv = require('dotenv');
+// !!! 确保 Llama3 Router 在最顶部被引入 !!!
+const llama3Router = require('../engine/llama3_router'); 
+// 导入智能路由系统
+const { integrateIntelligentRouting } = require('../api/integration');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -11,6 +15,9 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.CLAUDE_PROXY_PORT || 3100;
+
+// 是否通过Cursor企业版访问Claude模型
+const USE_CURSOR_FOR_CLAUDE = process.env.USE_CURSOR_FOR_CLAUDE === 'true';
 
 // 创建日志目录
 const logDir = path.join(__dirname, 'logs');
@@ -32,6 +39,12 @@ const logger = {
     const logMessage = `[${timestamp}] ERROR: ${message}\n`;
     fs.appendFileSync(logFilePath, logMessage);
     console.error(message);
+  },
+  warn: (message) => {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] WARN: ${message}\n`;
+    fs.appendFileSync(logFilePath, logMessage);
+    console.warn(message);
   }
 };
 
@@ -45,6 +58,22 @@ const API_KEYS = {
   OLLAMA: process.env.OLLAMA_API_KEY || null
 };
 
+// Cursor-Claude模型访问帮助函数
+const cursorClaudeHelper = {
+  // 获取通过Cursor访问Claude的端点
+  getCursorClaudeEndpoint: (claudeModel) => {
+    const modelMapping = {
+      'claude-3-opus': 'claude/claude-3-opus-20240229',
+      'claude-3-7-sonnet': 'claude/claude-3-7-sonnet-20250219',
+      'claude-3-sonnet': 'claude/claude-3-sonnet-20240229',
+      'claude-3-haiku': 'claude/claude-3-haiku-20240307'
+    };
+    
+    const cursorModel = modelMapping[claudeModel] || 'claude/claude-3-7-sonnet-20250219';
+    return `https://api.cursor.sh/v1/models/${cursorModel}/completions`;
+  }
+};
+
 // 打印API密钥加载状态(不输出实际密钥)
 logger.log(`API密钥状态:
 - Claude: ${API_KEYS.CLAUDE ? '已配置' : '未配置'}
@@ -55,9 +84,11 @@ logger.log(`API密钥状态:
 - Ollama: ${API_KEYS.OLLAMA ? '已配置' : '未配置'}`);
 
 // 验证必要的API密钥
-if (!API_KEYS.CLAUDE) {
-  logger.error('错误: 缺少 CLAUDE_API_KEY 环境变量。请在 .env 文件中设置。');
-  // 不完全退出，允许使用其他模型
+if (!API_KEYS.CLAUDE && !API_KEYS.CURSOR) {
+  logger.log('注意: 未配置Claude API密钥，但可以通过Cursor企业版访问Claude模型');
+  // 不退出，允许使用其他模型或通过Cursor访问
+} else if (USE_CURSOR_FOR_CLAUDE && API_KEYS.CURSOR) {
+  logger.log('已启用通过Cursor企业版访问Claude模型');
 }
 
 // 模型配置
@@ -521,13 +552,23 @@ const MODELS = {
 // 确保所有模型配置了正确的API提供商
 for (const model in MODELS) {
   const provider = MODELS[model].provider.toUpperCase();
-  const hasKey = Boolean(API_KEYS[provider]);
-  logger.log(`模型 ${model} (提供商: ${MODELS[model].provider}) API密钥状态: ${hasKey ? '可用' : '缺失'}`);
+  let hasKey = Boolean(API_KEYS[provider]);
+  
+  // 如果是Claude模型且启用了通过Cursor访问
+  if (MODELS[model].provider === 'anthropic' && USE_CURSOR_FOR_CLAUDE && API_KEYS.CURSOR) {
+    hasKey = true;
+    logger.log(`模型 ${model} (提供商: anthropic) API密钥状态: 通过Cursor访问`);
+  } else {
+    logger.log(`模型 ${model} (提供商: ${MODELS[model].provider}) API密钥状态: ${hasKey ? '可用' : '缺失'}`);
+  }
 }
 
 // 模型权重配置（用于负载均衡）
 const MODEL_WEIGHTS = {
-  // 删除无法访问的Claude模型
+  'claude-3-opus': 60,        // 通过Cursor访问，高权重高精度模型
+  'claude-3-7-sonnet': 70,    // 通过Cursor访问，主力高质量模型
+  'claude-3-sonnet': 50,      // 通过Cursor访问，平衡模型
+  'claude-3-haiku': 40,       // 通过Cursor访问，速度快的模型
   'gpt-4o': 30,               // OpenAI GPT-4o
   'gpt-4.1': 30,              // OpenAI GPT-4.1
   'deepseek-v3.1': 50,        // 提高DeepSeek权重
@@ -535,8 +576,8 @@ const MODEL_WEIGHTS = {
   'gemini-pro': 15,           // Gemini基础模型
   'gemini-pro-vision': 5,     // Gemini多模态模型
   'gemini-1.5-flash': 20,     // Gemini最新模型
-  'cursor': 100,              // 大幅提高Cursor权重，作为claude-3-7-sonnet的首选通道
-  'llama3': 0                 // 默认不使用，除非特别指定或所有其他模型失败
+  'cursor': 20,               // Cursor原生模型权重
+  'llama3': 50                // 默认不使用，除非特别指定或所有其他模型失败
 };
 
 // 模型状态监控
@@ -598,6 +639,18 @@ initModelStatus();
 // 根据多维度指标智能选择模型
 function selectModelByWeight() {
   const availableModels = [];
+  
+  // 添加Claude模型(可通过Cursor访问或直接API)
+  if (API_KEYS.CLAUDE || (USE_CURSOR_FOR_CLAUDE && API_KEYS.CURSOR)) {
+    const claudeModels = ['claude-3-opus', 'claude-3-7-sonnet', 'claude-3-sonnet', 'claude-3-haiku'];
+    for (const model of claudeModels) {
+      availableModels.push({ 
+        name: model, 
+        weight: MODEL_WEIGHTS[model],
+        accessVia: USE_CURSOR_FOR_CLAUDE && API_KEYS.CURSOR ? 'cursor' : 'direct'
+      });
+    }
+  }
   
   // 只添加有API密钥的云模型
   if (API_KEYS.OPENAI) {
@@ -929,41 +982,84 @@ async function callModelAPI(modelName, params, apiKeys) {
   
   // 获取对应提供商的API密钥
   let apiKey;
-  switch (modelConfig.provider) {
-    case 'anthropic':
-      apiKey = apiKeys.CLAUDE;
-      break;
-    case 'openai':
-      apiKey = apiKeys.OPENAI;
-      break;
-    case 'cursor':
-      apiKey = apiKeys.CURSOR;
-      break;
-    case 'deepseek':
-      apiKey = apiKeys.DEEPSEEK;
-      break;
-    case 'gemini':
-      apiKey = apiKeys.GEMINI;
-      break;
-    case 'ollama':
-      apiKey = null; // Ollama本地部署不需要API密钥
-      break;
-    default:
-      throw new Error(`未知的提供商: ${modelConfig.provider}`);
+  let provider = modelConfig.provider;
+  
+  // 如果启用了通过Cursor访问Claude，对Claude模型使用Cursor API
+  if (USE_CURSOR_FOR_CLAUDE && provider === 'anthropic' && apiKeys.CURSOR) {
+    logger.log(`通过Cursor企业版访问Claude模型: ${modelName}`);
+    apiKey = apiKeys.CURSOR;
+    provider = 'cursor';
+  } else {
+    switch (provider) {
+      case 'anthropic':
+        apiKey = apiKeys.CLAUDE;
+        break;
+      case 'openai':
+        apiKey = apiKeys.OPENAI;
+        break;
+      case 'cursor':
+        apiKey = apiKeys.CURSOR;
+        break;
+      case 'deepseek':
+        apiKey = apiKeys.DEEPSEEK;
+        break;
+      case 'gemini':
+        apiKey = apiKeys.GEMINI;
+        break;
+      case 'ollama':
+        apiKey = null; // Ollama本地部署不需要API密钥
+        break;
+      default:
+        throw new Error(`未知的提供商: ${provider}`);
+    }
+  }
+  
+  // 如果是通过Cursor访问Claude，修改endpoint和请求格式
+  let endpoint = modelConfig.endpoint;
+  let headers = {};
+  let requestData = {};
+  
+  if (USE_CURSOR_FOR_CLAUDE && modelConfig.provider === 'anthropic' && apiKeys.CURSOR) {
+    // 使用Cursor API代理Claude请求
+    endpoint = cursorClaudeHelper.getCursorClaudeEndpoint(modelName);
+    headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKeys.CURSOR}`
+    };
+    
+    // 提取system消息
+    let systemMessage = null;
+    const messages = [...params.messages];
+    
+    // 查找并移除system消息
+    const systemIndex = messages.findIndex(msg => msg.role === 'system');
+    if (systemIndex !== -1) {
+      systemMessage = messages[systemIndex].content;
+      messages.splice(systemIndex, 1);
+    }
+    
+    // 使用Cursor格式封装Claude请求
+    requestData = {
+      model: modelName.replace('claude-', 'claude/'),  // 适配Cursor API模型名称格式
+      messages: messages,
+      system: systemMessage,
+      max_tokens: params.max_tokens || 1000,
+      temperature: params.temperature || 0.7
+    };
+  } else {
+    // 使用原始模型配置
+    headers = modelConfig.headers(apiKey);
+    requestData = modelConfig.formatRequest(params);
   }
   
   // 检查是否有必要的API密钥(除了本地模型)
-  if (modelConfig.provider !== 'ollama' && !apiKey) {
-    throw new Error(`缺少${modelConfig.provider}的API密钥`);
+  if (provider !== 'ollama' && !apiKey) {
+    throw new Error(`缺少${provider}的API密钥`);
   }
   
   try {
-    // 准备请求
-    const requestData = modelConfig.formatRequest(params);
-    
     // 为Gemini模型添加API密钥作为URL查询参数
-    let endpoint = modelConfig.endpoint;
-    if (modelConfig.provider === 'gemini') {
+    if (provider === 'gemini') {
       endpoint = `${endpoint}?key=${apiKey}`;
       // 从请求数据中移除API密钥，因为已经添加到URL中
       if (requestData.key) {
@@ -977,16 +1073,14 @@ async function callModelAPI(modelName, params, apiKeys) {
       }
     }
     
-    const headers = modelConfig.headers(apiKey);
-    
     // 发送请求
     const startTime = Date.now();
-    logger.log(`正在调用模型API: ${modelName}`);
+    logger.log(`正在调用模型API: ${modelName}${USE_CURSOR_FOR_CLAUDE && modelConfig.provider === 'anthropic' ? ' (通过Cursor)' : ''}`);
     
     // 记录关键请求信息（但不包含敏感内容）
     const requestSummary = {
       model: modelName,
-      provider: modelConfig.provider,
+      provider: USE_CURSOR_FOR_CLAUDE && modelConfig.provider === 'anthropic' ? 'cursor_claude' : modelConfig.provider,
       messageCount: params.messages?.length || 0,
       max_tokens: params.max_tokens,
       temperature: params.temperature
@@ -994,7 +1088,7 @@ async function callModelAPI(modelName, params, apiKeys) {
     logger.log(`请求详情: ${JSON.stringify(requestSummary)}`);
     
     // 确定使用哪个endpoint
-    const targetEndpoint = modelConfig.provider === 'gemini' ? endpoint : modelConfig.endpoint;
+    const targetEndpoint = provider === 'gemini' ? endpoint : modelConfig.endpoint;
     
     const response = await axios.post(
       targetEndpoint,
@@ -1011,7 +1105,7 @@ async function callModelAPI(modelName, params, apiKeys) {
     // 增强错误日志
     const errorInfo = {
       model: modelName,
-      provider: modelConfig.provider,
+      provider: USE_CURSOR_FOR_CLAUDE && modelConfig.provider === 'anthropic' ? 'cursor_claude' : modelConfig.provider,
       message: error.message,
       status: error.response?.status || 'unknown',
       data: error.response?.data || 'no data available'
@@ -1022,7 +1116,7 @@ async function callModelAPI(modelName, params, apiKeys) {
     // 附加详细错误信息到异常对象
     error.modelInfo = {
       name: modelName,
-      provider: modelConfig.provider
+      provider: USE_CURSOR_FOR_CLAUDE && modelConfig.provider === 'anthropic' ? 'cursor_claude' : modelConfig.provider
     };
     
     throw error;
@@ -1036,7 +1130,7 @@ async function callModelWithFallback(params, customRoutingRules = []) {
   
   // 如果没有指定模型，使用语义路由
   if (!selectedModel || !MODELS[selectedModel]) {
-    selectedModel = routeBySemantics(params.messages, customRoutingRules);
+    selectedModel = await intelligentRoute(params.messages, { customRoutingRules });
     logger.log(`语义路由选择模型: ${selectedModel}`);
   }
   
@@ -1077,12 +1171,16 @@ async function callModelWithFallback(params, customRoutingRules = []) {
   let lastError = null;
   for (const model of modelOrder) {
     try {
-      // 检查是否有必要的API密钥
-      if (MODELS[model].provider === 'anthropic' && !API_KEYS.CLAUDE) continue;
-      if (MODELS[model].provider === 'openai' && !API_KEYS.OPENAI) continue;
-      if (MODELS[model].provider === 'cursor' && !API_KEYS.CURSOR) continue;
-      if (MODELS[model].provider === 'deepseek' && !API_KEYS.DEEPSEEK) continue;
-      if (MODELS[model].provider === 'gemini' && !API_KEYS.GEMINI) continue;
+      // 检查是否有必要的API密钥，考虑通过Cursor访问
+      const provider = MODELS[model].provider;
+      if (provider === 'anthropic' && !API_KEYS.CLAUDE) {
+        // 如果启用了通过Cursor访问Claude且有Cursor API密钥，继续尝试
+        if (!(USE_CURSOR_FOR_CLAUDE && API_KEYS.CURSOR)) continue;
+      }
+      if (provider === 'openai' && !API_KEYS.OPENAI) continue;
+      if (provider === 'cursor' && !API_KEYS.CURSOR) continue;
+      if (provider === 'deepseek' && !API_KEYS.DEEPSEEK) continue;
+      if (provider === 'gemini' && !API_KEYS.GEMINI) continue;
       
       // 创建新的参数对象，避免修改原始对象
       const callParams = {...params};
@@ -1127,6 +1225,29 @@ async function callModelWithFallback(params, customRoutingRules = []) {
   throw lastError || new Error('所有模型都调用失败');
 }
 
+// --- Llama3 Router 初始化 --- 
+// (移到更靠前的位置，确保在定义路由之前执行)
+let isLlama3RouterReady = false; // 全局标志位
+
+(async () => {
+    logger.log('[SYSTEM_INIT] 开始初始化 Llama3 Router...'); // 添加明确开始日志
+    try {
+        if (!llama3Router || typeof llama3Router.initialize !== 'function') {
+            throw new Error('Llama3 Router 模块加载失败或 initialize 方法不存在。');
+        }
+        const initSuccess = await llama3Router.initialize(); // 等待初始化完成
+        if (initSuccess) {
+            isLlama3RouterReady = true;
+            logger.log('[SYSTEM_INIT] Llama3 Router 初始化成功完成！'); // 添加明确成功日志
+        } else {
+            logger.error('[SYSTEM_INIT] Llama3 Router initialize() 方法返回 false。');
+        }
+    } catch (initError) {
+        logger.error('[SYSTEM_INIT] Llama3 Router 初始化过程中捕获到错误:', initError); // 记录完整错误
+    }
+    logger.log(`[SYSTEM_INIT] Llama3 Router 初始化流程结束。最终状态 (isLlama3RouterReady): ${isLlama3RouterReady}`); // 添加明确结束日志和状态
+})();
+
 // 设置中间件
 app.use(express.json({ limit: '10mb' }));
 
@@ -1135,6 +1256,12 @@ app.get('/health', (req, res) => {
   // 检查可用的模型和API密钥
   const availableModels = Object.keys(MODELS).filter(model => {
     const provider = MODELS[model].provider;
+    
+    // 如果是Claude模型，检查直接API或通过Cursor访问
+    if (provider === 'anthropic') {
+      return API_KEYS.CLAUDE || (USE_CURSOR_FOR_CLAUDE && API_KEYS.CURSOR);
+    }
+    
     if (provider === 'ollama') return true; // 假设Ollama总是可用的
     return API_KEYS[provider.toUpperCase()]; // 检查是否有API密钥
   });
@@ -1199,68 +1326,64 @@ app.get('/models', (req, res) => {
 
 // 统一的模型API接口
 app.post('/api/chat', async (req, res) => {
+  logger.log('[API /chat] 收到请求...'); // 请求入口日志
   try {
-    // 从请求中获取参数
-    const { model, messages, max_tokens, temperature, routing_rules } = req.body;
+    const { query, userId = 'default' } = req.body;
+    const messages = [{ role: 'user', content: query }];
     
-    // 验证必要参数
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ 
-        error: '请求格式错误', 
-        message: '需要提供 messages 数组' 
-      });
+    // *** 使用全局标志位检查初始化状态 ***
+    logger.log(`[API /chat] 检查 Llama3 Router 准备状态 (isLlama3RouterReady): ${isLlama3RouterReady}`);
+
+    let decision;
+    if (isLlama3RouterReady) { // 使用全局标志位
+        logger.log('[API /chat] Llama3 Router 已准备就绪，尝试调用 handleUserRequest...');
+        decision = await llama3Router.handleUserRequest(userId, query, { /* 可选参数 */ });
+        logger.log(`[API /chat] Llama3 Router 返回决策: ${JSON.stringify(decision)}`);
+    } else {
+        logger.warn('[API /chat] Llama3 Router 未准备就绪，无法执行智能路由。返回错误。');
+        return res.status(500).json({ error: '路由引擎未准备好' });
     }
     
-    // 准备模型请求参数
+    // 检查 Llama3 返回的决策是否有效
+    if (!decision || decision.model === 'error') {
+      logger.error('Llama3 路由决策失败或返回错误:', decision?.reasoning || '未知错误');
+      return res.status(500).json({ error: '路由决策失败', reasoning: decision?.reasoning });
+    }
+
+    logger.log(`[API /chat] 最终路由决策模型: ${decision.model} (Confidence: ${decision.confidence}%)`);
+
+    // 根据决策选择模型并处理请求 (使用 callModelWithFallback)
     const modelParams = {
-      model,
-      messages,
-      max_tokens: max_tokens || 1000,
-      temperature: temperature || 0.7
+        messages: messages,
+        model: decision.model, 
+        max_tokens: 1500,
+        temperature: 0.7
     };
     
-    // 处理claude-3-sonnet特殊情况
-    if (modelParams.model === 'claude-3-sonnet') {
-      logger.log('检测到请求使用claude-3-sonnet，自动转为claude-3-opus');
-      modelParams.model = 'claude-3-opus';
+    const result = await callModelWithFallback(modelParams);
+    
+    let responseText = '未能获取模型回复。';
+    if (result?.content?.[0]?.text) {
+        responseText = result.content[0].text;
+    } else if (result?.choices?.[0]?.message?.content) {
+        responseText = result.choices[0].message.content;
     }
     
-    // 补充参数处理：根据模型名称添加版本号
-    if (modelParams.model) {
-      // 确保使用完整模型ID
-      if (modelParams.model === 'claude-3-7-sonnet') {
-        modelParams.model = 'claude-3-7-sonnet-20250219';
-      } else if (modelParams.model === 'claude-3-sonnet') {
-        // 此分支应该不会执行，但为了安全起见
-        modelParams.model = 'claude-3-opus-20240229';
-      } else if (modelParams.model === 'claude-3-opus') {
-        modelParams.model = 'claude-3-opus-20240229';
-      } else if (modelParams.model === 'claude-3-haiku') {
-        modelParams.model = 'claude-3-haiku-20240307';
-      }
-    }
-    
-    // 调用模型API（带有fallback机制）
-    const result = await callModelWithFallback(modelParams, routing_rules);
-    
-    // 返回响应
-    res.json(result);
+    // 返回给用户，包含模型来源标记
+    const finalModelUsed = result?._actual_model_used || decision.model;
+    res.json({
+      model: finalModelUsed,
+      response: `${responseText} 【${finalModelUsed}】`,
+      confidence: decision.confidence, 
+      reasoning: decision.reasoning   
+    });
     
   } catch (error) {
-    logger.error(`处理请求时出错: ${error.message}`);
-    
-    // 如果有详细的错误响应，则返回
-    if (error.response?.data) {
-      return res.status(error.response.status || 500).json({
-        error: '调用模型API失败',
-        details: error.response.data
-      });
-    }
-    
-    // 否则返回一般错误
+    logger.error('处理 /api/chat 请求时出错:', error);
     res.status(500).json({ 
-      error: '服务器错误', 
-      message: `处理请求时出错: ${error.message}` 
+        error: '处理请求时出错', 
+        message: error.message, 
+        model_info: error.modelInfo
     });
   }
 });
@@ -1387,7 +1510,30 @@ app.get('/api/status', (req, res) => {
 });
 
 // 启动服务器
-app.listen(PORT, () => {
+// 初始化智能路由系统
+const { intelligentRoute, updateRouteResult, shutdown } = integrateIntelligentRouting(
+  app,
+  MODELS,
+  MODEL_STATUS,
+  MODEL_WEIGHTS,
+  routeBySemantics
+);
+
+// 注册智能路由系统的优雅关闭
+process.on('SIGINT', async () => {
+  console.log('正在关闭服务器...');
+  await shutdown();
+  if (server) {
+    server.close(() => {
+      console.log('服务器已关闭');
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+});
+
+const server = app.listen(PORT, () => {
   logger.log(`高级模型代理服务器已启动，监听端口 ${PORT}`);
   logger.log(`健康检查接口: http://localhost:${PORT}/health`);
   logger.log(`模型列表接口: http://localhost:${PORT}/models`);

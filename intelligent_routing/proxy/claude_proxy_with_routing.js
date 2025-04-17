@@ -3,6 +3,9 @@
 const express = require('express');
 const axios = require('axios');
 const dotenv = require('dotenv');
+// 导入智能路由系统
+const { integrateIntelligentRouting } = require('../api/integration');
+
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -10,7 +13,26 @@ const path = require('node:path');
 dotenv.config();
 
 const app = express();
-const PORT = process.env.CLAUDE_PROXY_PORT || 3100;
+const PORT =
+// 初始化智能路由系统
+const { intelligentRoute, updateRouteResult, shutdown } = integrateIntelligentRouting(
+  app,
+  MODELS,
+  MODEL_STATUS,
+  MODEL_WEIGHTS,
+  routeBySemantics
+);
+
+// 注册智能路由系统的优雅关闭
+process.on('SIGINT', async () => {
+  console.log('正在关闭服务器...');
+  await shutdown();
+  server.close(() => {
+    console.log('服务器已关闭');
+    process.exit(0);
+  });
+});
+ process.env.CLAUDE_PROXY_PORT || 3100;
 
 // 创建日志目录
 const logDir = path.join(__dirname, 'logs');

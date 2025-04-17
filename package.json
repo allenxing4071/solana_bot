@@ -51,9 +51,12 @@
     "fs-extra": "^11.3.0",
     "node-fetch": "^3.3.2",
     "node-telegram-bot-api": "^0.61.0",
+    "pdfkit": "^0.17.0",
+    "sqlite3": "^5.1.7",
     "ssh2": "^1.16.0",
     "winston": "^3.10.0",
-    "ws": "^8.13.0"
+    "ws": "^8.13.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.1",

@@ -1,0 +1,28 @@
+{
+  "name": "llama3-intelligent-routing",
+  "version": "1.0.0",
+  "description": "基于Llama3的自学习智能语义路由系统",
+  "main": "index.js",
+  "bin": {
+    "ir-cli": "./cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node cli.js",
+    "init-db": "node scripts/init_db.js"
+  },
+  "keywords": [
+    "llama3",
+    "routing",
+    "semantic",
+    "ai",
+    "intelligentrouting"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "pdfkit": "^0.17.0",
+    "sqlite3": "^5.1.6"
+  }
+}

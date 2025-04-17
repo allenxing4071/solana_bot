@@ -1,9 +1,59 @@
+# 依赖目录
 node_modules/
-.env
-.DS_Store
-*.pem
-logs/
-youtube_*
-*venv/
-*env/
+venv/
 __pycache__/
+
+# 环境文件
+.env
+.env.local
+.env.*.local
+
+# 日志文件
+logs/
+*.log
+
+# 构建输出
+dist/
+build/
+*.tsbuildinfo
+
+# IDE 文件
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 测试文件
+coverage/
+.nyc_output/
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 临时文件
+*.tmp
+*.temp
+.temp/
+tmp/
+
+# 密钥文件
+*.pem
+*.key
+*.cert
+
+# 报告文件
+reports/
+*.pdf
+*.xlsx
+*.xls
+
+# 其他
+.cache/
+.temp/
+temp/

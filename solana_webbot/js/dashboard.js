@@ -1090,7 +1090,7 @@ const fetchTokenTrend = period => {
  * 更新交易表格
  * @param {Array} transactions - 交易数据数组
  */
-const updateTradesTable = transactions => {
+const updateRecentTradesTable = transactions => {
     const tableBody = document.getElementById('recentTradesTableBody');
     
     // 清空表格
@@ -1151,56 +1151,54 @@ const updateTradesTable = transactions => {
  * @param {Array} tokens - 代币数据数组
  */
 const updateTokensTable = tokens => {
-    const tableBody = document.getElementById('recentTokensTableBody');
+    console.log('[updateTokensTable] 更新代币表格，数据条数:', tokens?.length || 0);
+    
+    // 获取表格主体元素
+    const tableBody = document.getElementById('tokensTableBody');
+    if (!tableBody) {
+        console.error('[updateTokensTable] 找不到代币表格主体元素 #tokensTableBody');
+        return;
+    }
     
     // 清空表格
     tableBody.innerHTML = '';
     
-    // 检查是否有代币数据
+    // 检查是否有数据
     if (!tokens || tokens.length === 0) {
-        // 显示无数据提示
-        const row = document.createElement('tr');
-        row.innerHTML = '<td colspan="5" class="text-center">无数据</td>';
-        tableBody.appendChild(row);
+        console.warn('[updateTokensTable] 没有代币数据');
+        
+        // 添加一个无数据的行
+        const noDataRow = document.createElement('tr');
+        noDataRow.innerHTML = `<td colspan="6" class="text-center">暂无代币数据</td>`;
+        tableBody.appendChild(noDataRow);
         return;
     }
     
-    // 显示最近的5个代币
-    const recentTokens = tokens.slice(0, 5);
-    
-    // 遍历代币记录并添加到表格
-    for (const token of recentTokens) {
+    // 为每个代币创建一行
+    for (const token of tokens) {
+        // 创建新行
         const row = document.createElement('tr');
         
         // 格式化代币数据
-        const price = parseFloat(token.price || 0).toFixed(4);
+        const price = Number.parseFloat(token.price || 0).toFixed(4);
         const date = new Date(token.createdAt || token.timestamp);
         const formattedDate = formatDateTime(date);
         
-        // 风险评分样式
-        let riskClass = '';
-        const riskScore = token.riskScore || 0;
-        
-        if (riskScore < 30) {
-            riskClass = 'text-success';
-        } else if (riskScore < 70) {
-            riskClass = 'text-warning';
-        } else {
-            riskClass = 'text-danger';
-        }
-        
-        // 设置表格内容
+        // 设置行内容
         row.innerHTML = `
             <td>${token.symbol || '未知'}</td>
             <td>${token.name || '未知'}</td>
-            <td>${price} SOL</td>
-            <td><span class="${riskClass}">${riskScore}/100</span></td>
+            <td>${formatAddress(token.address)}</td>
+            <td>$${price}</td>
             <td>${formattedDate}</td>
+            <td><span class="risk-score risk-${getRiskClass(token.riskScore || 0)}">${token.riskScore || 0}</span></td>
         `;
         
         // 添加行到表格
-        elements.tokensTableBody.appendChild(row);
+        tableBody.appendChild(row);
     }
+    
+    console.log('[updateTokensTable] 代币表格更新完成');
 };
 
 /**
@@ -2452,7 +2450,7 @@ async function fetchRecentTrades() {
                 
                 if (transactions.length > 0) {
                     // 更新交易表格
-                    updateTradesTable(transactions);
+                    updateRecentTradesTable(transactions);
                     
                     console.log(`[fetchRecentTrades] 成功加载 ${transactions.length} 条交易记录`);
                     addLog(`已加载 ${transactions.length} 条最新交易记录`, 'success');
@@ -2469,7 +2467,7 @@ async function fetchRecentTrades() {
         // 所有API路径都尝试失败，返回模拟数据
         console.warn('[fetchRecentTrades] 所有API路径都尝试失败，使用模拟数据');
         const mockTrades = generateMockTrades();
-        updateTradesTable(mockTrades);
+        updateRecentTradesTable(mockTrades);
         return mockTrades;
     } catch (error) {
         console.error('[fetchRecentTrades] 获取交易数据失败:', error);
@@ -2658,32 +2656,14 @@ function updateTradesTable(trades, elements) {
  * @param {Object} elements DOM元素对象
  */
 function initTokensTable(elements) {
-    console.log('[initTokensTable] 开始初始化代币表格');
-    if (!elements.tokensTableBody) {
-        console.error('[initTokensTable] 代币表格DOM元素不存在');
-        return;
-    }
-    
-    // 清空表格
-    elements.tokensTableBody.innerHTML = '';
-    
-    // 获取代币数据
+    // 加载代币数据
     fetchTokens()
         .then(tokens => {
-            if (!tokens || tokens.length === 0) {
-                console.log('[initTokensTable] 无代币数据，显示空表格提示');
-                elements.tokensTableBody.innerHTML = '<tr><td colspan="5" class="text-center">暂无代币数据</td></tr>';
-                return;
-            }
-            
-            console.log(`[initTokensTable] 获取到 ${tokens.length} 个代币`);
-            
-            // 更新表格内容
-            updateTokensTable(tokens, elements);
+            // 更新表格
+            updateTokensTableV2(tokens, elements);
         })
         .catch(error => {
             console.error('[initTokensTable] 获取代币数据失败:', error);
-            elements.tokensTableBody.innerHTML = '<tr><td colspan="5" class="text-center">获取数据失败</td></tr>';
         });
 }
 
@@ -2692,7 +2672,7 @@ function initTokensTable(elements) {
  * @param {Array} tokens 代币数据数组
  * @param {Object} elements DOM元素对象
  */
-function updateTokensTable(tokens, elements) {
+function updateTokensTableV2(tokens, elements) {
     if (!elements.tokensTableBody) return;
     
     // 清空表格

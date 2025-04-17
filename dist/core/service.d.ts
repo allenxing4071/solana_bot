@@ -15,6 +15,7 @@ export interface Service {
  * RPC服务接口
  */
 export interface RPCService extends Service {
+    initialize(): Promise<void>;
     isConnectionHealthy(): Promise<boolean>;
     reconnect(): Promise<boolean>;
 }

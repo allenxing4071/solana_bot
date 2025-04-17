@@ -267,22 +267,130 @@
   <!-- 最重要的配置和环境文件必须优先加载 -->
   <script src="js/env-config.js"></script>
   <script src="js/utils.js"></script>
-
-  <!-- 加载Chart.js库 -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-
-  <!-- 加载主要脚本，包括仪表板逻辑 -->
+  <script>
+    // 定义initializeDashboard函数
+    function initializeDashboard() {
+      console.log('初始化仪表盘...');
+      
+      // 获取需要的DOM元素
+      const elements = {
+        // 系统状态
+        systemStatus: document.getElementById('systemStatus'),
+        cpuUsage: document.querySelector('.cpu-usage'),
+        memoryUsage: document.querySelector('.memory-usage'),
+        uptime: document.querySelector('.uptime'),
+        profit: document.getElementById('totalProfit'),
+        todayProfit: document.getElementById('todayProfit'),
+        weeklyProfit: document.getElementById('weekProfit'),
+        activePools: document.getElementById('activePools'),
+        totalPools: document.getElementById('totalPools'),
+        monitoredTokens: document.getElementById('monitoredTokens'),
+        todayNewTokens: document.getElementById('todayNewTokens'),
+        executedTrades: document.getElementById('executedTrades'),
+        successRate: document.getElementById('successRate'),
+        
+        // 交易表格
+        tradesTable: document.getElementById('recentTradesTable'),
+        tradesTableBody: document.getElementById('tradesTableBody'),
+        
+        // 代币表格
+        tokensTable: document.getElementById('recentTokensTable'),
+        tokensTableBody: document.getElementById('tokensTableBody'),
+        
+        // 图表容器
+        profitChart: document.getElementById('profitTrendChart'),
+        tokenChart: document.getElementById('tokenDiscoveryChart')
+      };
+      
+      // 如果dashboard.js中有这些函数，调用它们
+      if (typeof initSystemStatus === 'function') {
+        initSystemStatus(elements);
+      }
+      
+      if (typeof initTradesTable === 'function') {
+        initTradesTable(elements);
+      }
+      
+      if (typeof initTokensTable === 'function') {
+        initTokensTable(elements);
+      }
+      
+      if (typeof initCharts === 'function') {
+        initCharts();
+      }
+      
+      // 定义刷新仪表盘的函数
+      function refreshDashboard() {
+        console.log('刷新仪表盘数据...');
+        
+        // 刷新系统状态
+        if (typeof fetchSystemStatus === 'function') {
+          fetchSystemStatus()
+            .then(data => {
+              if (typeof updateSystemStatusDisplay === 'function') {
+                updateSystemStatusDisplay(data, elements);
+              }
+            })
+            .catch(err => {
+              console.error('刷新系统状态失败:', err);
+            });
+        }
+        
+        // 刷新交易数据
+        if (typeof fetchRecentTrades === 'function') {
+          fetchRecentTrades()
+            .then(trades => {
+              if (typeof updateTradesTable === 'function') {
+                updateTradesTable(trades, elements);
+              }
+            })
+            .catch(err => {
+              console.error('刷新交易数据失败:', err);
+            });
+        }
+        
+        // 刷新代币数据
+        if (typeof fetchTokens === 'function') {
+          fetchTokens()
+            .then(tokens => {
+              if (typeof updateTokensTableV2 === 'function') {
+                updateTokensTableV2(tokens, elements);
+              }
+            })
+            .catch(err => {
+              console.error('刷新代币数据失败:', err);
+            });
+        }
+      }
+      
+      // 设置定时刷新
+      setInterval(refreshDashboard, 30000); // 每30秒刷新一次
+    }
+    
+    // 删除dashboard.js中重复定义的函数
+    window.addEventListener('DOMContentLoaded', () => {
+      // 临时修复updateTokensTable重复定义的问题
+      const originalUpdateTokensTable = window.updateTokensTable;
+      
+      // 当加载dashboard.js后，恢复原来的函数
+      window.addEventListener('load', () => {
+        if (originalUpdateTokensTable) {
+          window.updateTokensTable = originalUpdateTokensTable;
+        }
+      });
+    });
+  </script>
   <script src="js/dashboard.js"></script>
-
+  
   <!-- 初始化脚本 - 移除内联初始化函数，使用dashboard.js中的DOMContentLoaded事件处理 -->
   <script>
-    // 页面加载完成后输出调试信息
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('DOM内容加载完成，准备初始化应用');
-      console.log('API基础URL:', window.utilsGetApiBaseUrl ? window.utilsGetApiBaseUrl() : '未定义');
-      
-      // dashboard.js会自动初始化应用
+      console.log('页面加载完成，初始化仪表盘...');
+      setTimeout(() => {
+        initializeDashboard();
+      }, 500);
     });
+    // dashboard.js会自动初始化应用
   </script>
 </body>
 </html> 

@@ -286,8 +286,12 @@ class Application {
     async initializeModules() {
         try {
             logger_1.default.info('开始初始化系统模块...', MODULE_NAME);
-            // 检查RPC连接
-            const rpcServiceObj = asService(rpc_service_1.default);
+            // 初始化RPC服务
+            const rpcServiceObj = asRPCService(rpc_service_1.default);
+            // 初始化RPC连接
+            await rpcServiceObj.initialize();
+            logger_1.default.info('RPC服务初始化完成', MODULE_NAME);
+            // 检查连接健康
             if (rpcServiceObj.isConnectionHealthy) {
                 const isHealthy = await rpcServiceObj.isConnectionHealthy();
                 if (!isHealthy) {

@@ -52,6 +52,7 @@ import traderExecutor from './trader_executor';
 import appConfig from '../../core/config';
 import tokenValidator from '../../modules/analyzer/token_validator';
 import type { Transaction } from '@solana/web3.js';
+import { DexType } from '../../core/types';
 
 // 导入接口，注释掉找不到的模块，后续需要创建这些接口
 // import type { WalletManager } from '../../modules/wallet/wallet_manager';
@@ -1144,11 +1145,11 @@ export class TraderModule extends EventEmitter {
     // 这里创建一个假的池子信息
     return {
       address: new PublicKey('11111111111111111111111111111111'),
-      dex: appConfig.dexes[0].name,
-      tokenAMint: tokenMint,
-      tokenBMint: new PublicKey('So11111111111111111111111111111111111111112'), // SOL
-      createdAt: Date.now() - 3600000,
-      firstDetectedAt: Date.now() - 3600000
+      dex: DexType.RAYDIUM,
+      tokenAMint: new PublicKey('11111111111111111111111111111111'),
+      tokenBMint: new PublicKey('11111111111111111111111111111111'),
+      createdAt: Date.now(),
+      firstDetectedAt: Date.now()
     };
   }
   

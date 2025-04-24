@@ -242,4 +242,76 @@ export const getRecentTransactions = async (req: Request, res: Response): Promis
       error: '获取最近交易失败'
     });
   }
+};
+
+/**
+ * 获取交易统计信息
+ */
+export const getTransactionStats = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // 计算成功交易数量
+    const successTransactions = mockTransactions.filter(tx => tx.status === 'success');
+    const failedTransactions = mockTransactions.filter(tx => tx.status === 'failed');
+    
+    // 计算成功率
+    const successRate = mockTransactions.length > 0
+      ? (successTransactions.length / mockTransactions.length) * 100
+      : 0;
+    
+    // 计算总利润
+    const totalProfit = successTransactions.reduce((sum, tx) => sum + Number(tx.profit), 0);
+    
+    // 计算今日利润
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTimestamp = today.getTime();
+    const todayTransactions = successTransactions.filter(tx => tx.timestamp >= todayTimestamp);
+    const todayProfit = todayTransactions.reduce((sum, tx) => sum + Number(tx.profit), 0);
+    
+    // 计算平均利润
+    const averageProfit = successTransactions.length > 0
+      ? totalProfit / successTransactions.length
+      : 0;
+    
+    // 找出最大利润交易
+    const maxProfitTx = successTransactions.reduce((max, tx) => 
+      Number(tx.profit) > Number(max.profit) ? tx : max, 
+      { profit: '0' } as typeof successTransactions[0]
+    );
+    
+    // 构建统计数据
+    const stats = {
+      executedTrades: mockTransactions.length,
+      successTrades: successTransactions.length,
+      failedTrades: failedTransactions.length,
+      successRate: successRate,
+      todayProfit: parseFloat(todayProfit.toFixed(4)),
+      totalProfit: parseFloat(totalProfit.toFixed(4)),
+      averageProfit: parseFloat(averageProfit.toFixed(4)),
+      maxProfit: maxProfitTx.profit,
+      recentTrades: mockTransactions
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 5)
+        .map(tx => ({
+          timestamp: tx.timestamp,
+          token: tx.pair,
+          type: tx.txDetails.type,
+          amount: tx.amount,
+          status: tx.status
+        }))
+    };
+    
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    logger.error('获取交易统计信息失败', MODULE_NAME, { 
+      error: error instanceof Error ? error.message : String(error) 
+    });
+    res.status(500).json({
+      success: false,
+      error: '获取交易统计信息失败'
+    });
+  }
 }; 

@@ -67,13 +67,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 // 导入winston包及其类型
 const winston = __importStar(require("winston"));
+require("winston-daily-rotate-file");
+const path = __importStar(require("path"));
+const fs = __importStar(require("fs"));
 const config_1 = __importDefault(require("./config"));
+// 确保日志目录存在
+const logDir = './logs';
+if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+}
 // 颜色主题配置
 // 就像给不同类型的事件使用不同颜色的墨水
 const colors = {
     error: 'red',
     warn: 'yellow',
     info: 'blue',
+    http: 'magenta',
     debug: 'green'
 };
 // 向winston添加颜色主题
@@ -96,7 +105,7 @@ winston.addColors(colors);
  * format.timestamp = 时间戳：给每条记录加上精确的时间
  * format.printf = 打印格式：决定最终记录的样子
  */
-const customFormat = winston.format.combine(
+const consoleFormat = winston.format.combine(
 // 添加时间戳
 // 就像每条航海记录必须有精确的日期时间
 winston.format.timestamp({
@@ -107,6 +116,8 @@ winston.format.timestamp({
 winston.format.colorize({
     all: true
 }), 
+// 错误堆栈格式化
+winston.format.errors({ stack: true }), 
 // 定义打印格式
 // 就像规定航海日志的标准格式
 winston.format.printf((info) => {
@@ -118,9 +129,17 @@ winston.format.printf((info) => {
     if (info.module) {
         logMessage += ` [${info.module}]`;
     }
+    // 添加请求ID（如果有，用于API追踪）
+    if (info.requestId) {
+        logMessage += ` [req:${info.requestId}]`;
+    }
     // 添加主要信息
     // 就像记录事件的主要描述
     logMessage += `: ${info.message}`;
+    // 添加错误堆栈（如果有）
+    if (info.stack) {
+        logMessage += `\n${info.stack}`;
+    }
     // 添加详细信息（如果有）
     // 就像记录事件的详细情况
     if (info.meta && Object.keys(info.meta).length) {
@@ -128,6 +147,29 @@ winston.format.printf((info) => {
     }
     return logMessage;
 }));
+// 文件输出格式（无颜色）
+const fileFormat = winston.format.combine(winston.format.timestamp({
+    format: 'YYYY-MM-DD HH:mm:ss.SSS'
+}), winston.format.errors({ stack: true }), winston.format.json());
+// 根据环境决定是否启用文件日志
+const isProduction = process.env.NODE_ENV === 'production';
+// 创建文件轮转配置
+const fileTransport = new winston.transports.DailyRotateFile({
+    filename: path.join(logDir, '%DATE%-app.log'),
+    datePattern: 'YYYY-MM-DD',
+    maxSize: '20m',
+    maxFiles: '14d',
+    format: fileFormat
+});
+// 创建错误日志轮转配置
+const errorFileTransport = new winston.transports.DailyRotateFile({
+    filename: path.join(logDir, '%DATE%-error.log'),
+    datePattern: 'YYYY-MM-DD',
+    maxSize: '20m',
+    maxFiles: '30d',
+    level: 'error',
+    format: fileFormat
+});
 /**
  * 创建Winston日志记录器
  * 基于配置设置适当的日志级别和输出
@@ -146,21 +188,28 @@ winston.format.printf((info) => {
 const winstonLogger = winston.createLogger({
     // 设置日志级别
     // 就像设置需要记录的事件重要性阈值
-    level: config_1.default.logging.level,
+    level: config_1.default.logging.level || 'info',
     // 应用自定义格式
     // 就像使用统一的航海日志格式
-    format: customFormat,
+    format: consoleFormat,
     // 定义日志输出目标
     // 就像决定记录保存的方式
     transports: [
         // 输出到控制台
         // 就像向船员广播重要信息
         new winston.transports.Console()
-        // 可以添加文件输出等
-        // 就像同时保存到正式航海日志本中
-        // new winston.transports.File({ filename: 'logs/app.log' })
     ]
 });
+// 在生产环境中添加文件日志
+if (isProduction) {
+    winstonLogger.add(fileTransport);
+    winstonLogger.add(errorFileTransport);
+}
+else if (config_1.default.logging.file) {
+    // 非生产环境但配置启用了文件日志时
+    winstonLogger.add(fileTransport);
+    winstonLogger.add(errorFileTransport);
+}
 /**
  * 创建日志辅助函数
  * 包装Winston日志器，添加模块上下文
@@ -194,6 +243,18 @@ const logger = {
      */
     debug: (message, module, meta) => {
         winstonLogger.debug(message, { module, meta });
+    },
+    /**
+     * 记录HTTP请求信息
+     * 用于API请求的跟踪
+     *
+     * @param {string} message - 日志消息
+     * @param {string} [requestId] - 请求ID
+     * @param {string} [module] - 模块名称
+     * @param {unknown} [meta] - 元数据
+     */
+    http: (message, requestId, module, meta) => {
+        winstonLogger.http(message, { module, requestId, meta });
     },
     /**
      * 记录信息
@@ -233,21 +294,27 @@ const logger = {
      * 记录错误
      * 严重问题或功能失败情况
      *
-     * 【比喻解释】
-     * 这就像记录船只遇到的严重问题：
-     * - 记录发动机故障（系统错误）
-     * - 记录船体进水（数据损坏）
-     * - 记录导航系统失效（连接中断）
-     *
-     * @param {string} message - 日志消息，就像记录的主要内容
-     * @param {string} [module] - 模块名称，就像报告来源的船舱
-     * @param {unknown} [meta] - 元数据，就像事件的详细背景和错误堆栈
+     * @param {string} message - 日志消息
+     * @param {string} [module] - 模块名称
+     * @param {Error|unknown} [error] - 错误对象或元数据
      */
-    error: (message, module, meta) => {
-        winstonLogger.error(message, { module, meta });
+    error: (message, module, error) => {
+        // 检测是否为Error对象
+        if (error instanceof Error) {
+            winstonLogger.error(message, {
+                module,
+                stack: error.stack,
+                meta: {
+                    name: error.name,
+                    message: error.message
+                }
+            });
+        }
+        else {
+            winstonLogger.error(message, { module, meta: error });
+        }
     }
 };
 // 默认导出日志服务
 // 就像让航海记录系统可以被其他部门使用
 exports.default = logger;
-//# sourceMappingURL=logger.js.map

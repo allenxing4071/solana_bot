@@ -219,6 +219,7 @@ class TraderExecutor {
      * @returns 交易结果，就像售卖行动的成果报告
      */
     async executeSell(params) {
+        var _a;
         const startTime = Date.now();
         const opportunity = params.opportunity;
         const pool = opportunity.pool;
@@ -262,7 +263,7 @@ class TraderExecutor {
                 executionTimeMs: executionTime,
                 token: opportunity.targetToken.symbol || opportunity.targetToken.mint.toBase58(),
                 amount: amountIn.toString(),
-                receivedBaseAmount: txResult.expectedOutAmount?.toString()
+                receivedBaseAmount: (_a = txResult.expectedOutAmount) === null || _a === void 0 ? void 0 : _a.toString()
             });
             // 返回交易结果
             // 就像向船长提交售卖成果报告
@@ -437,4 +438,3 @@ exports.TraderExecutor = TraderExecutor;
 // 导出单例实例
 const traderExecutor = new TraderExecutor(process.env.WALLET_PRIVATE_KEY || '');
 exports.default = traderExecutor;
-//# sourceMappingURL=trader_executor.js.map

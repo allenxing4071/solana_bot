@@ -44,6 +44,7 @@ const web3_js_1 = require("@solana/web3.js");
 const logger_1 = __importDefault(require("../../core/logger"));
 const config_1 = __importDefault(require("../../core/config"));
 const token_validator_1 = __importDefault(require("../../modules/analyzer/token_validator"));
+const types_1 = require("../../core/types");
 // 模块名称
 // 就像渔船上这个部门的舱位编号
 const MODULE_NAME = 'TraderModule';
@@ -983,11 +984,11 @@ class TraderModule extends node_events_1.EventEmitter {
         // 这里创建一个假的池子信息
         return {
             address: new web3_js_1.PublicKey('11111111111111111111111111111111'),
-            dex: config_1.default.dexes[0].name,
-            tokenAMint: tokenMint,
-            tokenBMint: new web3_js_1.PublicKey('So11111111111111111111111111111111111111112'), // SOL
-            createdAt: Date.now() - 3600000,
-            firstDetectedAt: Date.now() - 3600000
+            dex: types_1.DexType.RAYDIUM,
+            tokenAMint: new web3_js_1.PublicKey('11111111111111111111111111111111'),
+            tokenBMint: new web3_js_1.PublicKey('11111111111111111111111111111111'),
+            createdAt: Date.now(),
+            firstDetectedAt: Date.now()
         };
     }
     /**
@@ -1427,4 +1428,3 @@ exports.TraderModule = TraderModule;
 // 导出单例实例
 const traderModule = new TraderModule();
 exports.default = traderModule;
-//# sourceMappingURL=trader_module.js.map

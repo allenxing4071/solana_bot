@@ -98,4 +98,3 @@ exports.default = {
     safeOnce,
     safeEmit
 };
-//# sourceMappingURL=typed_events.js.map

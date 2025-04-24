@@ -301,6 +301,7 @@ class AdaptiveStrategyFramework {
      * @returns 是否成功应用新策略
      */
     applyRecommendedStrategy() {
+        var _a;
         const recommendation = this.recommendStrategy();
         // 只有当推荐信心度较高时才应用新策略
         if (recommendation.confidence < 0.5) {
@@ -308,7 +309,7 @@ class AdaptiveStrategyFramework {
             return false;
         }
         // 如果推荐的策略与当前策略相同，不需要更改
-        if (this.activeStrategy?.id === recommendation.recommendedStrategy.id) {
+        if (((_a = this.activeStrategy) === null || _a === void 0 ? void 0 : _a.id) === recommendation.recommendedStrategy.id) {
             logger_1.default.info(MODULE_NAME, `保持当前捕鱼策略: ${this.activeStrategy.name}`);
             return true;
         }
@@ -447,6 +448,7 @@ class AdaptiveStrategyFramework {
      * @returns 是否应该买入的决策
      */
     shouldBuy(opportunity) {
+        var _a, _b;
         const activeStrategy = this.getActiveStrategy();
         // 检查机会的可信度是否达到策略要求
         if (opportunity.confidence < activeStrategy.buyConditions.minConfidence) {
@@ -455,7 +457,7 @@ class AdaptiveStrategyFramework {
         }
         // 检查滑点是否在可接受范围内
         if (opportunity.estimatedSlippage !== undefined && opportunity.estimatedSlippage > activeStrategy.buyConditions.maxSlippage) {
-            logger_1.default.debug(MODULE_NAME, `预计网具损耗过大 (滑点: ${opportunity.estimatedSlippage?.toFixed(2) || 'unknown'}%, 最大接受: ${activeStrategy.buyConditions.maxSlippage.toFixed(2)}%)`);
+            logger_1.default.debug(MODULE_NAME, `预计网具损耗过大 (滑点: ${((_a = opportunity.estimatedSlippage) === null || _a === void 0 ? void 0 : _a.toFixed(2)) || 'unknown'}%, 最大接受: ${activeStrategy.buyConditions.maxSlippage.toFixed(2)}%)`);
             return false;
         }
         // 检查优先级是否达到策略要求
@@ -464,7 +466,7 @@ class AdaptiveStrategyFramework {
             return false;
         }
         // 如果所有条件都满足，则推荐买入
-        logger_1.default.info(MODULE_NAME, `发现值得捕捞的鱼群! 代币: ${opportunity.tokenSymbol}, 预计收益: ${opportunity.estimatedProfit?.toFixed(2) || 'unknown'}%, 策略: ${activeStrategy.name}`);
+        logger_1.default.info(MODULE_NAME, `发现值得捕捞的鱼群! 代币: ${opportunity.tokenSymbol}, 预计收益: ${((_b = opportunity.estimatedProfit) === null || _b === void 0 ? void 0 : _b.toFixed(2)) || 'unknown'}%, 策略: ${activeStrategy.name}`);
         return true;
     }
     /**
@@ -474,6 +476,7 @@ class AdaptiveStrategyFramework {
      * @returns 是否应该卖出的决策和原因
      */
     shouldSell(position) {
+        var _a, _b;
         const activeStrategy = this.getActiveStrategy();
         // 检查各种卖出条件
         for (const condition of activeStrategy.sellConditions) {
@@ -486,7 +489,7 @@ class AdaptiveStrategyFramework {
                     if (position.currentProfitPercentage !== undefined && position.currentProfitPercentage >= takeProfitPercentage) {
                         return {
                             sell: true,
-                            reason: `达到目标收益 (${position.currentProfitPercentage?.toFixed(2) || 'unknown'}% >= ${takeProfitPercentage.toFixed(2)}%)`
+                            reason: `达到目标收益 (${((_a = position.currentProfitPercentage) === null || _a === void 0 ? void 0 : _a.toFixed(2)) || 'unknown'}% >= ${takeProfitPercentage.toFixed(2)}%)`
                         };
                     }
                     break;
@@ -497,7 +500,7 @@ class AdaptiveStrategyFramework {
                     if (position.currentProfitPercentage !== undefined && position.currentProfitPercentage <= -stopLossPercentage) {
                         return {
                             sell: true,
-                            reason: `触发安全警报 (${position.currentProfitPercentage?.toFixed(2) || 'unknown'}% <= -${stopLossPercentage.toFixed(2)}%)`
+                            reason: `触发安全警报 (${((_b = position.currentProfitPercentage) === null || _b === void 0 ? void 0 : _b.toFixed(2)) || 'unknown'}% <= -${stopLossPercentage.toFixed(2)}%)`
                         };
                     }
                     break;
@@ -523,4 +526,3 @@ class AdaptiveStrategyFramework {
 exports.AdaptiveStrategyFramework = AdaptiveStrategyFramework;
 // 导出自适应策略框架的单例实例
 exports.adaptiveStrategyFramework = new AdaptiveStrategyFramework();
-//# sourceMappingURL=adaptive_strategy_framework.js.map

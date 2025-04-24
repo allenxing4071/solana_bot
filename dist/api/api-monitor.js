@@ -101,8 +101,8 @@ const htmlContent = `<!DOCTYPE html>
         <div class="api-section">
             <div class="api-title">
                 <h2>系统状态</h2>
-                <span class="api-url">/api/status</span>
-                <button class="refresh-btn" onclick="fetchData('system-status', '/api/status')">刷新</button>
+                <span class="api-url">/api/health</span>
+                <button class="refresh-btn" onclick="fetchData('system-status', '/api/health')">刷新</button>
             </div>
             <div class="status" id="system-status-status"></div>
             <pre id="system-status"></pre>
@@ -111,8 +111,8 @@ const htmlContent = `<!DOCTYPE html>
         <div class="api-section">
             <div class="api-title">
                 <h2>监控中的代币</h2>
-                <span class="api-url">/api/tokens</span>
-                <button class="refresh-btn" onclick="fetchData('tokens', '/api/tokens')">刷新</button>
+                <span class="api-url">/api/tokens/details</span>
+                <button class="refresh-btn" onclick="fetchData('tokens', '/api/tokens/details')">刷新</button>
             </div>
             <div class="status" id="tokens-status"></div>
             <pre id="tokens"></pre>
@@ -152,7 +152,7 @@ const htmlContent = `<!DOCTYPE html>
             <div class="api-title">
                 <h2>API状态</h2>
                 <span class="api-url">/api/status</span>
-                <button class="refresh-btn" onclick="fetchData('api-status', '/api/status')">刷新</button>
+                <button class="refresh-btn" onclick="fetchData('api-status', '/api/health')">刷新</button>
             </div>
             <div class="status" id="api-status-status"></div>
             <pre id="api-status"></pre>
@@ -169,7 +169,7 @@ const htmlContent = `<!DOCTYPE html>
                 json = JSON.stringify(json, null, 2);
             }
             json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\\d+(?:\\.\\d*)?(?:[eE][+\\-]?\\d+)?)/g, function (match) {
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
                 let cls = 'json-number';
                 if (/^"/.test(match)) {
                     if (/:$/.test(match)) {
@@ -231,12 +231,12 @@ const htmlContent = `<!DOCTYPE html>
         
         // 页面加载时获取所有数据
         window.onload = function() {
-            fetchData('system-status', '/api/status');
-            fetchData('tokens', '/api/tokens');
+            fetchData('system-status', '/api/health');
+            fetchData('tokens', '/api/tokens/details');
             fetchData('transactions', '/api/transactions');
             fetchData('pools', '/api/pools');
             fetchData('memory', '/api/memory');
-            fetchData('api-status', '/api/status');
+            fetchData('api-status', '/api/health');
         };
     </script>
 </body>
@@ -255,4 +255,3 @@ function setupAPIMonitorRoute(app) {
     console.log('[API监控] 路由已添加: /api-monitor');
 }
 exports.default = setupAPIMonitorRoute;
-//# sourceMappingURL=api-monitor.js.map

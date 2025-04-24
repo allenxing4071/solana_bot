@@ -219,4 +219,3 @@ class TradeHistoryManager {
     }
 }
 exports.TradeHistoryManager = TradeHistoryManager;
-//# sourceMappingURL=trade_history_manager.js.map

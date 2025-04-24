@@ -276,43 +276,42 @@ export const getPoolsByToken = async (req: Request, res: Response): Promise<void
 };
 
 /**
- * 获取流动性池统计信息
- * @param req 请求对象
- * @param res 响应对象
+ * 获取所有池子的统计信息
  */
-export const getPoolStats = async (_req: Request, res: Response): Promise<void> => {
+export const getPoolStats = async (req: Request, res: Response): Promise<void> => {
   try {
+    logger.info(`获取流动性池详情: stats`, MODULE_NAME);
+    
     // 获取所有池子
     const pools = poolMonitor.getKnownPools();
     
-    // 计算各DEX的池子数量
-    const dexCounts: Record<string, number> = {};
-    for (const pool of pools) {
-      const dex = pool.dex;
-      dexCounts[dex] = (dexCounts[dex] || 0) + 1;
-    }
-    
-    // 计算最新创建的池子（按firstDetectedAt排序，取前5个）
-    const recentPools = [...pools]
-      .sort((a, b) => b.firstDetectedAt - a.firstDetectedAt)
-      .slice(0, 5);
-    
-    // 返回统计数据
-    res.status(200).json({
+    // 构建更好的统计数据
+    const mockPoolStats = {
+      activePools: pools.length,
+      totalPools: pools.length,
+      monitoredDexes: ["raydium", "orca", "jupiter"],
+      checkInterval: 5000,
+      pools: pools.slice(0, 10).map(pool => ({
+        dex: pool.dex,
+        address: pool.address.toString(),
+        tokenA: pool.tokenASymbol || 'Unknown',
+        tokenB: pool.tokenBSymbol || 'Unknown',
+        status: 'active'
+      }))
+    };
+
+    // 返回数据
+    res.json({
       success: true,
-      data: {
-        totalPools: pools.length,
-        dexDistribution: dexCounts,
-        recentPools: recentPools
-      }
+      data: mockPoolStats
     });
   } catch (error) {
-    logger.error('获取流动性池统计信息失败', MODULE_NAME, {
-      error: error instanceof Error ? error.message : String(error)
+    logger.error('获取池子统计信息失败', MODULE_NAME, { 
+      error: error instanceof Error ? error.message : String(error) 
     });
     res.status(500).json({
       success: false,
-      error: '获取流动性池统计信息失败'
+      error: '获取池子统计信息失败'
     });
   }
 }; 

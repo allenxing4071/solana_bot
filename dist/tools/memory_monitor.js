@@ -450,4 +450,3 @@ if (!global.gc && process.argv.indexOf('--expose-gc') === -1) {
 if (require.main === module) {
     main();
 }
-//# sourceMappingURL=memory_monitor.js.map

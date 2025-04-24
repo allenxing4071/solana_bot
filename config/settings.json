@@ -1,29 +1,54 @@
 {
   "system": {
+    "nodeEnv": "production",
+    "logLevel": "info",
+    "listenOnly": false,
     "rpcEndpoint": "https://api.mainnet-beta.solana.com",
     "websocketEndpoint": "wss://api.mainnet-beta.solana.com",
-    "useBackupNodes": true,
-    "maxTransactionRetry": 3,
-    "healthCheckInterval": 30000,
-    "priceCheckInterval": 5000,
-    "logLevel": "info",
-    "logToConsole": true,
-    "logToFile": false
+    "backupRpcEndpoints": [
+      "https://api.mainnet-beta.solana.com",
+      "https://solana-api.projectserum.com"
+    ],
+    "healthCheckInterval": 30000
   },
   "trading": {
+    "maxTransactionAmount": 0.1,
     "buyAmountSol": 0.05,
-    "takeProfitPercentage": 20,
-    "stopLossPercentage": 10,
     "maxBuySlippage": 5,
     "maxSellSlippage": 5,
-    "priorityFee": 0.000005,
-    "listenOnly": true,
-    "maxTransactionAmount": 0.1
+    "txRetryCount": 3,
+    "txConfirmTimeout": 60000,
+    "txPriorityFee": 0.000005,
+    "takeProfitPercentage": 20,
+    "stopLossPercentage": 10,
+    "priceCheckInterval": 5000
   },
-  "security": {
-    "checkTokenCode": true,
-    "minimumLiquidity": 1000,
-    "minPoolAgeDays": 1,
-    "maxRiskScore": 7
+  "api": {
+    "enabled": true,
+    "port": 3000
+  },
+  "dex": {
+    "raydium": {
+      "programId": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
+    },
+    "orca": {
+      "programId": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
+    },
+    "jupiter": {
+      "apiUrl": "https://quote-api.jup.ag/v4"
+    }
+  },
+  "paths": {
+    "whitelistPath": "./config/whitelist.json",
+    "blacklistPath": "./config/blacklist.json"
+  },
+  "notifications": {
+    "enableTelegram": false,
+    "telegramBotToken": "",
+    "telegramChatId": ""
+  },
+  "mev": {
+    "useJitoBundle": false,
+    "jitoAuthKeypath": ""
   }
 }

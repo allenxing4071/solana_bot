@@ -270,6 +270,7 @@ class TokenValidator {
      * return = 出具报告：完成所有检查后，提供最终的安全评估结果
      */
     async validateToken(token, liquidityUsd) {
+        var _a, _b;
         await this.checkAndReloadIfNeeded();
         const mintAddress = token.mint.toBase58().toLowerCase();
         const result = {
@@ -295,7 +296,7 @@ class TokenValidator {
                 const blacklistEntry = this.blacklist.get(mintAddress);
                 result.isBlacklisted = true;
                 result.isValid = false;
-                result.reason = blacklistEntry?.reason || '代币在黑名单中';
+                result.reason = (blacklistEntry === null || blacklistEntry === void 0 ? void 0 : blacklistEntry.reason) || '代币在黑名单中';
                 return result;
             }
             // 2.2 模式黑名单 (如果有代币名称和符号)
@@ -326,7 +327,7 @@ class TokenValidator {
         }
         // 3. 流动性检查
         if (liquidityUsd !== undefined) {
-            const minLiquidity = this.tokenFilters?.minLiquidityUsd ||
+            const minLiquidity = ((_a = this.tokenFilters) === null || _a === void 0 ? void 0 : _a.minLiquidityUsd) ||
                 config_1.default.security.tokenValidation.minLiquidityUsd;
             if (liquidityUsd < minLiquidity) {
                 result.isValid = false;
@@ -362,7 +363,7 @@ class TokenValidator {
             }
         }
         // 5. 小数位检查
-        if (this.tokenFilters?.requireDecimals && token.decimals === undefined) {
+        if (((_b = this.tokenFilters) === null || _b === void 0 ? void 0 : _b.requireDecimals) && token.decimals === undefined) {
             result.isValid = false;
             result.reason = '缺少代币小数位信息';
             return result;
@@ -455,4 +456,3 @@ class TokenValidator {
 // 创建并导出单例实例
 const tokenValidator = new TokenValidator();
 exports.default = tokenValidator;
-//# sourceMappingURL=token_validator.js.map

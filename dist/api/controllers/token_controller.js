@@ -604,19 +604,22 @@ const getAllTokens = async (req, res) => {
             ...whitelist.map(token => ({
                 ...token,
                 type: 'whitelist',
-                mint: token?.mint || ''
+                mint: (token === null || token === void 0 ? void 0 : token.mint) || ''
             })),
             ...blacklist.map(token => ({
                 ...token,
                 type: 'blacklist',
-                mint: token?.mint || ''
+                mint: (token === null || token === void 0 ? void 0 : token.mint) || ''
             }))
         ];
         // 应用搜索过滤
         if (search) {
-            allTokens = allTokens.filter(token => (token.symbol?.toLowerCase().includes(search.toLowerCase())) ||
-                (token.name?.toLowerCase().includes(search.toLowerCase())) ||
-                token.mint.toString().includes(search));
+            allTokens = allTokens.filter(token => {
+                var _a, _b;
+                return ((_a = token.symbol) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes(search.toLowerCase())) ||
+                    ((_b = token.name) === null || _b === void 0 ? void 0 : _b.toLowerCase().includes(search.toLowerCase())) ||
+                    token.mint.toString().includes(search);
+            });
         }
         // 按类型过滤
         if (type !== 'all') {
@@ -649,4 +652,3 @@ const getAllTokens = async (req, res) => {
     }
 };
 exports.getAllTokens = getAllTokens;
-//# sourceMappingURL=token_controller.js.map

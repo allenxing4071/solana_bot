@@ -1,11 +1,19 @@
-[
+{
+  "tokens": [
   {
-    "mint": "5tTkZSZJWyxNBzZvqzxkC1hYPhvghtCDYxvwTyzoSKFU"
+      "address": "5tTkZSZJWyxNBzZvqzxkC1hYPhvghtCDYxvwTyzoSKFU",
+      "symbol": "SOL",
+      "name": "Wrapped SOL",
+      "reason": "Native token",
+      "addedAt": "2024-04-23T00:00:00Z"
   },
   {
-    "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
     "symbol": "USDC",
     "name": "USD Coin",
-    "trusted": true
+      "reason": "Stablecoin",
+      "trusted": true,
+      "addedAt": "2024-04-23T00:00:00Z"
   }
 ]
+}

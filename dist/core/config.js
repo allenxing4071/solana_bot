@@ -1,297 +1,365 @@
 "use strict";
 /**
- * 配置管理模块
- * 负责加载、解析和提供系统配置参数
+ * @file config.ts
+ * @description 配置处理模块，读取和验证应用配置
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.appConfig = void 0;
-const config_1 = __importDefault(require("config"));
-const dotenv_1 = __importDefault(require("dotenv"));
-const node_path_1 = __importDefault(require("node:path"));
-const fs_extra_1 = __importDefault(require("fs-extra"));
+const dotenv = __importStar(require("dotenv"));
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 const types_1 = require("./types");
-// 加载环境变量
-dotenv_1.default.config();
-/**
- * API服务配置
- */
-const apiConfig = {
-    // API端口，默认为8080
-    port: process.env.API_PORT ? parseInt(process.env.API_PORT) : 8080,
-    // 是否使用模拟数据
-    useMockData: process.env.USE_MOCK_DATA === 'true',
-    // CORS设置
-    cors: {
-        origin: '*',
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization']
+// 载入.env文件
+dotenv.config();
+// 默认值
+const defaultConfig = {
+    environment: 'development',
+    api: {
+        port: 3000,
+        useMockData: false,
+        enableAuth: false,
+        apiKey: '',
+        cors: {
+            origin: '*',
+            methods: ['GET', 'POST', 'PUT', 'DELETE'],
+            allowedHeaders: ['Content-Type', 'x-api-key']
+        },
+        staticDir: path.join(__dirname, '../public')
     },
-    // 静态文件目录
-    staticDir: process.env.STATIC_DIR || 'public'
-};
-/**
- * 获取网络配置
- */
-function getNetworkConfig() {
-    // 获取主RPC节点
-    let rpcUrl = process.env.SOLANA_RPC_URL || '';
-    let wsUrl = process.env.SOLANA_WS_URL || '';
-    // 如果主RPC节点为空，或者明确标记为使用备用节点，则使用备用节点
-    const useBackup = !rpcUrl || process.env.USE_BACKUP_RPC === 'true';
-    if (useBackup) {
-        // 从环境变量中获取备用节点列表
-        const backupEndpoints = process.env.BACKUP_RPC_ENDPOINTS?.split(',') || [];
-        // 如果有备用节点，使用第一个可用的备用节点
-        if (backupEndpoints.length > 0) {
-            rpcUrl = backupEndpoints[0].trim();
-            // 对于WebSocket，我们尝试将http替换为ws，https替换为wss
-            wsUrl = rpcUrl.replace('https://', 'wss://').replace('http://', 'ws://');
+    logging: {
+        level: 'info',
+        console: true,
+        file: false,
+        filename: 'app.log',
+        maxFiles: 5,
+        maxSize: '10m'
+    },
+    network: {
+        cluster: 'mainnet-beta',
+        rpcUrl: 'https://api.mainnet-beta.solana.com',
+        wsUrl: 'wss://api.mainnet-beta.solana.com',
+        connection: {
+            commitment: 'confirmed',
+            confirmTransactionInitialTimeout: 60000
         }
-    }
-    return {
-        cluster: process.env.SOLANA_NETWORK || config_1.default.get('network.cluster'),
-        rpcUrl,
-        wsUrl,
-    };
-}
-/**
- * 获取钱包配置
- */
-function getWalletConfig() {
-    return {
-        privateKey: process.env.WALLET_PRIVATE_KEY || '',
-        maxTransactionAmount: Number.parseFloat(process.env.MAX_TRANSACTION_AMOUNT || '1.0'),
-    };
-}
-/**
- * 获取DEX配置列表
- */
-function getDexesConfig() {
-    const dexes = [];
-    // 从config文件获取DEX列表
-    if (config_1.default.has('monitoring.poolMonitor.targets')) {
-        const targets = config_1.default.get('monitoring.poolMonitor.targets');
-        for (const target of targets) {
-            if (typeof target === 'object' && target && 'name' in target && 'programId' in target) {
-                dexes.push({
-                    name: target.name.toLowerCase(),
-                    programId: target.programId,
-                    enabled: 'enabled' in target ? Boolean(target.enabled) : true
-                });
-            }
-        }
-    }
-    // 添加环境变量中的DEX(如果有)
-    if (process.env.RAYDIUM_PROGRAM_ID) {
-        dexes.push({
+    },
+    wallet: {
+        privateKey: '',
+        maxTransactionAmount: 0.1
+    },
+    dexes: [
+        {
             name: types_1.DexType.RAYDIUM,
-            programId: process.env.RAYDIUM_PROGRAM_ID,
+            programId: '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8',
             enabled: true
-        });
-    }
-    if (process.env.ORCA_PROGRAM_ID) {
-        dexes.push({
+        },
+        {
             name: types_1.DexType.ORCA,
-            programId: process.env.ORCA_PROGRAM_ID,
+            programId: '9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP',
             enabled: true
-        });
-    }
-    return dexes;
-}
-/**
- * 获取监控配置
- */
-function getMonitoringConfig() {
-    return {
-        poolMonitorInterval: parseInt(process.env.POOL_MONITOR_INTERVAL || '5000'),
-        priceCheckInterval: parseInt(process.env.PRICE_CHECK_INTERVAL || '3000'),
-        healthCheckInterval: parseInt(process.env.HEALTH_CHECK_INTERVAL || '30000')
-    };
-}
-/**
- * 获取交易策略配置
- */
-function getTradingConfig() {
-    const tradingConfig = config_1.default.has('trading')
-        ? config_1.default.get('trading')
-        : {};
-    return {
+        },
+        {
+            name: types_1.DexType.JUPITER,
+            programId: 'JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB',
+            enabled: true
+        }
+    ],
+    monitoring: {
+        poolMonitorInterval: 5000,
+        priceCheckInterval: 5000,
+        healthCheckInterval: 30000
+    },
+    trading: {
         buyStrategy: {
-            enabled: process.env.ENABLE_BUY_STRATEGY !== 'false',
-            maxAmountPerTrade: Number.parseFloat(process.env.BUY_AMOUNT_SOL ||
-                tradingConfig.buyStrategy?.maxAmountPerTrade || '0.1'),
-            maxSlippage: Number.parseFloat(process.env.MAX_BUY_SLIPPAGE ||
-                tradingConfig.buyStrategy?.maxSlippage || '5'),
-            minConfidence: Number.parseFloat(process.env.MIN_CONFIDENCE ||
-                tradingConfig.buyStrategy?.minConfidence || '0.7'),
+            enabled: true,
+            maxAmountPerTrade: 0.1,
+            maxSlippage: 5,
+            minConfidence: 0.8,
             priorityFee: {
-                enabled: process.env.TX_PRIORITY_FEE ? true :
-                    tradingConfig.buyStrategy?.priorityFee?.enabled || false,
-                multiplier: Number.parseFloat(process.env.TX_PRIORITY_FEE_MULTIPLIER ||
-                    tradingConfig.buyStrategy?.priorityFee?.multiplier || '1.5'),
-                baseFee: Number.parseFloat(process.env.TX_PRIORITY_FEE ||
-                    tradingConfig.buyStrategy?.priorityFee?.baseFee || '0.000005'),
-                maxFee: Number.parseFloat(process.env.TX_MAX_PRIORITY_FEE ||
-                    tradingConfig.buyStrategy?.priorityFee?.maxFee || '0.00005')
+                enabled: true,
+                multiplier: 1.5,
+                baseFee: 0.000005,
+                maxFee: 0.0001
             }
         },
         sellStrategy: {
-            enabled: process.env.ENABLE_SELL_STRATEGY !== 'false',
-            conditions: [
-                {
-                    type: types_1.StrategyType.TAKE_PROFIT,
-                    percentage: Number(tradingConfig.sellStrategy?.takeProfit?.percentage || '20'),
-                    enabled: tradingConfig.sellStrategy?.takeProfit?.enabled ?? true
-                },
-                {
-                    type: types_1.StrategyType.STOP_LOSS,
-                    percentage: Number(tradingConfig.sellStrategy?.stopLoss?.percentage || '10'),
-                    enabled: tradingConfig.sellStrategy?.stopLoss?.enabled ?? true
-                },
-                {
-                    type: types_1.StrategyType.TRAILING_STOP,
-                    percentage: Number(tradingConfig.sellStrategy?.trailingStop?.percentage || '5'),
-                    enabled: tradingConfig.sellStrategy?.trailingStop?.enabled ?? false
-                },
-                {
-                    type: types_1.StrategyType.TIME_LIMIT,
-                    timeSeconds: Number(tradingConfig.sellStrategy?.timeLimit?.seconds || '300'),
-                    enabled: tradingConfig.sellStrategy?.timeLimit?.enabled ?? false
-                }
-            ],
-            maxSlippage: Number.parseFloat(process.env.MAX_SELL_SLIPPAGE ||
-                tradingConfig.sellStrategy?.maxSlippage || '5')
+            enabled: true,
+            conditions: [],
+            maxSlippage: 5
         },
-        txRetryCount: parseInt(process.env.TX_RETRY_COUNT || tradingConfig.txRetryCount || '3'),
-        txConfirmTimeout: parseInt(process.env.TX_CONFIRM_TIMEOUT || tradingConfig.txConfirmTimeout || '60000')
-    };
-}
-/**
- * 获取安全配置
- */
-function getSecurityConfig() {
-    const securityConfig = config_1.default.has('security')
-        ? config_1.default.get('security')
-        : {};
-    return {
+        maxTransactionAmount: 0.1,
+        buyAmountSol: 0.05,
+        maxBuySlippage: 5,
+        maxSellSlippage: 5,
+        txRetryCount: 3,
+        txConfirmTimeout: 60000,
+        txPriorityFee: 0.000005
+    },
+    security: {
         tokenValidation: {
-            useWhitelist: process.env.USE_WHITELIST === 'true' ||
-                securityConfig.tokenValidation?.useWhitelist || false,
-            useBlacklist: process.env.USE_BLACKLIST !== 'false', // 默认启用黑名单
-            whitelistPath: process.env.TOKEN_WHITELIST_PATH || './config/whitelist.json',
-            blacklistPath: process.env.TOKEN_BLACKLIST_PATH || './config/blacklist.json',
-            minLiquidityUsd: Number.parseFloat(process.env.MIN_LIQUIDITY_USD ||
-                securityConfig.tokenValidation?.minLiquidityUsd || '1000'),
-            minPoolBalanceToken: Number.parseFloat(process.env.MIN_POOL_BALANCE_TOKEN ||
-                securityConfig.tokenValidation?.minPoolBalanceToken || '100'),
-            requireMetadata: process.env.REQUIRE_METADATA === 'true' ||
-                securityConfig.tokenValidation?.requireMetadata || true,
-            maxInitialPriceUsd: Number.parseFloat(process.env.MAX_INITIAL_PRICE_USD ||
-                securityConfig.tokenValidation?.maxInitialPriceUsd || '0.01')
+            useWhitelist: false,
+            useBlacklist: true,
+            whitelistPath: './config/whitelist.json',
+            blacklistPath: './config/blacklist.json',
+            minLiquidityUsd: 1000,
+            minPoolBalanceToken: 1000,
+            requireMetadata: true,
+            maxInitialPriceUsd: 0.01
         },
         transactionSafety: {
-            simulateBeforeSend: process.env.SIMULATE_BEFORE_SEND !== 'false',
-            maxRetryCount: parseInt(process.env.TX_RETRY_COUNT ||
-                securityConfig.transactionSafety?.maxRetryCount || '3'),
-            maxPendingTx: parseInt(process.env.MAX_PENDING_TX ||
-                securityConfig.transactionSafety?.maxPendingTx || '5')
+            simulateBeforeSend: true,
+            maxRetryCount: 3,
+            maxPendingTx: 5
         }
-    };
-}
-/**
- * 获取通知配置
- */
-function getNotificationConfig() {
-    const notificationConfig = config_1.default.has('notification')
-        ? config_1.default.get('notification')
-        : {};
-    return {
+    },
+    notification: {
         telegram: {
-            enabled: process.env.ENABLE_TELEGRAM_NOTIFICATIONS === 'true' ||
-                notificationConfig.telegram?.enabled || false,
-            botToken: process.env.TELEGRAM_BOT_TOKEN || null,
-            chatId: process.env.TELEGRAM_CHAT_ID || null,
-            events: notificationConfig.telegram?.events || {
-                startup: true,
-                newTokenDetected: true,
-                buyExecuted: true,
-                sellExecuted: true,
-                error: true
-            }
+            enabled: false,
+            botToken: null,
+            chatId: null,
+            events: {}
         }
-    };
-}
-/**
- * 获取日志配置
- */
-function getLoggingConfig() {
-    const loggingConfig = config_1.default.has('logging')
-        ? config_1.default.get('logging')
-        : {};
-    return {
-        level: process.env.LOG_LEVEL || loggingConfig.level || 'info',
-        console: process.env.LOG_TO_CONSOLE !== 'false',
-        file: process.env.LOG_TO_FILE === 'true' || loggingConfig.file || false,
-        filename: process.env.LOG_FILE_PATH || loggingConfig.filename || './logs/bot.log',
-        maxFiles: parseInt(process.env.LOG_MAX_FILES || loggingConfig.maxFiles || '5'),
-        maxSize: process.env.LOG_MAX_SIZE || loggingConfig.maxSize || '10m'
-    };
-}
-/**
- * 获取Jito MEV配置
- */
-function getJitoConfig() {
-    const jitoConfig = config_1.default.has('jitoMev')
-        ? config_1.default.get('jitoMev')
-        : {};
-    return {
-        enabled: process.env.USE_JITO_BUNDLE === 'true' || jitoConfig.enabled || false,
-        tipPercent: parseInt(process.env.JITO_TIP_PERCENT || jitoConfig.tipPercent || '80'),
-        authKeypair: process.env.JITO_AUTH_KEYPAIR || null
-    };
-}
-/**
- * 构建完整配置
- */
-function buildConfig() {
-    return {
-        network: getNetworkConfig(),
-        wallet: getWalletConfig(),
-        dexes: getDexesConfig(),
-        monitoring: getMonitoringConfig(),
-        trading: getTradingConfig(),
-        security: getSecurityConfig(),
-        notification: getNotificationConfig(),
-        logging: getLoggingConfig(),
-        jitoMev: getJitoConfig(),
-        api: apiConfig
-    };
-}
-/**
- * 验证配置是否有效
- */
-function validateConfig(config) {
-    // 验证必要的网络设置
-    if (!config.network.rpcUrl) {
-        throw new Error('未设置Solana RPC URL，请在.env文件或配置文件中设置SOLANA_RPC_URL');
+    },
+    jitoMev: {
+        enabled: false,
+        tipPercent: 90,
+        authKeypair: null
     }
-    // 验证钱包设置
-    if (!config.wallet.privateKey) {
-        throw new Error('未设置钱包私钥，请在.env文件中设置WALLET_PRIVATE_KEY');
+};
+// 构建最终配置
+const appConfig = {
+    ...defaultConfig,
+    environment: process.env.NODE_ENV || defaultConfig.environment,
+    api: {
+        ...defaultConfig.api,
+        port: parseInt(process.env.API_PORT || defaultConfig.api.port.toString(), 10),
+        useMockData: process.env.USE_MOCK_DATA === 'true' || defaultConfig.api.useMockData,
+        enableAuth: process.env.API_AUTH_ENABLED === 'true' || defaultConfig.api.enableAuth,
+        apiKey: process.env.API_KEY || defaultConfig.api.apiKey,
+    },
+    logging: {
+        ...defaultConfig.logging,
+        level: process.env.LOG_LEVEL || defaultConfig.logging.level,
+        console: process.env.LOG_TO_CONSOLE === 'true' || defaultConfig.logging.console,
+        file: process.env.LOG_TO_FILE === 'true' || defaultConfig.logging.file,
+        filename: process.env.LOG_FILENAME || defaultConfig.logging.filename,
+        maxFiles: parseInt(process.env.LOG_MAX_FILES || defaultConfig.logging.maxFiles.toString(), 10),
+        maxSize: process.env.LOG_MAX_SIZE || defaultConfig.logging.maxSize
+    },
+    network: {
+        ...defaultConfig.network,
+        cluster: process.env.SOLANA_CLUSTER || defaultConfig.network.cluster,
+        rpcUrl: process.env.SOLANA_RPC_URL || defaultConfig.network.rpcUrl,
+        wsUrl: process.env.SOLANA_WS_URL || defaultConfig.network.wsUrl,
+        connection: {
+            ...defaultConfig.network.connection,
+            commitment: process.env.SOLANA_COMMITMENT || ((_a = defaultConfig.network.connection) === null || _a === void 0 ? void 0 : _a.commitment),
+            confirmTransactionInitialTimeout: parseInt(process.env.SOLANA_CONFIRM_TIMEOUT ||
+                ((_b = defaultConfig.network.connection) === null || _b === void 0 ? void 0 : _b.confirmTransactionInitialTimeout.toString()) || '60000', 10)
+        }
+    },
+    wallet: {
+        ...defaultConfig.wallet,
+        privateKey: process.env.WALLET_PRIVATE_KEY || defaultConfig.wallet.privateKey,
+        maxTransactionAmount: parseFloat(process.env.MAX_TRANSACTION_AMOUNT ||
+            defaultConfig.wallet.maxTransactionAmount.toString())
+    },
+    dexes: process.env.DEXES ? process.env.DEXES.split(',').map(dex => {
+        const [name, programId] = dex.split(':');
+        return {
+            name: name.toLowerCase() === 'raydium' ? types_1.DexType.RAYDIUM :
+                name.toLowerCase() === 'orca' ? types_1.DexType.ORCA :
+                    name.toLowerCase() === 'jupiter' ? types_1.DexType.JUPITER :
+                        types_1.DexType.RAYDIUM,
+            programId,
+            enabled: true
+        };
+    }) : defaultConfig.dexes,
+    monitoring: {
+        ...defaultConfig.monitoring,
+        poolMonitorInterval: parseInt(process.env.POOL_MONITOR_INTERVAL ||
+            defaultConfig.monitoring.poolMonitorInterval.toString(), 10),
+        priceCheckInterval: parseInt(process.env.PRICE_CHECK_INTERVAL ||
+            defaultConfig.monitoring.priceCheckInterval.toString(), 10),
+        healthCheckInterval: parseInt(process.env.HEALTH_CHECK_INTERVAL ||
+            defaultConfig.monitoring.healthCheckInterval.toString(), 10)
+    },
+    trading: {
+        ...defaultConfig.trading,
+        buyStrategy: {
+            ...defaultConfig.trading.buyStrategy,
+            enabled: process.env.BUY_STRATEGY_ENABLED === 'true' || defaultConfig.trading.buyStrategy.enabled,
+            maxAmountPerTrade: parseFloat(process.env.BUY_STRATEGY_MAX_AMOUNT_PER_TRADE ||
+                defaultConfig.trading.buyStrategy.maxAmountPerTrade.toString()),
+            maxSlippage: parseInt(process.env.BUY_STRATEGY_MAX_SLIPPAGE ||
+                defaultConfig.trading.buyStrategy.maxSlippage.toString(), 10),
+            minConfidence: parseFloat(process.env.BUY_STRATEGY_MIN_CONFIDENCE ||
+                defaultConfig.trading.buyStrategy.minConfidence.toString()),
+            priorityFee: {
+                ...defaultConfig.trading.buyStrategy.priorityFee,
+                enabled: process.env.BUY_STRATEGY_PRIORITY_FEE_ENABLED === 'true' || defaultConfig.trading.buyStrategy.priorityFee.enabled,
+                multiplier: parseFloat(process.env.BUY_STRATEGY_PRIORITY_FEE_MULTIPLIER ||
+                    defaultConfig.trading.buyStrategy.priorityFee.multiplier.toString()),
+                baseFee: parseFloat(process.env.BUY_STRATEGY_PRIORITY_FEE_BASE_FEE ||
+                    defaultConfig.trading.buyStrategy.priorityFee.baseFee.toString()),
+                maxFee: parseFloat(process.env.BUY_STRATEGY_PRIORITY_FEE_MAX_FEE ||
+                    defaultConfig.trading.buyStrategy.priorityFee.maxFee.toString())
+            }
+        },
+        sellStrategy: {
+            ...defaultConfig.trading.sellStrategy,
+            enabled: process.env.SELL_STRATEGY_ENABLED === 'true' || defaultConfig.trading.sellStrategy.enabled,
+            conditions: process.env.SELL_STRATEGY_CONDITIONS ?
+                JSON.parse(process.env.SELL_STRATEGY_CONDITIONS) : defaultConfig.trading.sellStrategy.conditions,
+            maxSlippage: parseInt(process.env.SELL_STRATEGY_MAX_SLIPPAGE ||
+                defaultConfig.trading.sellStrategy.maxSlippage.toString(), 10)
+        },
+        maxTransactionAmount: parseFloat(process.env.MAX_TRANSACTION_AMOUNT ||
+            defaultConfig.trading.maxTransactionAmount.toString()),
+        buyAmountSol: parseFloat(process.env.BUY_AMOUNT_SOL ||
+            defaultConfig.trading.buyAmountSol.toString()),
+        maxBuySlippage: parseInt(process.env.MAX_BUY_SLIPPAGE ||
+            defaultConfig.trading.maxBuySlippage.toString(), 10),
+        maxSellSlippage: parseInt(process.env.MAX_SELL_SLIPPAGE ||
+            defaultConfig.trading.maxSellSlippage.toString(), 10),
+        txRetryCount: parseInt(process.env.TX_RETRY_COUNT ||
+            defaultConfig.trading.txRetryCount.toString(), 10),
+        txConfirmTimeout: parseInt(process.env.TX_CONFIRM_TIMEOUT ||
+            defaultConfig.trading.txConfirmTimeout.toString(), 10),
+        txPriorityFee: parseFloat(process.env.TX_PRIORITY_FEE ||
+            defaultConfig.trading.txPriorityFee.toString())
+    },
+    security: {
+        ...defaultConfig.security,
+        tokenValidation: {
+            ...defaultConfig.security.tokenValidation,
+            useWhitelist: process.env.TOKEN_WHITELIST_ENABLED === 'true' || defaultConfig.security.tokenValidation.useWhitelist,
+            useBlacklist: process.env.TOKEN_BLACKLIST_ENABLED === 'true' || defaultConfig.security.tokenValidation.useBlacklist,
+            whitelistPath: process.env.TOKEN_WHITELIST_PATH || defaultConfig.security.tokenValidation.whitelistPath,
+            blacklistPath: process.env.TOKEN_BLACKLIST_PATH || defaultConfig.security.tokenValidation.blacklistPath,
+            minLiquidityUsd: parseFloat(process.env.MIN_LIQUIDITY_USD ||
+                defaultConfig.security.tokenValidation.minLiquidityUsd.toString()),
+            minPoolBalanceToken: parseInt(process.env.MIN_POOL_BALANCE_TOKEN ||
+                defaultConfig.security.tokenValidation.minPoolBalanceToken.toString(), 10),
+            requireMetadata: process.env.TOKEN_METADATA_REQUIRED === 'true' || defaultConfig.security.tokenValidation.requireMetadata,
+            maxInitialPriceUsd: process.env.MAX_INITIAL_PRICE_USD ?
+                parseFloat(process.env.MAX_INITIAL_PRICE_USD) : defaultConfig.security.tokenValidation.maxInitialPriceUsd
+        },
+        transactionSafety: {
+            ...defaultConfig.security.transactionSafety,
+            simulateBeforeSend: process.env.TRANSACTION_SAFETY_SIMULATE === 'true' || defaultConfig.security.transactionSafety.simulateBeforeSend,
+            maxRetryCount: parseInt(process.env.TRANSACTION_SAFETY_MAX_RETRY_COUNT ||
+                defaultConfig.security.transactionSafety.maxRetryCount.toString(), 10),
+            maxPendingTx: parseInt(process.env.TRANSACTION_SAFETY_MAX_PENDING_TX ||
+                defaultConfig.security.transactionSafety.maxPendingTx.toString(), 10)
+        }
+    },
+    notification: {
+        ...defaultConfig.notification,
+        telegram: {
+            ...defaultConfig.notification.telegram,
+            enabled: process.env.TELEGRAM_NOTIFICATION_ENABLED === 'true' || defaultConfig.notification.telegram.enabled,
+            botToken: process.env.TELEGRAM_BOT_TOKEN || defaultConfig.notification.telegram.botToken,
+            chatId: process.env.TELEGRAM_CHAT_ID || defaultConfig.notification.telegram.chatId,
+            events: process.env.TELEGRAM_EVENTS ?
+                JSON.parse(process.env.TELEGRAM_EVENTS) : defaultConfig.notification.telegram.events
+        }
+    },
+    jitoMev: {
+        ...defaultConfig.jitoMev,
+        enabled: process.env.JITO_MEV_ENABLED === 'true' || defaultConfig.jitoMev.enabled,
+        tipPercent: parseInt(process.env.JITO_MEV_TIP_PERCENT ||
+            defaultConfig.jitoMev.tipPercent.toString(), 10),
+        authKeypair: process.env.JITO_MEV_AUTH_KEYPAIR || defaultConfig.jitoMev.authKeypair
     }
-    // 创建日志目录(如果不存在)
-    if (config.logging.file) {
-        const logDir = node_path_1.default.dirname(config.logging.filename);
-        fs_extra_1.default.ensureDirSync(logDir);
-    }
-    return true;
-}
-// 构建并导出配置
-exports.appConfig = buildConfig();
+};
+exports.appConfig = appConfig;
 // 验证配置
-validateConfig(exports.appConfig);
-exports.default = exports.appConfig;
-//# sourceMappingURL=config.js.map
+function validateConfig(config) {
+    var _a;
+    // 检查RPC端点
+    if (!config.network.rpcUrl) {
+        throw new Error('缺少RPC端点配置 (SOLANA_RPC_URL)');
+    }
+    // 检查WebSocket端点
+    if (!config.network.wsUrl) {
+        throw new Error('缺少WebSocket端点配置 (SOLANA_WS_URL)');
+    }
+    // 非只读模式需要钱包私钥
+    if (!((_a = config.network.connection) === null || _a === void 0 ? void 0 : _a.commitment)) {
+        throw new Error('非只读模式需要确认交易初始超时配置 (SOLANA_COMMITMENT)');
+    }
+    // 启用API认证需要API密钥
+    if (config.api.enableAuth && !config.api.apiKey) {
+        throw new Error('启用API认证需要设置API密钥 (API_KEY)');
+    }
+}
+// 初始化配置（如果需要创建文件夹等）
+function initializeConfig(config) {
+    // 确保日志目录存在
+    const logDir = './logs';
+    if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+    }
+    // 确保配置目录存在
+    const configDir = './config';
+    if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+    }
+    // 确保黑白名单文件存在
+    function ensureJsonFileExists(filePath, defaultContent) {
+        if (!fs.existsSync(filePath)) {
+            fs.writeFileSync(filePath, JSON.stringify(defaultContent, null, 2));
+            console.log(`创建默认配置文件: ${filePath}`);
+        }
+    }
+    // 创建默认的白名单文件
+    ensureJsonFileExists(config.security.tokenValidation.whitelistPath, { tokens: [] });
+    // 创建默认的黑名单文件
+    ensureJsonFileExists(config.security.tokenValidation.blacklistPath, { tokens: [], patterns: [], creators: [] });
+}
+// 验证并初始化配置
+try {
+    validateConfig(appConfig);
+    initializeConfig(appConfig);
+    console.log(`配置加载完成，环境: ${appConfig.environment}`);
+}
+catch (error) {
+    console.error('配置错误:', error instanceof Error ? error.message : error);
+    process.exit(1);
+}
+exports.default = appConfig;

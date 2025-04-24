@@ -148,7 +148,8 @@ class Application {
         const performanceMonitorObj = asService(performance_monitor_1.default);
         // 使用类型安全的事件监听器
         (0, typed_events_1.safeOn)(poolMonitorObj, 'newPool', (poolInfo) => {
-            traderModuleObj.handleNewPool?.(poolInfo);
+            var _a;
+            (_a = traderModuleObj.handleNewPool) === null || _a === void 0 ? void 0 : _a.call(traderModuleObj, poolInfo);
         });
         // 监听系统事件
         (0, typed_events_1.safeOn)(traderModuleObj, 'event', (event) => {
@@ -376,4 +377,3 @@ app.start().catch(error => {
 // 导出应用程序实例
 // 方便其他模块引用
 exports.default = app;
-//# sourceMappingURL=index.js.map

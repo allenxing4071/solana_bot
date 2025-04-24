@@ -15,12 +15,13 @@ import transactionRoutes from './routes/transaction_routes';
 import settingsRoutes from './routes/settings_routes';
 import statsRoutes from './routes/stats_routes';
 import setupAPIMonitorRoute from './api-monitor'; // 使用TypeScript版本的API监控模块
+import fs from 'fs';
 
 // 模块名称
 const MODULE_NAME = 'ApiServer';
 
-// 获取API端口，默认与简化版一致为8080
-const DEFAULT_PORT = appConfig.api?.port || 8080;
+// 获取API端口，默认为8081
+const DEFAULT_PORT = 8081;  // 使用8081端口
 
 /**
  * API服务器类
@@ -74,16 +75,25 @@ class ApiServer {
     }));
     
     // 提供静态文件 - 使用简化版API服务器相同的静态文件目录
-    const staticDir = path.resolve(process.cwd(), 'solana_webbot');
+    const staticDir = path.resolve(process.cwd(), 'public');
     logger.info(`静态文件目录: ${staticDir}`, MODULE_NAME);
+    
+    // 检查静态文件目录是否存在
+    if (!fs.existsSync(staticDir)) {
+      logger.error(`静态文件目录不存在: ${staticDir}`, MODULE_NAME);
+    } else {
+      logger.info(`静态文件目录内容: ${fs.readdirSync(staticDir).join(', ')}`, MODULE_NAME);
+    }
+    
     this.app.use(express.static(staticDir));
     
-    // 请求日志中间件
-    this.app.use((req, _res, next) => {
+    // 添加请求日志中间件
+    this.app.use((req, res, next) => {
       logger.debug(`API请求: ${req.method} ${req.path}`, MODULE_NAME, {
         ip: req.ip,
         query: req.query,
-        params: req.params
+        params: req.params,
+        headers: req.headers
       });
       next();
     });
@@ -93,14 +103,6 @@ class ApiServer {
    * 设置路由
    */
   private setupRoutes(): void {
-    // 健康检查路由
-    this.app.get('/api/health', (req, res) => {
-      res.status(200).json({
-        status: 'ok',
-        timestamp: new Date().toISOString()
-      });
-    });
-    
     // 使用代币路由模块处理所有代币相关请求
     this.app.use('/api/tokens', tokenRoutes);
     
@@ -289,9 +291,7 @@ class ApiServer {
 }
 
 // 创建并导出单例
-const apiServer = new ApiServer(
-  Number.parseInt(process.env.API_PORT || '8080') || DEFAULT_PORT
-);
+const apiServer = new ApiServer(8081);
 
 export default apiServer;
 

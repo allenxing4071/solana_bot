@@ -21,7 +21,7 @@ async function main() {
         logger_1.default.info('正在启动API服务器...', MODULE_NAME);
         // 启动API服务器
         await server_1.default.start();
-        logger_1.default.info(`API服务器已成功启动，访问地址: http://localhost:${process.env.API_PORT || 3000}`, MODULE_NAME);
+        logger_1.default.info(`API服务器已成功启动，访问地址: http://localhost:8081`, MODULE_NAME);
         // 添加进程退出处理
         process.on('SIGINT', handleShutdown);
         process.on('SIGTERM', handleShutdown);
@@ -55,4 +55,3 @@ if (require.main === module) {
     main();
 }
 exports.default = server_1.default;
-//# sourceMappingURL=api-server.js.map

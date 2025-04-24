@@ -66,12 +66,13 @@ class RPCService {
      * 初始化连接
      */
     async initialize() {
+        var _a;
         try {
             // 获取RPC URL
             let rpcUrl = config_1.default.network.rpcUrl;
             // 如果主RPC URL未设置或明确使用备用节点
             if (!rpcUrl || process.env.USE_BACKUP_RPC === 'true') {
-                const backupEndpoints = process.env.BACKUP_RPC_ENDPOINTS?.split(',') || [];
+                const backupEndpoints = ((_a = process.env.BACKUP_RPC_ENDPOINTS) === null || _a === void 0 ? void 0 : _a.split(',')) || [];
                 if (backupEndpoints.length > 0) {
                     rpcUrl = backupEndpoints[0].trim();
                     logger_1.default.info(`使用备用RPC节点: ${rpcUrl}`);
@@ -318,4 +319,3 @@ class RPCService {
 // 创建并导出单例
 exports.rpcService = new RPCService();
 exports.default = exports.rpcService;
-//# sourceMappingURL=rpc_service.js.map

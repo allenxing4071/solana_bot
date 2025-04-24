@@ -27,9 +27,12 @@ const getTradeHistory = async (req, res) => {
         let trades = await tradeHistoryManager.getAllTrades();
         // 应用搜索过滤
         if (search) {
-            trades = trades.filter(trade => (trade.tokenSymbol?.toLowerCase().includes(search.toLowerCase())) ||
-                trade.id.toLowerCase().includes(search.toLowerCase()) ||
-                (trade.txid?.toLowerCase().includes(search.toLowerCase())));
+            trades = trades.filter(trade => {
+                var _a, _b;
+                return ((_a = trade.tokenSymbol) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes(search.toLowerCase())) ||
+                    trade.id.toLowerCase().includes(search.toLowerCase()) ||
+                    ((_b = trade.txid) === null || _b === void 0 ? void 0 : _b.toLowerCase().includes(search.toLowerCase()));
+            });
         }
         // 按状态过滤
         if (status !== 'all') {
@@ -66,4 +69,3 @@ const getTradeHistory = async (req, res) => {
     }
 };
 exports.getTradeHistory = getTradeHistory;
-//# sourceMappingURL=trade_controller.js.map

@@ -21,6 +21,12 @@ router.get('/', transactionController.getTransactions);
 router.get('/recent', transactionController.getRecentTransactions);
 
 /**
+ * @route   GET /api/transactions/stats
+ * @desc    获取交易统计信息
+ */
+router.get('/stats', transactionController.getTransactionStats);
+
+/**
  * @route   GET /api/transactions/:id
  * @desc    获取交易详情
  */

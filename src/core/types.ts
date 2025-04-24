@@ -318,54 +318,19 @@ export interface SecurityConfig {
  * 配置文件接口
  */
 export interface AppConfig {
-  // 网络配置
-  network: {
-    cluster: string;
-    rpcUrl: string;
-    wsUrl: string;
-    connection?: {
-      commitment: string;
-      confirmTransactionInitialTimeout: number;
-    }
+  environment: string;
+  api: {
+    port: number;
+    useMockData: boolean;
+    enableAuth: boolean;
+    apiKey: string;
+    cors: {
+      origin: string;
+      methods: string[];
+      allowedHeaders: string[];
+    };
+    staticDir: string;
   };
-  
-  // 钱包配置
-  wallet: {
-    privateKey: string;
-    maxTransactionAmount: number;
-  };
-  
-  // DEX配置
-  dexes: Array<{
-    name: DexType;
-    programId: string;
-    enabled: boolean;
-  }>;
-  
-  // 监控配置
-  monitoring: {
-    poolMonitorInterval: number;
-    priceCheckInterval: number;
-    healthCheckInterval: number;
-  };
-  
-  // 交易策略配置
-  trading: StrategyConfig;
-  
-  // 安全配置
-  security: SecurityConfig;
-  
-  // 通知配置
-  notification: {
-    telegram: {
-      enabled: boolean;
-      botToken: string | null;
-      chatId: string | null;
-      events: Record<string, boolean>;
-    }
-  };
-  
-  // 日志配置
   logging: {
     level: string;
     console: boolean;
@@ -374,8 +339,80 @@ export interface AppConfig {
     maxFiles: number;
     maxSize: string;
   };
-  
-  // Jito MEV配置
+  network: {
+    cluster: string;
+    rpcUrl: string;
+    wsUrl: string;
+    connection: {
+      commitment: string;
+      confirmTransactionInitialTimeout: number;
+    }
+  };
+  wallet: {
+    privateKey: string;
+    maxTransactionAmount: number;
+  };
+  dexes: Array<{
+    name: DexType;
+    programId: string;
+    enabled: boolean;
+  }>;
+  monitoring: {
+    poolMonitorInterval: number;
+    priceCheckInterval: number;
+    healthCheckInterval: number;
+  };
+  trading: {
+    buyStrategy: {
+      enabled: boolean;
+      maxAmountPerTrade: number;
+      maxSlippage: number;
+      minConfidence: number;
+      priorityFee: {
+        enabled: boolean;
+        multiplier: number;
+        baseFee: number;
+        maxFee: number;
+      }
+    };
+    sellStrategy: {
+      enabled: boolean;
+      conditions: StrategyCondition[];
+      maxSlippage: number;
+    };
+    maxTransactionAmount: number;
+    buyAmountSol: number;
+    maxBuySlippage: number;
+    maxSellSlippage: number;
+    txRetryCount: number;
+    txConfirmTimeout: number;
+    txPriorityFee: number;
+  };
+  security: {
+    tokenValidation: {
+      useWhitelist: boolean;
+      useBlacklist: boolean;
+      whitelistPath: string;
+      blacklistPath: string;
+      minLiquidityUsd: number;
+      minPoolBalanceToken: number;
+      requireMetadata: boolean;
+      maxInitialPriceUsd?: number;
+    };
+    transactionSafety: {
+      simulateBeforeSend: boolean;
+      maxRetryCount: number;
+      maxPendingTx: number;
+    };
+  };
+  notification: {
+    telegram: {
+      enabled: boolean;
+      botToken: string | null;
+      chatId: string | null;
+      events: Record<string, boolean>;
+    }
+  };
   jitoMev: {
     enabled: boolean;
     tipPercent: number;

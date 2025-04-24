@@ -358,6 +358,7 @@ class WalletManager {
      * @returns 代币账户地址，就像新仓库的位置
      */
     async createTokenAccount(mintAddress, owner) {
+        var _a;
         try {
             // 如果未指定所有者，使用钱包地址
             // 就像如果没指定船只，就在自己船上建仓库
@@ -375,7 +376,7 @@ class WalletManager {
             catch (error) {
                 // 账户不存在，继续创建
                 // 就像确认需要建造新仓库
-                if (!error.message?.includes('account not found')) {
+                if (!((_a = error.message) === null || _a === void 0 ? void 0 : _a.includes('account not found'))) {
                     throw error;
                 }
             }
@@ -410,4 +411,3 @@ class WalletManager {
 // 创建并导出单例
 exports.walletManager = new WalletManager(config_1.default.wallet.privateKey);
 exports.default = exports.walletManager;
-//# sourceMappingURL=wallet_manager.js.map

@@ -420,6 +420,7 @@ exports.saveSettings = saveSettings;
  * 应用系统设置
  */
 const applySettings = async (req, res) => {
+    var _a, _b;
     try {
         logger_1.default.info('应用系统设置', MODULE_NAME);
         // 这里可以添加实际应用设置的逻辑
@@ -427,7 +428,7 @@ const applySettings = async (req, res) => {
         // 模拟应用延迟
         await new Promise(resolve => setTimeout(resolve, 500));
         // 模拟更新环境变量
-        process.env.LOG_LEVEL = req.body?.system?.logLevel || process.env.LOG_LEVEL || 'info';
+        process.env.LOG_LEVEL = ((_b = (_a = req.body) === null || _a === void 0 ? void 0 : _a.system) === null || _b === void 0 ? void 0 : _b.logLevel) || process.env.LOG_LEVEL || 'info';
         res.json({
             success: true,
             message: '设置已应用',
@@ -568,4 +569,3 @@ function handleApiError(res, message, error) {
         error: message
     });
 }
-//# sourceMappingURL=admin_controller.js.map

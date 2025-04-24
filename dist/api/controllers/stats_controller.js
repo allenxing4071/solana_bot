@@ -353,4 +353,3 @@ function generateTrendData(period, type) {
     }
     return data;
 }
-//# sourceMappingURL=stats_controller.js.map

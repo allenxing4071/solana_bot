@@ -22,7 +22,7 @@ async function main() {
     // 启动API服务器
     await apiServer.start();
     
-    logger.info(`API服务器已成功启动，访问地址: http://localhost:${process.env.API_PORT || 3000}`, MODULE_NAME);
+    logger.info(`API服务器已成功启动，访问地址: http://localhost:8081`, MODULE_NAME);
     
     // 添加进程退出处理
     process.on('SIGINT', handleShutdown);

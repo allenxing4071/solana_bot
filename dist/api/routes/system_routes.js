@@ -137,4 +137,3 @@ router.get('/system/health', (_req, res) => {
     });
 });
 exports.default = router;
-//# sourceMappingURL=system_routes.js.map

@@ -11,7 +11,6 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const node_path_1 = __importDefault(require("node:path"));
 const logger_1 = __importDefault(require("../core/logger"));
-const config_1 = __importDefault(require("../core/config"));
 const token_routes_1 = __importDefault(require("./routes/token_routes"));
 const system_routes_1 = __importDefault(require("./routes/system_routes"));
 const pool_routes_1 = __importDefault(require("./routes/pool_routes"));
@@ -19,10 +18,11 @@ const transaction_routes_1 = __importDefault(require("./routes/transaction_route
 const settings_routes_1 = __importDefault(require("./routes/settings_routes"));
 const stats_routes_1 = __importDefault(require("./routes/stats_routes"));
 const api_monitor_1 = __importDefault(require("./api-monitor")); // 使用TypeScript版本的API监控模块
+const fs_1 = __importDefault(require("fs"));
 // 模块名称
 const MODULE_NAME = 'ApiServer';
-// 获取API端口，默认与简化版一致为8080
-const DEFAULT_PORT = config_1.default.api?.port || 8080;
+// 获取API端口，默认为8081
+const DEFAULT_PORT = 8081; // 使用8081端口
 /**
  * API服务器类
  * 提供HTTP接口，允许管理黑名单和白名单
@@ -69,15 +69,23 @@ class ApiServer {
             maxAge: 86400 // 预检请求结果缓存1天
         }));
         // 提供静态文件 - 使用简化版API服务器相同的静态文件目录
-        const staticDir = node_path_1.default.resolve(process.cwd(), 'solana_webbot');
+        const staticDir = node_path_1.default.resolve(process.cwd(), 'public');
         logger_1.default.info(`静态文件目录: ${staticDir}`, MODULE_NAME);
+        // 检查静态文件目录是否存在
+        if (!fs_1.default.existsSync(staticDir)) {
+            logger_1.default.error(`静态文件目录不存在: ${staticDir}`, MODULE_NAME);
+        }
+        else {
+            logger_1.default.info(`静态文件目录内容: ${fs_1.default.readdirSync(staticDir).join(', ')}`, MODULE_NAME);
+        }
         this.app.use(express_1.default.static(staticDir));
-        // 请求日志中间件
-        this.app.use((req, _res, next) => {
+        // 添加请求日志中间件
+        this.app.use((req, res, next) => {
             logger_1.default.debug(`API请求: ${req.method} ${req.path}`, MODULE_NAME, {
                 ip: req.ip,
                 query: req.query,
-                params: req.params
+                params: req.params,
+                headers: req.headers
             });
             next();
         });
@@ -86,13 +94,6 @@ class ApiServer {
      * 设置路由
      */
     setupRoutes() {
-        // 健康检查路由
-        this.app.get('/api/health', (req, res) => {
-            res.status(200).json({
-                status: 'ok',
-                timestamp: new Date().toISOString()
-            });
-        });
         // 使用代币路由模块处理所有代币相关请求
         this.app.use('/api/tokens', token_routes_1.default);
         // 使用系统路由模块处理系统相关请求
@@ -264,7 +265,7 @@ class ApiServer {
     }
 }
 // 创建并导出单例
-const apiServer = new ApiServer(Number.parseInt(process.env.API_PORT || '8080') || DEFAULT_PORT);
+const apiServer = new ApiServer(8081);
 exports.default = apiServer;
 // 如果直接运行此文件，则启动服务器
 if (require.main === module) {
@@ -277,4 +278,3 @@ if (require.main === module) {
         process.exit(1);
     });
 }
-//# sourceMappingURL=server.js.map

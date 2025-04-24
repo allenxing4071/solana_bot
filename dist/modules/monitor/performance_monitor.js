@@ -707,4 +707,3 @@ exports.PerformanceMonitor = PerformanceMonitor;
 // 导出单例实例
 const performanceMonitor = new PerformanceMonitor();
 exports.default = performanceMonitor;
-//# sourceMappingURL=performance_monitor.js.map

@@ -52,4 +52,3 @@ exports.memoryExtension = memory_extension_1.default;
 Object.defineProperty(exports, "MemoryExtension", { enumerable: true, get: function () { return memory_extension_1.MemoryExtension; } });
 // 默认导出内存扩展模块
 exports.default = memory_extension_1.default;
-//# sourceMappingURL=index.js.map

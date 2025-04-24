@@ -1,8 +1,20 @@
-[
+{
+  "tokens": [
   {
-    "mint": "E3GzbpPTkHYUC4yk8y7jZ9DvhGDvsMxv2VqCNB7TKqhg",
+      "address": "E3GzbpPTkHYUC4yk8y7jZ9DvhGDvsMxv2VqCNB7TKqhg",
     "symbol": "TEST",
     "name": "Test Token",
-    "reason": "测试黑名单功能"
+      "reason": "测试黑名单功能",
+      "addedAt": "2024-04-23T00:00:00Z"
+    }
+  ],
+  "patterns": [
+    {
+      "pattern": ".*SCAM.*",
+      "field": "name",
+      "reason": "Contains 'SCAM' in name",
+      "addedAt": "2024-04-23T00:00:00Z"
   }
-]
+  ],
+  "creators": []
+}

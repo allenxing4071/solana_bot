@@ -96,9 +96,26 @@ const getTokenDetails = async (req, res) => {
     try {
         const tokenAddress = req.query.address;
         if (!tokenAddress) {
-            res.status(400).json({
-                success: false,
-                error: '代币地址参数不能为空'
+            // 如果没有提供地址参数，返回所有代币的统计和详细信息
+            // 构建符合dashboard期望的数据格式
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const newTokensToday = mockTokens.filter(t => t.createdAt >= today.getTime()).length;
+            res.json({
+                success: true,
+                data: {
+                    total: mockTokens.length,
+                    whitelistCount: 1,
+                    blacklistCount: 1,
+                    newTokensToday: newTokensToday,
+                    tokens: mockTokens.map(token => ({
+                        symbol: token.symbol,
+                        address: token.address,
+                        price: token.price,
+                        riskScore: token.riskScore,
+                        status: token.riskScore < 50 ? '正常' : '风险'
+                    }))
+                }
             });
             return;
         }
@@ -175,4 +192,3 @@ const getTokensList = async (req, res) => {
     }
 };
 exports.getTokensList = getTokensList;
-//# sourceMappingURL=token_details_controller.js.map

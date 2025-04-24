@@ -53,4 +53,3 @@ router.get('/profit_summary', (req, res) => {
     (0, stats_controller_1.getProfitSummary)(req, res);
 });
 exports.default = router;
-//# sourceMappingURL=stats_routes.js.map

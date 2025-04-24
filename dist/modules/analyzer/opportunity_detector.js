@@ -541,4 +541,3 @@ exports.OpportunityDetector = OpportunityDetector;
 // 导出单例实例
 const opportunityDetector = new OpportunityDetector();
 exports.default = opportunityDetector;
-//# sourceMappingURL=opportunity_detector.js.map

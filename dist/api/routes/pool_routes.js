@@ -65,8 +65,7 @@ router.get('/dex/:dexName', poolController.getPoolsByDex);
 router.get('/token/:mint', poolController.getPoolsByToken);
 /**
  * @route   GET /api/pools/stats
- * @desc    获取流动性池统计信息
+ * @desc    获取所有池子的统计信息
  */
 router.get('/stats', poolController.getPoolStats);
 exports.default = router;
-//# sourceMappingURL=pool_routes.js.map

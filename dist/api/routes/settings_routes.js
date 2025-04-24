@@ -59,4 +59,3 @@ router.post('/', settingsController.saveSettings);
  */
 router.post('/apply', settingsController.applySettings);
 exports.default = router;
-//# sourceMappingURL=settings_routes.js.map

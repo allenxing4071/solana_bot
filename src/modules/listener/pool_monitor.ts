@@ -33,17 +33,12 @@
  * - 负责整个探测系统的启动、运行和关闭（生命周期管理）
  */
 
-import {
-  PublicKey,
-  LogsFilter,
-  KeyedAccountInfo,
-  AccountInfo
-} from '@solana/web3.js';
 import { EventEmitter } from 'node:events';
-import appConfig from '../../core/config';
+import { appConfig } from '../../core/config';
 import logger from '../../core/logger';
 import rpcService from '../../services/rpc_service';
 import { DexType, PoolInfo, EventType, SystemEvent } from '../../core/types';
+import { PublicKey, AccountInfo } from '@solana/web3.js';
 
 // 模块名称
 // 就像这个雷达系统的舱位编号
@@ -145,9 +140,17 @@ class PoolMonitor extends EventEmitter {
 
     // 从配置中加载监控设置
     // 就像根据任务手册设置探测参数
+    const enabledDexes = appConfig.dexes
+      .filter(dex => dex.enabled)
+      .map(dex => ({
+        name: dex.name,
+        programId: dex.programId,
+        enabled: dex.enabled
+      }));
+    
     this.config = {
       checkInterval: appConfig.monitoring.poolMonitorInterval,
-      dexes: appConfig.dexes.filter(dex => dex.enabled)
+      dexes: enabledDexes
     };
 
     // 记录初始化完成
@@ -303,7 +306,7 @@ class PoolMonitor extends EventEmitter {
           (accountInfo) => {
             // 添加上下文参数的模拟
             const context = { slot: 0 }; // 简化的上下文对象
-            this.handleProgramAccountChange(dex.name, programId, accountInfo, context);
+            this.handleProgramAccountChange(programId, accountInfo);
           }
         );
         this.subscriptions.set(`program:${dex.name}`, programSubId);
@@ -318,7 +321,7 @@ class PoolMonitor extends EventEmitter {
           (logs) => {
             // 添加上下文参数的模拟
             const context = { signature: '' }; // 简化的上下文对象
-            this.handleProgramLogs(dex.name, programId, logs, context);
+            this.handleProgramLogs(logs, programId);
           }
         );
         this.subscriptions.set(`logs:${dex.name}`, logsSubId);
@@ -336,109 +339,41 @@ class PoolMonitor extends EventEmitter {
 
   /**
    * 处理程序账户变更
-   * 分析账户信息，查找新池子创建迹象
-   * 
-   * 【比喻解释】
-   * 这就像分析声纳接收到的信号：
-   * - 接收来自特定海域的声纳信号（账户信息）
-   * - 分析信号是否表示鱼群聚集（新池子）
-   * - 如果信号明确，进行更深入分析（检查池子详情）
-   * - 记录每次声纳探测结果（日志）
-   * 
-   * 【编程语法通俗翻译】
-   * if (!this.isRunning) return = 设备已关闭：如果系统已关闭，不再处理信号
-   * logger.debug = 记录细节：把探测到的小信号记在技术日志里
-   * 
-   * @param {DexType} dexName - 交易所名称，就像海域名称
-   * @param {PublicKey} programId - 程序ID，像是特定区域的坐标
-   * @param {any} accountInfo - 账户信息，像是声纳接收到的原始信号
-   * @param {any} context - 上下文信息，像是信号接收时的环境数据
-   * @private
+   * @param programId 程序ID
+   * @param accountInfo 账户信息
    */
-  private handleProgramAccountChange(
-    dexName: DexType, 
-    _programId: PublicKey,
-    accountInfo: any, 
-    _context: any
-  ): void {
-    // 检查系统是否运行中
-    // 就像确认设备是否开启
-    if (!this.isRunning) return;
+  private handleProgramAccountChange(programId: PublicKey, accountInfo: AccountInfo<Buffer>): void {
+    // 找到对应的DEX
+    const dex = this.config.dexes.find(d => d.programId === programId.toBase58());
+    if (!dex) return;
 
-    // 记录探测到的变化
-    // 就像记录接收到的声纳信号
-    logger.debug(`检测到 ${dexName} 程序账户变化`, MODULE_NAME);
-    
-    // 确保accountInfo及其pubkey属性存在
-    if (!accountInfo || !accountInfo.pubkey) {
-      logger.warn(`接收到无效的账户信息，缺少pubkey`, MODULE_NAME, { dex: dexName });
-      return;
-    }
-    
-    // 解析数据查找池子创建
-    // 就像分析声纳信号寻找鱼群
-    this.checkForNewPool(dexName, accountInfo.pubkey, accountInfo.account);
+    // 检查是否为新池子
+    this.checkForNewPool(dex.name, new PublicKey(accountInfo.owner), accountInfo);
   }
 
   /**
    * 处理程序日志
-   * 分析程序日志，查找池子创建的关键信息
-   * 
-   * 【比喻解释】
-   * 这就像分析水面观测设备的录像：
-   * - 查看来自特定海域的画面记录（程序日志）
-   * - 寻找水面波纹或其他鱼群迹象（关键词）
-   * - 如果发现明显迹象，立即深入调查（查询交易）
-   * - 记录每次重要发现（日志记录）
-   * 
-   * 【编程语法通俗翻译】
-   * const signature = context.signature = 交易标识：就像每段录像的时间戳
-   * logMessages.some() = 查找特征：浏览记录寻找特定的波纹模式
-   * 
-   * @param {DexType} dexName - 交易所名称，就像海域名称
-   * @param {PublicKey} programId - 程序ID，像是特定区域的坐标
-   * @param {any} logs - 日志内容，像是观测设备记录的画面
-   * @param {any} context - 上下文信息，像是录像的时间和位置信息
-   * @private
+   * @param logs 日志信息
+   * @param programId 程序ID
    */
-  private handleProgramLogs(
-    dexName: DexType,
-    _programId: PublicKey,
-    logs: any,
-    context: any
-  ): void {
-    // 检查系统是否运行中
-    // 就像确认观测设备是否开启
-    if (!this.isRunning) return;
-    
-    // 获取交易签名和日志内容
-    // 就像获取录像的编号和内容
-    const signature = context?.signature || '';
-    const logMessages = logs?.logs || [];
-    
-    // 获取池子创建关键词
-    // 就像获取鱼群特征的识别清单
-    const poolCreationKeywords = this.getPoolCreationKeywords(dexName);
-    
-    // 检查日志是否包含关键词
-    // 就像检查录像中是否有鱼群特征
-    const hasPoolCreation = logMessages.some((log: string) => 
-      poolCreationKeywords.some(keyword => log.includes(keyword))
+  private handleProgramLogs(logs: any, programId: PublicKey): void {
+    // 找到对应的DEX
+    const dex = this.config.dexes.find(d => d.programId === programId.toBase58());
+    if (!dex) return;
+
+    const keywords = this.getPoolCreationKeywords(this.getDexType(dex.name));
+
+    // 检查日志中是否包含池子创建关键词
+    const containsKeyword = keywords.some(keyword => 
+      logs.logs.some((log: string) => log.includes(keyword))
     );
-    
-    // 如果发现池子创建迹象
-    // 就像发现明显的鱼群活动
-    if (hasPoolCreation) {
-      // 记录发现信息
-      // 就像记录重要发现
-      logger.info(`检测到 ${dexName} 可能的新池子创建日志`, MODULE_NAME, {
-        signature,
-        dex: dexName
-      });
-      
-      // 深入分析交易细节
-      // 就像派出小队近距离观察鱼群
-      this.processTransactionWithPool(dexName, signature);
+
+    if (containsKeyword) {
+      // 提取交易签名
+      const signature = logs.signature;
+      if (signature) {
+        this.processTransactionWithPool(this.getDexType(dex.name), signature);
+      }
     }
   }
 
@@ -463,7 +398,7 @@ class PoolMonitor extends EventEmitter {
    * @param dexName DEX名称
    * @param signature 交易签名
    */
-  private async processTransactionWithPool(_dexName: DexType, signature: string): Promise<void> {
+  private async processTransactionWithPool(dexName: DexType, signature: string): Promise<void> {
     try {
       // 获取交易详情
       const connection = rpcService.getConnection();
@@ -534,7 +469,7 @@ class PoolMonitor extends EventEmitter {
         
         // 分析账户数据，查找新池子
         for (const account of accounts) {
-          this.checkForNewPool(dex.name, account.pubkey, account.account);
+          this.checkForNewPool(this.getDexType(dex.name), account.pubkey, account.account);
         }
       } catch (error) {
         logger.error(`检查 ${dex.name} 新池子时出错`, MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
@@ -583,7 +518,7 @@ class PoolMonitor extends EventEmitter {
         // 创建池子信息对象
         const poolInfo: PoolInfo = {
           address: pubkey,
-          dex: dexName,
+          dex: this.getDexType(dexName),
           tokenAMint: new PublicKey('11111111111111111111111111111111'), // 示例，实际需要从数据中解析
           tokenBMint: new PublicKey('11111111111111111111111111111111'), // 示例，实际需要从数据中解析
           createdAt: Date.now(),
@@ -723,16 +658,16 @@ class PoolMonitor extends EventEmitter {
         
         // 分析账户，识别池子
         for (const account of accounts) {
-          const isPool = this.analyzeAccountForPool(dex.name, account.pubkey, account.account);
+          const isPool = this.analyzeAccountForPool(this.getDexType(dex.name), account.pubkey, account.account);
           
           if (isPool) {
             poolCount++;
-            const poolKey = `${dex.name}:${account.pubkey.toBase58()}`;
+            const poolKey = `${this.getDexType(dex.name)}:${account.pubkey.toBase58()}`;
             
             // 创建池子信息对象
             const poolInfo: PoolInfo = {
               address: account.pubkey,
-              dex: dex.name,
+              dex: this.getDexType(dex.name),
               tokenAMint: new PublicKey('11111111111111111111111111111111'), // 示例，实际需要从数据中解析
               tokenBMint: new PublicKey('11111111111111111111111111111111'), // 示例，实际需要从数据中解析
               createdAt: Date.now() - 3600000, // 假设一小时前创建，实际应从数据中解析
@@ -810,6 +745,24 @@ class PoolMonitor extends EventEmitter {
     
     // 转换为数组并返回
     return Array.from(tokenSet);
+  }
+
+  /**
+   * 将字符串转换为 DexType
+   * @param name DEX名称
+   * @returns DexType
+   */
+  private getDexType(name: string): DexType {
+    switch (name.toLowerCase()) {
+      case 'raydium':
+        return DexType.RAYDIUM;
+      case 'orca':
+        return DexType.ORCA;
+      case 'jupiter':
+        return DexType.JUPITER;
+      default:
+        throw new Error(`不支持的DEX类型: ${name}`);
+    }
   }
 }
 

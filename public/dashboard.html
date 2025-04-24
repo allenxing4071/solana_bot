@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solana MEV机器人 - 监控面板</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --danger-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --card-background: #ffffff;
+            --text-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: var(--card-background);
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+
+        .status-running {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .status-stopped {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .card-title {
+            margin: 0;
+            font-size: 18px;
+            color: var(--primary-color);
+        }
+
+        .refresh-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .metric {
+            margin-bottom: 15px;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .metric-subvalue {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .table th, .table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background-color: #eee;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--secondary-color);
+            transition: width 0.3s ease;
+        }
+
+        .last-updated {
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .data-item {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .data-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .data-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Solana MEV机器人监控面板</h1>
+            <div class="status-badge" id="system-status">正在加载...</div>
+        </div>
+
+        <div class="grid">
+            <!-- 系统状态卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">系统状态</h2>
+                    <button class="refresh-btn" onclick="fetchSystemStatus()">刷新</button>
+                </div>
+                <div class="data-grid">
+                    <div class="data-item">
+                        <div class="data-label">CPU使用率</div>
+                        <div class="data-value" id="cpu-usage">-</div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" id="cpu-progress"></div>
+                        </div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">内存使用率</div>
+                        <div class="data-value" id="memory-usage">-</div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" id="memory-progress"></div>
+                        </div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">运行时间</div>
+                        <div class="data-value" id="uptime">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">系统状态</div>
+                        <div class="data-value" id="system-state">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">最后更新</div>
+                        <div class="data-value" id="last-update-time">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 交易池监控卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">交易池监控</h2>
+                    <button class="refresh-btn" onclick="fetchPoolStatus()">刷新</button>
+                </div>
+                <div class="data-grid">
+                    <div class="data-item">
+                        <div class="data-label">活跃池子数</div>
+                        <div class="data-value" id="active-pools">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">总池子数</div>
+                        <div class="data-value" id="total-pools">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">监控中的DEX</div>
+                        <div class="data-value" id="monitored-dexes">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">检查间隔</div>
+                        <div class="data-value" id="check-interval">-</div>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>DEX</th>
+                            <th>池子地址</th>
+                            <th>代币A</th>
+                            <th>代币B</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pool-list">
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 代币监控卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">代币监控</h2>
+                    <button class="refresh-btn" onclick="fetchTokenStatus()">刷新</button>
+                </div>
+                <div class="data-grid">
+                    <div class="data-item">
+                        <div class="data-label">监控中的代币</div>
+                        <div class="data-value" id="monitored-tokens">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">白名单代币</div>
+                        <div class="data-value" id="whitelist-tokens">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">黑名单代币</div>
+                        <div class="data-value" id="blacklist-tokens">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">今日新代币</div>
+                        <div class="data-value" id="today-new-tokens">-</div>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>代币</th>
+                            <th>地址</th>
+                            <th>价格</th>
+                            <th>风险评分</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="token-list">
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 交易统计卡片 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">交易统计</h2>
+                    <button class="refresh-btn" onclick="fetchTradeStats()">刷新</button>
+                </div>
+                <div class="data-grid">
+                    <div class="data-item">
+                        <div class="data-label">执行交易数</div>
+                        <div class="data-value" id="executed-trades">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">成功率</div>
+                        <div class="data-value" id="success-rate">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">今日收益</div>
+                        <div class="data-value" id="today-profit">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">总收益</div>
+                        <div class="data-value" id="total-profit">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">平均收益</div>
+                        <div class="data-value" id="avg-profit">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">最大收益</div>
+                        <div class="data-value" id="max-profit">-</div>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>代币</th>
+                            <th>类型</th>
+                            <th>金额</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trade-list">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 警告信息区域 -->
+        <div id="alerts-container"></div>
+
+        <div class="last-updated" id="last-updated">最后更新: -</div>
+    </div>
+
+    <script>
+        // API基础URL
+        const API_BASE_URL = 'http://localhost:8080/api';
+
+        // 格式化数字
+        function formatNumber(num) {
+            return new Intl.NumberFormat('zh-CN').format(num);
+        }
+
+        // 格式化百分比
+        function formatPercent(num) {
+            return `${num.toFixed(2)}%`;
+        }
+
+        // 格式化时间
+        function formatTime(ms) {
+            const seconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+        }
+
+        // 格式化日期时间
+        function formatDateTime(date) {
+            return new Date(date).toLocaleString('zh-CN');
+        }
+
+        // 更新最后更新时间
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('last-updated').textContent = 
+                `最后更新: ${now.toLocaleTimeString()}`;
+        }
+
+        // 获取系统状态
+        async function fetchSystemStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    document.getElementById('system-status').textContent = '运行中';
+                    document.getElementById('system-status').className = 'status-badge status-running';
+                    
+                    // 获取系统资源使用情况
+                    const memoryResponse = await fetch(`${API_BASE_URL}/memory`);
+                    const memoryData = await memoryResponse.json();
+                    
+                    if (memoryData.success) {
+                        const memory = memoryData.data;
+                        document.getElementById('memory-usage').textContent = formatPercent(memory.usage);
+                        document.getElementById('memory-progress').style.width = `${memory.usage}%`;
+                    }
+                    
+                    // 获取CPU使用情况
+                    const cpuResponse = await fetch(`${API_BASE_URL}/cpu`);
+                    const cpuData = await cpuResponse.json();
+                    
+                    if (cpuData.success) {
+                        const cpu = cpuData.data;
+                        document.getElementById('cpu-usage').textContent = formatPercent(cpu.usage);
+                        document.getElementById('cpu-progress').style.width = `${cpu.usage}%`;
+                    }
+                    
+                    updateLastUpdated();
+                }
+            } catch (error) {
+                console.error('获取系统状态失败:', error);
+                document.getElementById('system-status').textContent = '错误';
+                document.getElementById('system-status').className = 'status-badge status-stopped';
+            }
+        }
+
+        // 获取交易池状态
+        async function fetchPoolStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/pools/stats`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const pools = data.data;
+                    document.getElementById('active-pools').textContent = pools.activePools;
+                    document.getElementById('total-pools').textContent = pools.totalPools;
+                    document.getElementById('monitored-dexes').textContent = pools.monitoredDexes.join(', ');
+                    document.getElementById('check-interval').textContent = `${pools.checkInterval}ms`;
+                    
+                    // 更新池子列表
+                    const poolList = document.getElementById('pool-list');
+                    poolList.innerHTML = '';
+                    
+                    pools.pools.forEach(pool => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${pool.dex}</td>
+                            <td>${pool.address}</td>
+                            <td>${pool.tokenA}</td>
+                            <td>${pool.tokenB}</td>
+                            <td>${pool.status}</td>
+                        `;
+                        poolList.appendChild(row);
+                    });
+                    
+                    updateLastUpdated();
+                }
+            } catch (error) {
+                console.error('获取交易池状态失败:', error);
+            }
+        }
+
+        // 获取代币状态
+        async function fetchTokenStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tokens/details`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const tokens = data.data;
+                    document.getElementById('monitored-tokens').textContent = tokens.total;
+                    document.getElementById('whitelist-tokens').textContent = tokens.whitelistCount;
+                    document.getElementById('blacklist-tokens').textContent = tokens.blacklistCount;
+                    document.getElementById('today-new-tokens').textContent = tokens.newTokensToday;
+                    
+                    // 更新代币列表
+                    const tokenList = document.getElementById('token-list');
+                    tokenList.innerHTML = '';
+                    
+                    tokens.tokens.forEach(token => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${token.symbol}</td>
+                            <td>${token.address}</td>
+                            <td>$${token.price}</td>
+                            <td>${token.riskScore}</td>
+                            <td>${token.status}</td>
+                        `;
+                        tokenList.appendChild(row);
+                    });
+                    
+                    updateLastUpdated();
+                }
+            } catch (error) {
+                console.error('获取代币状态失败:', error);
+            }
+        }
+
+        // 获取交易统计
+        async function fetchTradeStats() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/transactions/stats`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.data;
+                    document.getElementById('executed-trades').textContent = stats.executedTrades;
+                    document.getElementById('success-rate').textContent = formatPercent(stats.successRate);
+                    document.getElementById('today-profit').textContent = `$${stats.todayProfit}`;
+                    document.getElementById('total-profit').textContent = `$${stats.totalProfit}`;
+                    document.getElementById('avg-profit').textContent = `$${stats.averageProfit}`;
+                    document.getElementById('max-profit').textContent = `$${stats.maxProfit}`;
+                    
+                    // 更新交易列表
+                    const tradeList = document.getElementById('trade-list');
+                    tradeList.innerHTML = '';
+                    
+                    stats.recentTrades.forEach(trade => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${formatDateTime(trade.timestamp)}</td>
+                            <td>${trade.token}</td>
+                            <td>${trade.type}</td>
+                            <td>$${trade.amount}</td>
+                            <td>${trade.status}</td>
+                        `;
+                        tradeList.appendChild(row);
+                    });
+                    
+                    updateLastUpdated();
+                }
+            } catch (error) {
+                console.error('获取交易统计失败:', error);
+            }
+        }
+
+        // 检查警告条件
+        function checkAlerts() {
+            const alertsContainer = document.getElementById('alerts-container');
+            alertsContainer.innerHTML = '';
+            
+            // 检查内存使用率
+            const memoryUsage = parseFloat(document.getElementById('memory-usage').textContent);
+            if (memoryUsage > 90) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-warning';
+                alert.textContent = `警告: 内存使用率过高 (${memoryUsage}%)`;
+                alertsContainer.appendChild(alert);
+            }
+            
+            // 检查CPU使用率
+            const cpuUsage = parseFloat(document.getElementById('cpu-usage').textContent);
+            if (cpuUsage > 80) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-warning';
+                alert.textContent = `警告: CPU使用率过高 (${cpuUsage}%)`;
+                alertsContainer.appendChild(alert);
+            }
+        }
+
+        // 初始化
+        async function initialize() {
+            await Promise.all([
+                fetchSystemStatus(),
+                fetchPoolStatus(),
+                fetchTokenStatus(),
+                fetchTradeStats()
+            ]);
+            checkAlerts();
+            
+            // 设置定时刷新
+            setInterval(async () => {
+                await Promise.all([
+                    fetchSystemStatus(),
+                    fetchPoolStatus(),
+                    fetchTokenStatus(),
+                    fetchTradeStats()
+                ]);
+                checkAlerts();
+            }, 5000);
+        }
+
+        // 页面加载完成后初始化
+        window.onload = initialize;
+    </script>
+</body>
+</html> 

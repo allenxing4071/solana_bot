@@ -95,4 +95,3 @@ router.get('/details', tokenDetailsController.getTokenDetails);
  */
 router.get('/', tokenDetailsController.getTokensList);
 exports.default = router;
-//# sourceMappingURL=token_routes.js.map

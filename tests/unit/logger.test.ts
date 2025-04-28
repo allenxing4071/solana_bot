@@ -1,4 +1,4 @@
-import logger from '../../src/core/logger';
+import logger from '../../src/core/logger.js';
 import * as winston from 'winston';
 
 // 模拟winston库
@@ -14,7 +14,6 @@ jest.mock('winston', () => {
     },
     createLogger: jest.fn().mockReturnValue({
       debug: jest.fn(),
-      http: jest.fn(),
       info: jest.fn(),
       warn: jest.fn(),
       error: jest.fn(),
@@ -99,16 +98,5 @@ describe('Logger', () => {
     logger.error(message, module, meta);
 
     expect(mockedWinstonLogger.error).toHaveBeenCalledWith(message, { module, meta });
-  });
-
-  test('should log HTTP messages correctly', () => {
-    const message = 'Test HTTP message';
-    const requestId = 'req123';
-    const module = 'TestModule';
-    const meta = { test: 'data' };
-
-    logger.http(message, requestId, module, meta);
-
-    expect(mockedWinstonLogger.http).toHaveBeenCalledWith(message, { module, requestId, meta });
   });
 }); 

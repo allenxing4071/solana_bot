@@ -94,8 +94,8 @@
         <div class="api-section">
             <div class="api-title">
                 <h2>系统状态</h2>
-                <span class="api-url">/api/system/status</span>
-                <button class="refresh-btn" onclick="fetchData('system-status', '/api/system/status')">刷新</button>
+                <span class="api-url">/api/status</span>
+                <button class="refresh-btn" onclick="fetchData('system-status', '/api/status')">刷新</button>
             </div>
             <div class="status" id="system-status-status"></div>
             <pre id="system-status"></pre>
@@ -104,8 +104,8 @@
         <div class="api-section">
             <div class="api-title">
                 <h2>监控中的代币</h2>
-                <span class="api-url">/api/tokens</span>
-                <button class="refresh-btn" onclick="fetchData('tokens', '/api/tokens')">刷新</button>
+                <span class="api-url">/api/tokens/details</span>
+                <button class="refresh-btn" onclick="fetchData('tokens', '/api/tokens/details')">刷新</button>
             </div>
             <div class="status" id="tokens-status"></div>
             <pre id="tokens"></pre>
@@ -134,8 +134,8 @@
         <div class="api-section">
             <div class="api-title">
                 <h2>内存监控数据</h2>
-                <span class="api-url">/api/memory_stats.json</span>
-                <button class="refresh-btn" onclick="fetchData('memory', '/api/memory_stats.json')">刷新</button>
+                <span class="api-url">/api/memory</span>
+                <button class="refresh-btn" onclick="fetchData('memory', '/api/memory')">刷新</button>
             </div>
             <div class="status" id="memory-status"></div>
             <pre id="memory"></pre>
@@ -144,8 +144,8 @@
         <div class="api-section">
             <div class="api-title">
                 <h2>API状态</h2>
-                <span class="api-url">/api/status</span>
-                <button class="refresh-btn" onclick="fetchData('api-status', '/api/status')">刷新</button>
+                <span class="api-url">/api/health</span>
+                <button class="refresh-btn" onclick="fetchData('api-status', '/api/health')">刷新</button>
             </div>
             <div class="status" id="api-status-status"></div>
             <pre id="api-status"></pre>
@@ -218,12 +218,12 @@
         
         // 页面加载时获取所有数据
         window.onload = function() {
-            fetchData('system-status', '/api/system/status');
-            fetchData('tokens', '/api/tokens');
+            fetchData('system-status', '/api/status');
+            fetchData('tokens', '/api/tokens/details');
             fetchData('transactions', '/api/transactions');
             fetchData('pools', '/api/pools');
-            fetchData('memory', '/api/memory_stats.json');
-            fetchData('api-status', '/api/status');
+            fetchData('memory', '/api/memory');
+            fetchData('api-status', '/api/health');
         };
     </script>
 </body>

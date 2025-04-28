@@ -1,19 +1,16 @@
-FROM node:18-alpine
+FROM node:20
 
 WORKDIR /app
 
 # 安装依赖
-COPY package*.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm install telegraf@4.12.2
 
 # 复制源代码
-COPY . .
-
-# 构建TypeScript
-RUN npm run build
+COPY mini_telegram_test.cjs ./
 
 # 暴露端口
-EXPOSE 8080
+EXPOSE 3000
 
 # 启动命令
-CMD ["node", "dist/api-server.js"] 
+CMD ["node", "mini_telegram_test.cjs"] 

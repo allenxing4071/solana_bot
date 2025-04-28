@@ -1,5 +1,5 @@
 import { Telegraf } from 'telegraf';
-import logger from '../core/logger';
+import logger from '../core/logger.js';
 import * as os from 'os';
 import * as process from 'process';
 

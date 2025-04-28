@@ -1,75 +1,104 @@
 {
+  "environment": "production",
+  "api": {
+    "port": 8080,
+    "host": "0.0.0.0",
+    "useMockData": false,
+    "enableAuth": true,
+    "apiKey": "your-api-key",
+    "cors": {
+      "origin": "*",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "allowedHeaders": [
+        "Content-Type",
+        "Authorization"
+      ]
+    },
+    "staticDir": "./static"
+  },
+  "logging": {
+    "level": "warn",
+    "console": true,
+    "file": true,
+    "directory": "/var/log/solana-bot",
+    "maxFileSize": 10485760,
+    "maxFiles": 5,
+    "includeTimestamp": true
+  },
   "network": {
-    "cluster": "mainnet-beta",
     "connection": {
       "commitment": "confirmed",
       "confirmTransactionInitialTimeout": 60000
     },
+    "cluster": "mainnet-beta",
     "rpcUrl": "https://api.mainnet-beta.solana.com",
     "wsUrl": "wss://api.mainnet-beta.solana.com"
   },
+  "wallet": {
+    "privateKey": "5vj7FRJZjUAAhJCjNc5fjzQdJRHHePpKMZBgQ8oDZ8EqenXaH84QivVjHvCmGa9qVmSq3HE5wpXazoYtC2CVTQ5t",
+    "maxTransactionAmount": 1000
+  },
+  "dexes": [
+    {
+      "name": "RAYDIUM",
+      "programId": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
+      "enabled": true
+    }
+  ],
   "monitoring": {
-    "poolMonitor": {
-      "checkInterval": 5000,
-      "targets": [
-        {
-          "name": "raydium",
-          "programId": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
-          "enabled": true
-        },
-        {
-          "name": "orca",
-          "programId": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
-          "enabled": true
-        }
-      ]
-    },
-    "priceMonitor": {
-      "interval": 3000,
-      "sources": ["raydium", "jupiter"]
+    "enabled": true,
+    "interval": 5000,
+    "metrics": {
+      "enabled": true,
+      "port": 9090
     }
   },
   "trading": {
     "buyStrategy": {
-      "maxAmountPerTrade": 0.1,
-      "maxSlippage": 5,
+      "enabled": true,
+      "maxAmountPerTrade": 1,
+      "maxSlippage": 3,
+      "minConfidence": 0.8,
       "priorityFee": {
         "enabled": true,
-        "baseFee": 0.000005,
-        "maxFee": 0.00005
-      },
-      "simulation": {
-        "required": true,
-        "retryOnFail": 2
+        "multiplier": 1.5,
+        "baseFee": 1000,
+        "maxFee": 10000
       }
     },
     "sellStrategy": {
-      "takeProfit": {
-        "percentage": 20,
-        "enabled": true
-      },
-      "stopLoss": {
-        "percentage": 10,
-        "enabled": true
-      },
-      "trailingStop": {
-        "percentage": 5,
-        "enabled": false
-      },
-      "timeLimit": {
-        "seconds": 300,
-        "enabled": false
-      },
-      "maxSlippage": 5
+      "enabled": true,
+      "conditions": [
+        {
+          "type": "take_profit",
+          "percentage": 20,
+          "enabled": true
+        },
+        {
+          "type": "stop_loss",
+          "percentage": 10,
+          "enabled": true
+        }
+      ],
+      "maxSlippage": 3
     },
-    "exchanges": {
-      "preferredRoutes": ["raydium", "jupiter", "orca"]
-    }
+    "maxTransactionAmount": 1,
+    "buyAmountSol": 0.1,
+    "maxBuySlippage": 3,
+    "maxSellSlippage": 3,
+    "txRetryCount": 3,
+    "txConfirmTimeout": 60000,
+    "txPriorityFee": 1000
   },
   "security": {
     "tokenValidation": {
       "useWhitelist": false,
       "useBlacklist": true,
+      "whitelistPath": "./config/whitelist.json",
+      "blacklistPath": "./config/blacklist.json",
       "minLiquidityUsd": 1000,
       "minPoolBalanceToken": 100,
       "requireMetadata": true,
@@ -81,28 +110,27 @@
       "maxPendingTx": 5
     }
   },
-  "jitoMev": {
-    "enabled": false,
-    "tipPercent": 80
-  },
   "notification": {
     "telegram": {
-      "enabled": false,
+      "enabled": true,
+      "botToken": "7368714077:AAHXATYrFT8uOibqYNG6UuGWJQVAq3RyixQ",
+      "chatId": "7395950412",
       "events": {
         "startup": true,
-        "newTokenDetected": true,
-        "buyExecuted": true,
-        "sellExecuted": true,
-        "error": true
+        "shutdown": true,
+        "trade": true,
+        "error": true,
+        "position": true,
+        "performance": true,
+        "price": true,
+        "balance": true,
+        "alert": true
       }
     }
   },
-  "logging": {
-    "level": "info",
-    "console": true,
-    "file": true,
-    "filename": "logs/bot.log",
-    "maxFiles": 5,
-    "maxSize": "10m"
+  "jitoMev": {
+    "enabled": false,
+    "tipPercent": 80,
+    "authKeypair": null
   }
-} 
+}

@@ -34,8 +34,8 @@
 
 import os from 'node:os';
 import { EventEmitter } from 'node:events';
-import logger from '../../core/logger';
-import { TradeResult } from '../../core/types';
+import logger from '../../core/logger.js';
+import { TradeResult } from '../../core/types.js';
 
 // 模块名称
 // 就像船舶控制中心的门牌

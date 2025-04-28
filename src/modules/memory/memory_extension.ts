@@ -9,10 +9,10 @@
  * - 提供一系列船舱使用的最佳实践
  */
 
-import memoryOptimizer, { MemoryConsumer } from './memory_optimizer';
-import logger from '../../core/logger';
-import traderModule from '../trader/trader_module';
-import rpcService from '../../services/rpc_service';
+import memoryOptimizer, { MemoryConsumer } from './memory_optimizer.js';
+import logger from '../../core/logger.js';
+import traderModule from '../trader/trader_module.js';
+import rpcService from '../../services/rpc_service.js';
 import { EventEmitter } from 'node:events';
 
 // 模块名称

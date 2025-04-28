@@ -10,10 +10,10 @@
 
 import os from 'node:os';
 import * as v8 from 'node:v8';
-import filesize from 'filesize';
+import { filesize } from 'filesize';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import logger from '../core/logger';
+import logger from '../core/logger.js';
 
 // 工具名称常量
 const MODULE_NAME = 'MemoryReport';
@@ -54,7 +54,7 @@ interface MemoryStats {
  * @returns 格式化后的字符串
  */
 function formatSize(size: number): string {
-  return filesize.filesize(size) as string;
+  return filesize(size) as string;
 }
 
 /**
@@ -221,6 +221,6 @@ async function main() {
 }
 
 // 执行主函数
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 } 

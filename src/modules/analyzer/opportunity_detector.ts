@@ -34,10 +34,10 @@
  */
 
 import { PublicKey } from '@solana/web3.js';
-import logger from '../../core/logger';
-import { PoolInfo, TokenInfo, TradingOpportunity } from '../../core/types';
-import tokenValidator from './token_validator';
-import appConfig from '../../core/config';
+import logger from '../../core/logger.js';
+import { PoolInfo, TokenInfo, TradingOpportunity } from '../../core/types.js';
+import tokenValidator from './token_validator.js';
+import appConfig from '../../core/config.js';
 
 // 模块名称
 // 就像渔船上这个系统的专属编号
@@ -113,8 +113,8 @@ export class OpportunityDetector {
     try {
       // 从配置中加载设置
       // 就像读取船长的捕捞标准手册
-      this.minLiquidityUsd = appConfig.security.tokenValidation.minLiquidityUsd || 1000;
-      this.maxInitialPriceUsd = appConfig.security.tokenValidation.maxInitialPriceUsd || 0.01;
+      this.minLiquidityUsd = appConfig!.security.tokenValidation.minLiquidityUsd || 1000;
+      this.maxInitialPriceUsd = appConfig!.security.tokenValidation.maxInitialPriceUsd || 0.01;
       
       // 记录配置加载信息
       // 就像在日志中记录使用的评估标准
@@ -250,7 +250,7 @@ export class OpportunityDetector {
         poolInfo,
         baseToken,
         targetToken,
-        appConfig.trading.buyStrategy.maxAmountPerTrade
+        0
       );
       
       // 计算利润百分比

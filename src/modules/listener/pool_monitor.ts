@@ -34,10 +34,10 @@
  */
 
 import { EventEmitter } from 'node:events';
-import { appConfig } from '../../core/config';
-import logger from '../../core/logger';
-import rpcService from '../../services/rpc_service';
-import { DexType, PoolInfo, EventType, SystemEvent } from '../../core/types';
+import appConfig from '../../core/config.js';
+import logger from '../../core/logger.js';
+import rpcService from '../../services/rpc_service.js';
+import { DexType, PoolInfo, EventType, SystemEvent } from '../../core/types.js';
 import { PublicKey, AccountInfo } from '@solana/web3.js';
 
 // 模块名称
@@ -137,9 +137,20 @@ class PoolMonitor extends EventEmitter {
     // 初始化事件发射器
     // 就像安装基础通讯系统
     super();
+    // 构造函数不再直接访问appConfig，延迟到initConfig
+    this.config = {
+      checkInterval: 0,
+      dexes: []
+    };
+  }
 
-    // 从配置中加载监控设置
-    // 就像根据任务手册设置探测参数
+  /**
+   * 初始化配置（需在appConfig初始化后调用）
+   */
+  public initConfig(): void {
+    if (!appConfig || !appConfig.dexes || !appConfig.monitoring) {
+      throw new Error('appConfig未初始化或缺少必要字段');
+    }
     const enabledDexes = appConfig.dexes
       .filter(dex => dex.enabled)
       .map(dex => ({
@@ -147,15 +158,9 @@ class PoolMonitor extends EventEmitter {
         programId: dex.programId,
         enabled: dex.enabled
       }));
-    
-    this.config = {
-      checkInterval: appConfig.monitoring.poolMonitorInterval,
-      dexes: enabledDexes
-    };
-
-    // 记录初始化完成
-    // 就像在航行日志中记录设备安装完毕
-    logger.info('交易池监听器初始化完成', MODULE_NAME, {
+    this.config.checkInterval = appConfig.monitoring.poolMonitorInterval;
+    this.config.dexes = enabledDexes;
+    logger.info('交易池监听器配置初始化完成', MODULE_NAME, {
       enabledDexes: this.config.dexes.map(dex => dex.name),
       checkInterval: this.config.checkInterval
     });
@@ -400,12 +405,12 @@ class PoolMonitor extends EventEmitter {
    */
   private async processTransactionWithPool(dexName: DexType, signature: string): Promise<void> {
     try {
-      // 获取交易详情
-      const connection = rpcService.getConnection();
-      if (!connection) {
-        throw new Error('RPC连接未初始化');
-      }
-      const txInfo = await connection.getParsedTransaction(signature);
+      const connection = await rpcService.getConnection();
+      // 使用 getTransaction 替代 getParsedTransaction，并添加必要的配置
+      const txInfo = await connection.getTransaction(signature, {
+        maxSupportedTransactionVersion: 0,
+        commitment: 'confirmed'
+      });
       
       if (!txInfo) {
         logger.warn(`无法获取交易 ${signature} 的详情`, MODULE_NAME);
@@ -417,9 +422,16 @@ class PoolMonitor extends EventEmitter {
       // 实际会更复杂，可能需要分析指令数据、账户等
       
       // 示例: 简单提取相关账户
-      const accounts = txInfo.transaction.message.instructions
-        .flatMap(ix => ('accounts' in ix) ? ix.accounts : [])
-        .filter(acc => !!acc);
+      const message = txInfo.transaction.message;
+      const accounts = ('instructions' in message 
+        ? message.instructions
+        : message.compiledInstructions
+      ).flatMap(ix => {
+        if ('accounts' in ix) {
+          return ix.accounts;
+        }
+        return [];
+      }).filter((acc): acc is string => typeof acc === 'string' && acc.length > 0);
       
       // 可能需要进一步查询这些账户以确认是否为池子
       if (accounts.length > 0) {
@@ -521,7 +533,11 @@ class PoolMonitor extends EventEmitter {
           dex: this.getDexType(dexName),
           tokenAMint: new PublicKey('11111111111111111111111111111111'), // 示例，实际需要从数据中解析
           tokenBMint: new PublicKey('11111111111111111111111111111111'), // 示例，实际需要从数据中解析
-          createdAt: Date.now(),
+          tokenA: '11111111111111111111111111111111', // 示例，实际需要从数据中解析
+          tokenB: '11111111111111111111111111111111', // 示例，实际需要从数据中解析
+          liquidity: '0', // 初始流动性为0
+          volume24h: '0', // 初始24小时交易量为0
+          timestamp: Date.now(),
           firstDetectedAt: Date.now()
         };
         
@@ -670,7 +686,11 @@ class PoolMonitor extends EventEmitter {
               dex: this.getDexType(dex.name),
               tokenAMint: new PublicKey('11111111111111111111111111111111'), // 示例，实际需要从数据中解析
               tokenBMint: new PublicKey('11111111111111111111111111111111'), // 示例，实际需要从数据中解析
-              createdAt: Date.now() - 3600000, // 假设一小时前创建，实际应从数据中解析
+              tokenA: '11111111111111111111111111111111', // 示例，实际需要从数据中解析
+              tokenB: '11111111111111111111111111111111', // 示例，实际需要从数据中解析
+              liquidity: '0', // 初始流动性为0
+              volume24h: '0', // 初始24小时交易量为0
+              timestamp: Date.now() - 3600000, // 假设一小时前创建，实际应从数据中解析
               firstDetectedAt: Date.now()
             };
             
@@ -763,6 +783,37 @@ class PoolMonitor extends EventEmitter {
       default:
         throw new Error(`不支持的DEX类型: ${name}`);
     }
+  }
+
+  /**
+   * 更新池子信息
+   * @param poolKey 池子键值（格式：DEX:地址）
+   * @param updates 要更新的信息
+   */
+  public updatePoolInfo(poolKey: string, updates: Partial<PoolInfo>): void {
+    const pool = this.knownPools.get(poolKey);
+    if (!pool) {
+      logger.warn(`尝试更新不存在的池子: ${poolKey}`, MODULE_NAME);
+      return;
+    }
+
+    // 更新池子信息
+    const updatedPool = { ...pool, ...updates };
+    this.knownPools.set(poolKey, updatedPool);
+
+    // 发出池子更新事件
+    const event: SystemEvent = {
+      type: EventType.POOL_UPDATED,
+      data: updatedPool,
+      timestamp: Date.now()
+    };
+
+    this.emit('poolUpdated', updatedPool);
+    this.emit('event', event);
+
+    logger.debug(`池子信息已更新: ${poolKey}`, MODULE_NAME, {
+      updates: Object.keys(updates)
+    });
   }
 }
 

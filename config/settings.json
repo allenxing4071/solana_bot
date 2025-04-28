@@ -43,9 +43,19 @@
     "blacklistPath": "./config/blacklist.json"
   },
   "notifications": {
-    "enableTelegram": false,
-    "telegramBotToken": "",
-    "telegramChatId": ""
+    "enableTelegram": true,
+    "telegramBotToken": "7368714077:AAHXATYrFT8uOibqYNG6UuGWJQVAq3RyixQ",
+    "telegramChatId": "7395950412",
+    "events": {
+      "startup": true,
+      "shutdown": true,
+      "newToken": true,
+      "trade": true,
+      "error": true,
+      "warning": true,
+      "profitTarget": true,
+      "stopLoss": true
+    }
   },
   "mev": {
     "useJitoBundle": false,

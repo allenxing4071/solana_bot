@@ -6,22 +6,22 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'node:path';
-import logger from '../core/logger';
-import appConfig from '../core/config';
-import tokenRoutes from './routes/token_routes';
-import systemRoutes from './routes/system_routes';
-import poolRoutes from './routes/pool_routes';
-import transactionRoutes from './routes/transaction_routes';
-import settingsRoutes from './routes/settings_routes';
-import statsRoutes from './routes/stats_routes';
-import setupAPIMonitorRoute from './api-monitor'; // 使用TypeScript版本的API监控模块
+import logger from '../core/logger.js';
+import appConfig from '../core/config.js';
+import tokenRoutes from './routes/token_routes.js';
+import systemRoutes from './routes/system_routes.js';
+import poolRoutes from './routes/pool_routes.js';
+import transactionRoutes from './routes/transaction_routes.js';
+import settingsRoutes from './routes/settings_routes.js';
+import statsRoutes from './routes/stats_routes.js';
+import setupAPIMonitorRoute from './api-monitor.js'; // 使用TypeScript版本的API监控模块
 import fs from 'fs';
 
 // 模块名称
 const MODULE_NAME = 'ApiServer';
 
 // 获取API端口，默认为8081
-const DEFAULT_PORT = 8081;  // 使用8081端口
+const DEFAULT_PORT = (appConfig as any)?.api?.port || 3000;
 
 /**
  * API服务器类
@@ -291,12 +291,12 @@ class ApiServer {
 }
 
 // 创建并导出单例
-const apiServer = new ApiServer(8081);
+const apiServer = new ApiServer(3000);
 
 export default apiServer;
 
 // 如果直接运行此文件，则启动服务器
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   apiServer.start()
     .then(() => {
       console.log(`API服务器已启动，监听端口 ${process.env.API_PORT || DEFAULT_PORT}`);

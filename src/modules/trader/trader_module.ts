@@ -36,8 +36,8 @@
 
 import { EventEmitter } from 'node:events';
 import { PublicKey } from '@solana/web3.js';
-import logger from '../../core/logger';
-import { EventType } from '../../core/types';
+import logger from '../../core/logger.js';
+import { EventType } from '../../core/types.js';
 import type { 
   TokenInfo, 
   PoolInfo, 
@@ -45,22 +45,22 @@ import type {
   TradeResult, 
   TradingOpportunity,
   SystemEvent
-} from '../../core/types';
-import opportunityDetector from '../analyzer/opportunity_detector';
-import strategyManager from './strategy_manager';
-import traderExecutor from './trader_executor';
-import appConfig from '../../core/config';
-import tokenValidator from '../../modules/analyzer/token_validator';
+} from '../../core/types.js';
+import opportunityDetector from '../analyzer/opportunity_detector.js';
+import strategyManager from './strategy_manager.js';
+import traderExecutor from './trader_executor.js';
+import appConfig from '../../core/config.js';
+import tokenValidator from '../../modules/analyzer/token_validator.js';
 import type { Transaction } from '@solana/web3.js';
-import { DexType } from '../../core/types';
+import { DexType } from '../../core/types.js';
 
 // 导入接口，注释掉找不到的模块，后续需要创建这些接口
-// import type { WalletManager } from '../../modules/wallet/wallet_manager';
-// import type { TransactionBuilder } from '../../modules/transaction/transaction_builder';
-// import type { RiskManager } from '../../modules/risk/risk_manager';
-// import type { OpportunityDetector } from '../analyzer/opportunity_detector';
-// import type { StrategyManager } from './strategy_manager';
-// import type { TokenValidator } from '../../modules/analyzer/token_validator';
+// import type { WalletManager } from '../../modules/wallet/wallet_manager.js';
+// import type { TransactionBuilder } from '../../modules/transaction/transaction_builder.js';
+// import type { RiskManager } from '../../modules/risk/risk_manager.js';
+// import type { OpportunityDetector } from '../analyzer/opportunity_detector.js';
+// import type { StrategyManager } from './strategy_manager.js';
+// import type { TokenValidator } from '../../modules/analyzer/token_validator.js';
 
 // 定义本地接口，替代找不到的模块接口
 interface WalletManager {
@@ -175,19 +175,29 @@ export class TraderModule extends EventEmitter {
    */
   constructor() {
     // 初始化事件发射器
-    // 就像安装与其他部门通信的设备
     super();
     
     // 初始化属性
-    // 就像设置工作状态为待命
     this.isRunning = false;
     this.isExecuting = false;
     
-    // 设置价格检查间隔
-    // 就像设定检查鱼市价格的时间表
-    this.batchProcessInterval = appConfig.monitoring.priceCheckInterval || 5000;
+    // 构造函数不再直接访问appConfig，延迟到initConfig
+    this.batchProcessInterval = 1000;
     
     logger.info('交易模块已创建', MODULE_NAME);
+  }
+  
+  /**
+   * 初始化配置（需在appConfig初始化后调用）
+   */
+  public initConfig(): void {
+    if (!appConfig || !appConfig.monitoring) {
+      throw new Error('appConfig未初始化或缺少monitoring配置');
+    }
+    this.batchProcessInterval = appConfig.monitoring.priceCheckInterval || 5000;
+    logger.info('交易模块配置初始化完成', MODULE_NAME, {
+      batchProcessInterval: this.batchProcessInterval
+    });
   }
   
   /**
@@ -1148,7 +1158,11 @@ export class TraderModule extends EventEmitter {
       dex: DexType.RAYDIUM,
       tokenAMint: new PublicKey('11111111111111111111111111111111'),
       tokenBMint: new PublicKey('11111111111111111111111111111111'),
-      createdAt: Date.now(),
+      tokenA: '11111111111111111111111111111111',
+      tokenB: '11111111111111111111111111111111',
+      liquidity: '0',
+      volume24h: '0',
+      timestamp: Date.now(),
       firstDetectedAt: Date.now()
     };
   }

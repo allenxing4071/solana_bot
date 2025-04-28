@@ -5,10 +5,10 @@
 
 import { Request, Response } from 'express';
 import { PublicKey } from '@solana/web3.js';
-import poolMonitor from '../../modules/listener/pool_monitor';
-import type { DexType, PoolInfo } from '../../core/types';
-import logger from '../../core/logger';
-import appConfig from '../../core/config';
+import poolMonitor from '../../modules/listener/pool_monitor.js';
+import type { DexType, PoolInfo } from '../../core/types.js';
+import logger from '../../core/logger.js';
+import appConfig from '../../core/config.js';
 
 // 模块名称
 const MODULE_NAME = 'PoolController';

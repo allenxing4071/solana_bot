@@ -9,8 +9,8 @@
  * - 方便系统其他部分引用和使用
  */
 
-import memoryOptimizer, { MemoryOptimizer, MemoryOptimizerConfig, MemoryStats, MemoryConsumer } from './memory_optimizer';
-import memoryExtension, { MemoryExtension, MemoryExtensionConfig } from './memory_extension';
+import memoryOptimizer, { MemoryOptimizer, MemoryOptimizerConfig, MemoryStats, MemoryConsumer } from './memory_optimizer.js';
+import memoryExtension, { MemoryExtension, MemoryExtensionConfig } from './memory_extension.js';
 
 // 导出类型定义
 export {

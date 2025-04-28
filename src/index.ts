@@ -34,19 +34,24 @@ dotenv.config();
 import { Connection, PublicKey } from '@solana/web3.js';
 import fs from 'fs-extra';
 import path from 'node:path';
-import logger from './core/logger';
-import appConfig from './core/config';
-import rpcService from './services/rpc_service';
-import tokenValidator from './modules/analyzer/token_validator';
-import poolMonitor from './modules/listener/pool_monitor';
-import riskManager from './modules/risk/risk_manager';
-import performanceMonitor from './modules/monitor/performance_monitor';
-import apiServer from './api/server';
-import { EventType } from './core/types';
-import type { SystemEvent, PoolInfo } from './core/types';
-import type { Service, RPCService, RiskManager, PerformanceMonitor } from './core/service';
-import traderModule from './modules/trader/trader_module';
-import { safeOn } from './core/typed_events';
+import logger from './core/logger.js';
+import { updateLoggerConfig } from './core/logger.js';
+import appConfig from './core/config.js';
+import { waitForConfigReady, initAppConfig } from './core/config.js';
+import type { AppConfig } from './core/config.js';
+import rpcService from './services/rpc_service.js';
+import tokenValidator from './modules/analyzer/token_validator.js';
+import poolMonitor from './modules/listener/pool_monitor.js';
+import riskManager from './modules/risk/risk_manager.js';
+import performanceMonitor from './modules/monitor/performance_monitor.js';
+import apiServer from './api/server.js';
+import { EventType } from './core/types.js';
+import type { SystemEvent, PoolInfo } from './core/types.js';
+import type { Service, RPCService, RiskManager, PerformanceMonitor } from './core/service.js';
+import traderModule from './modules/trader/trader_module.js';
+import { safeOn } from './core/typed_events.js';
+import { initializeDatabaseSystem, cleanupDatabase } from './scripts/init_database.js';
+import { telegramService } from './services/telegram.js';
 
 // 定义警报接口
 interface Alert {
@@ -64,7 +69,7 @@ const asRiskManager = (obj: unknown): RiskManager => obj as RiskManager;
 const asPerformanceMonitor = (obj: unknown): PerformanceMonitor => obj as PerformanceMonitor;
 
 // 程序名称
-const MODULE_NAME = 'App';
+const MODULE_NAME = 'Main';
 
 // 系统状态常量
 enum SystemStatus {
@@ -79,6 +84,9 @@ enum SystemStatus {
 // 是否处于仅监听模式
 const LISTEN_ONLY_MODE = process.argv.includes('--listen-only') || 
                          process.env.LISTEN_ONLY === 'true';
+
+// 确保配置对象已初始化
+const config = appConfig as AppConfig;
 
 /**
  * 应用程序类
@@ -211,73 +219,79 @@ class Application {
 
   /**
    * 启动应用程序
+   * 初始化所有模块并开始业务逻辑
+   * 
+   * 【比喻解释】
+   * 这就像渔船的启航过程：
+   * - 检查所有系统状态（初始化检查）
+   * - 启动各个功能模块（系统启动）
+   * - 开始正常航行（业务逻辑）
+   * - 处理可能的异常情况（错误处理）
    */
   async start(): Promise<void> {
     try {
-      this.setSystemStatus(SystemStatus.STARTING);
-      logger.info('正在启动Solana MEV机器人...', MODULE_NAME);
-      
-      if (LISTEN_ONLY_MODE) {
-        logger.info('仅监听模式已启用 - 只会监听新池子/代币，不会执行交易', MODULE_NAME);
-      }
-      
-      // 初始化和启动各系统模块
+      // 等待配置就绪
+      await waitForConfigReady();
+      logger.info('配置加载完成', MODULE_NAME);
+
+      // 更新日志配置
+      updateLoggerConfig(config);
+      logger.info('日志配置已更新', MODULE_NAME);
+
+      // 初始化数据库
+      await initializeDatabaseSystem();
+      logger.info('数据库初始化完成', MODULE_NAME);
+
+      // 初始化所有模块
       await this.initializeModules();
-      
-      // 启动业务逻辑
+      logger.info('所有模块初始化完成', MODULE_NAME);
+
+      // 设置系统状态为运行中
+      this.setSystemStatus(SystemStatus.RUNNING);
+      logger.info('系统启动完成，开始运行', MODULE_NAME);
+
+      // 开始业务逻辑
       await this.startBusinessLogic();
       
-      this.setSystemStatus(SystemStatus.RUNNING);
-      logger.info('Solana MEV机器人启动完成', MODULE_NAME);
     } catch (error) {
+      logger.error('启动过程中发生错误', MODULE_NAME, { error });
       this.setSystemStatus(SystemStatus.ERROR);
-      logger.error('启动失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   }
 
   /**
-   * 优雅关闭应用程序
-   * 按相反顺序停止所有系统模块
+   * 关闭应用程序
+   * 优雅地停止所有模块
    * 
    * 【比喻解释】
-   * 这就像渔船的返航程序：
-   * - 有序收起各种设备（按顺序关闭模块）
-   * - 确保所有系统安全关闭（状态检查）
-   * - 最终安全停泊（完成关闭）
-   * 
-   * @returns {Promise<void>} - 关闭完成的信号
+   * 这就像渔船的返航过程：
+   * - 通知所有系统准备关闭（关闭信号）
+   * - 等待所有操作完成（优雅关闭）
+   * - 清理所有资源（资源释放）
+   * - 记录关闭状态（状态更新）
    */
   async shutdown(): Promise<void> {
     try {
+      // 设置系统状态为停止中
       this.setSystemStatus(SystemStatus.STOPPING);
-      logger.info('正在关闭Solana MEV机器人...', MODULE_NAME);
-      
-      // 关闭各个模块
-      const serviceModules = [
-        poolMonitor,
-        traderModule,
-        performanceMonitor,
-        apiServer
-      ];
-      
-      for (const service of serviceModules) {
-        const serviceObj = asService(service);
-        if (serviceObj.start) {
-          try {
-            await serviceObj.start();
-            logger.info(`已关闭服务: ${service.constructor.name}`, MODULE_NAME);
-          } catch (error) {
-            logger.error(`关闭服务失败: ${service.constructor.name}`, MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
-          }
-        }
-      }
-      
+      logger.info('开始关闭系统', MODULE_NAME);
+
+      // 关闭所有模块
+      await this.initializeModules(true);
+      logger.info('所有模块已关闭', MODULE_NAME);
+
+      // 清理数据库连接
+      await cleanupDatabase();
+      logger.info('数据库连接已关闭', MODULE_NAME);
+
+      // 设置系统状态为已停止
       this.setSystemStatus(SystemStatus.STOPPED);
-      logger.info('Solana MEV机器人已关闭', MODULE_NAME);
+      logger.info('系统已完全关闭', MODULE_NAME);
+      
     } catch (error) {
+      logger.error('关闭过程中发生错误', MODULE_NAME, { error });
       this.setSystemStatus(SystemStatus.ERROR);
-      logger.error('关闭失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   }
@@ -324,7 +338,7 @@ class Application {
    * 初始化系统模块
    * 按顺序初始化各个功能模块
    */
-  private async initializeModules(): Promise<void> {
+  private async initializeModules(cleanup: boolean = false): Promise<void> {
     try {
       logger.info('开始初始化系统模块...', MODULE_NAME);
 
@@ -378,6 +392,10 @@ class Application {
         logger.info('API服务器启动完成', MODULE_NAME);
       }
 
+      // 初始化 Telegram 服务
+      await telegramService.initialize();
+      logger.info('Telegram 服务初始化完成', MODULE_NAME);
+
       logger.info('所有系统模块初始化完成', MODULE_NAME);
     } catch (error) {
       logger.error('系统模块初始化失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
@@ -423,10 +441,13 @@ class Application {
 const app = new Application();
 
 // 启动应用程序并处理错误
-app.start().catch(error => {
-  logger.error('应用程序启动失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
-  process.exit(1);
-});
+(async () => {
+  await initAppConfig();
+  app.start().catch(error => {
+    logger.error('应用程序启动失败', MODULE_NAME, { error: error instanceof Error ? error.message : String(error) });
+    process.exit(1);
+  });
+})();
 
 // 导出应用程序实例
 // 方便其他模块引用

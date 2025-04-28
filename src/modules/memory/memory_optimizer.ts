@@ -18,7 +18,7 @@
 
 import * as v8 from 'v8';
 import EventEmitter from 'node:events';
-import logger from '../../core/logger';
+import logger from '../../core/logger.js';
 import os from 'os';
 
 // 模块名称

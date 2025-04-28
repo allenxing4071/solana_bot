@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import logger from '../../core/logger';
+import logger from '../../core/logger.js';
 import * as os from 'node:os';
 import * as v8 from 'node:v8';
 

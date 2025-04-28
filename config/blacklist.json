@@ -16,5 +16,10 @@
       "addedAt": "2024-04-23T00:00:00Z"
   }
   ],
-  "creators": []
+  "creators": [],
+  "scamTokens": [
+    "scamToken1",
+    "scamToken2",
+    "scamToken3"
+  ]
 }

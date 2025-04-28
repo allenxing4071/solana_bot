@@ -4,33 +4,33 @@
  */
 
 import type { PublicKey } from '@solana/web3.js';
+import type { Connection } from '@solana/web3.js';
 
 /**
  * DEX交易所类型
  */
 export enum DexType {
-  RAYDIUM = 'raydium',
-  ORCA = 'orca',
-  JUPITER = 'jupiter'
+  RAYDIUM = 'RAYDIUM',
+  ORCA = 'ORCA',
+  JUPITER = 'JUPITER'
 }
 
 /**
  * 交易池信息接口
  */
 export interface PoolInfo {
-  address: PublicKey;          // 池子地址
-  dex: DexType;                // 所属DEX
-  tokenAMint: PublicKey;       // 代币A的Mint地址
-  tokenBMint: PublicKey;       // 代币B的Mint地址
-  tokenASymbol?: string;       // 代币A的符号
-  tokenBSymbol?: string;       // 代币B的符号
-  lpMint?: PublicKey;          // LP代币的Mint地址
-  createdAt: number;           // 创建时间
-  firstDetectedAt: number;     // 首次检测到时间
-  reserves?: {               // 储备金额
-    tokenA?: bigint;
-    tokenB?: bigint;
-  };
+  address: PublicKey;           // 池子地址
+  tokenAMint: PublicKey;        // Token A 的 Mint 地址
+  tokenBMint: PublicKey;        // Token B 的 Mint 地址
+  tokenASymbol?: string;        // Token A 的符号
+  tokenBSymbol?: string;        // Token B 的符号
+  tokenA: string;              // Token A 的地址
+  tokenB: string;              // Token B 的地址
+  dex: DexType;                // DEX 类型
+  liquidity: string;           // 流动性
+  volume24h: string;           // 24小时交易量
+  timestamp: number;           // 时间戳
+  firstDetectedAt: number;     // 首次检测时间
 }
 
 /**
@@ -53,11 +53,20 @@ export interface TokenInfo {
  * 代币元数据接口
  */
 export interface TokenMetadata {
-  name: string;                // 名称
-  symbol: string;              // 符号
-  uri?: string;                // 元数据URI
-  image?: string;              // 图片URL
-  description?: string;        // 描述
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  logo?: string;
+  totalSupply?: string;
+  marketCap?: string;
+  volume24h?: string;
+  holders?: number;
+  createdAt: string;
+  updatedAt?: string;
+  isWhitelisted?: boolean;
+  isBlacklisted?: boolean;
+  riskScore?: number;
 }
 
 /**
@@ -184,14 +193,14 @@ export enum SystemStatus {
 /**
  * 事件类型枚举
  */
-export const enum EventType {
-  POOL_CREATED = 'pool_created',
-  NEW_POOL_DETECTED = 'new_pool_detected',
-  TRADE_EXECUTED = 'trade_executed',
-  POSITION_UPDATED = 'position_updated',
-  PRICE_UPDATED = 'price_updated',
-  ERROR_OCCURRED = 'error_occurred',
-  OPPORTUNITY_DETECTED = 'opportunity_detected'
+export enum EventType {
+  TRADE_EXECUTED = 'TRADE_EXECUTED',       // 交易执行
+  POSITION_UPDATED = 'POSITION_UPDATED',   // 持仓更新
+  ERROR_OCCURRED = 'ERROR_OCCURRED',       // 错误发生
+  NEW_POOL_DETECTED = 'NEW_POOL_DETECTED', // 新池子检测
+  PRICE_UPDATED = 'PRICE_UPDATED',         // 价格更新
+  OPPORTUNITY_DETECTED = 'OPPORTUNITY_DETECTED', // 机会检测
+  POOL_UPDATED = 'POOL_UPDATED'            // 池子更新
 }
 
 /**
@@ -210,8 +219,8 @@ export type EventData =
  * 系统事件接口
  */
 export interface SystemEvent {
-  type: string;
-  data: EventData;
+  type: EventType;
+  data: any;
   timestamp: number;
 }
 
@@ -418,4 +427,87 @@ export interface AppConfig {
     tipPercent: number;
     authKeypair: string | null;
   };
+}
+
+/**
+ * 价格数据类型
+ */
+export interface PriceData {
+  price: string;
+  priceUsd: string;
+  volume24h: string;
+  timestamp: number;
+  source: string;
+}
+
+/**
+ * 流动性数据类型
+ */
+export interface LiquidityData {
+  totalLiquidity: string;
+  liquidityUsd: string;
+  poolAddress: string;
+  dex: DexType;
+  timestamp: number;
+}
+
+/**
+ * 交易数据类型
+ */
+export interface TransactionData {
+  id: string;
+  signature: string;
+  type: string;
+  status: string;
+  timestamp: number;
+  amount: string;
+  price: string;
+  value: string;
+  fee: string;
+  route: string;
+  inputToken: string;
+  outputToken: string;
+  inputAmount: string;
+  outputAmount: string;
+  slippage: string;
+  errorReason?: string;
+}
+
+/**
+ * 服务接口
+ */
+export interface Service {
+  start(): Promise<void>;
+  stop(): Promise<void>;
+  isRunning(): boolean;
+}
+
+/**
+ * RPC服务接口
+ */
+export interface RPCService extends Service {
+  getConnection(): Promise<Connection>;
+  getLatestBlockhash(): Promise<string>;
+  sendTransaction(signedTx: any): Promise<string>;
+}
+
+/**
+ * 风险管理器接口
+ */
+export interface RiskManager extends Service {
+  evaluateRisk(tokenAddress: string): Promise<number>;
+  addToBlacklist(tokenAddress: string, reason: string): Promise<void>;
+  removeFromBlacklist(tokenAddress: string): Promise<void>;
+  addToWhitelist(tokenAddress: string): Promise<void>;
+  removeFromWhitelist(tokenAddress: string): Promise<void>;
+}
+
+/**
+ * 性能监控器接口
+ */
+export interface PerformanceMonitor extends Service {
+  getMemoryUsage(): Promise<any>;
+  getCPUUsage(): Promise<any>;
+  getNetworkUsage(): Promise<any>;
+  getSystemMetrics(): Promise<any>;
 } 

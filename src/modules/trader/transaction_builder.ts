@@ -46,10 +46,10 @@ import {
 } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import BN from 'bn.js';
-import appConfig from '../../core/config';
-import logger from '../../core/logger';
-import rpcService from '../../services/rpc_service';
-import { DexType, PoolInfo, TokenInfo } from '../../core/types';
+import appConfig from '../../core/config.js';
+import logger from '../../core/logger.js';
+import rpcService from '../../services/rpc_service.js';
+import { DexType, PoolInfo, TokenInfo } from '../../core/types.js';
 
 // 模块名称
 // 就像渔船上这个工坊的船舱编号
@@ -167,7 +167,7 @@ class TransactionBuilder {
     this.connection = connection;
     // 加载优先级费用配置
     // 就像设置船只加速的燃料配置
-    this.priorityFee = appConfig.trading.buyStrategy.priorityFee;
+    this.priorityFee = appConfig!.trading.buyStrategy.priorityFee;
     
     logger.info('交易构建器初始化完成', MODULE_NAME);
   }

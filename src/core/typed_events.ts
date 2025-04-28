@@ -4,8 +4,8 @@
  */
 
 import { EventEmitter } from 'node:events';
-import type { Service } from './service';
-import logger from './logger';
+import type { Service } from './service.js';
+import logger from './logger.js';
 
 const MODULE_NAME = 'TypedEvents';
 

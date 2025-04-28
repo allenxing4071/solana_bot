@@ -12,8 +12,8 @@ import os from 'node:os';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import * as v8 from 'node:v8';
-import filesize from 'filesize';
-import logger from '../core/logger';
+import { filesize } from 'filesize';
+import logger from '../core/logger.js';
 
 // 工具名称
 const TOOL_NAME = 'MemoryMonitor';
@@ -444,7 +444,7 @@ class MemoryMonitor {
  * @returns 格式化后的字符串
  */
 function formatSize(size: number): string {
-  return filesize.filesize(size) as string;
+  return filesize(size) as string;
 }
 
 /**
@@ -523,6 +523,6 @@ if (!global.gc && process.argv.indexOf('--expose-gc') === -1) {
 }
 
 // 执行主函数
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 } 

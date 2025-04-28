@@ -30,10 +30,10 @@
 import { PublicKey } from '@solana/web3.js';
 import fs from 'fs-extra';
 import path from 'path';
-import appConfig from '../../core/config';
-import logger from '../../core/logger';
-import rpcService from '../../services/rpc_service';
-import type { TokenInfo } from '../../core/types';
+import appConfig from '../../core/config.js';
+import logger from '../../core/logger.js';
+import rpcService from '../../services/rpc_service.js';
+import type { TokenInfo } from '../../core/types.js';
 
 const MODULE_NAME = 'TokenValidator';
 
@@ -190,9 +190,9 @@ class TokenValidator {
   async loadTokenLists(): Promise<void> {
     try {
       // 加载白名单
-      const whitelistPath = appConfig.security.tokenValidation.whitelistPath;
+      const whitelistPath = appConfig!.security.tokenValidation.whitelistPath;
       // 加载黑名单
-      const blacklistPath = appConfig.security.tokenValidation.blacklistPath;
+      const blacklistPath = appConfig!.security.tokenValidation.blacklistPath;
 
       logger.info('开始加载代币列表', MODULE_NAME, {
         whitelistPath,
@@ -390,7 +390,7 @@ class TokenValidator {
     };
     
     // 1. 白名单检查
-    if (appConfig.security.tokenValidation.useWhitelist) {
+    if (appConfig!.security.tokenValidation.useWhitelist) {
       const isWhitelisted = this.whitelist.has(mintAddress);
       result.isWhitelisted = isWhitelisted;
       
@@ -403,7 +403,7 @@ class TokenValidator {
     }
     
     // 2. 黑名单检查
-    if (appConfig.security.tokenValidation.useBlacklist) {
+    if (appConfig!.security.tokenValidation.useBlacklist) {
       // 2.1 直接黑名单
       if (this.blacklist.has(mintAddress)) {
         const blacklistEntry = this.blacklist.get(mintAddress);
@@ -444,7 +444,7 @@ class TokenValidator {
     // 3. 流动性检查
     if (liquidityUsd !== undefined) {
       const minLiquidity = this.tokenFilters?.minLiquidityUsd || 
-                          appConfig.security.tokenValidation.minLiquidityUsd;
+                          appConfig!.security.tokenValidation.minLiquidityUsd;
       
       if (liquidityUsd < minLiquidity) {
         result.isValid = false;
@@ -454,7 +454,7 @@ class TokenValidator {
     }
     
     // 4. 元数据检查
-    if (appConfig.security.tokenValidation.requireMetadata) {
+    if (appConfig!.security.tokenValidation.requireMetadata) {
       // 如果没有元数据，尝试获取
       if (!token.metadata && (token.metadata === undefined)) {
         try {

@@ -6,8 +6,8 @@
 import express from 'express';
 import * as os from 'node:os';
 import * as v8 from 'node:v8';
-import logger from '../../core/logger';
-import * as systemController from '../controllers/system_controller';
+import logger from '../../core/logger.js';
+import * as systemController from '../controllers/system_controller.js';
 
 const router = express.Router();
 const MODULE_NAME = 'SystemApi';

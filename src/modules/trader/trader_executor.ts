@@ -47,11 +47,11 @@ import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { Buffer } from 'buffer';
 import BN from 'bn.js';
 import bs58 from 'bs58';
-import logger from '../../core/logger';
-import rpcService from '../../services/rpc_service';
-import { transactionBuilder } from './transaction_builder';
-import type { TokenInfo, PoolInfo, TradeResult, TradingOpportunity } from '../../core/types';
-import appConfig from '../../core/config';
+import logger from '../../core/logger.js';
+import rpcService from '../../services/rpc_service.js';
+import { transactionBuilder } from './transaction_builder.js';
+import type { TokenInfo, PoolInfo, TradeResult, TradingOpportunity } from '../../core/types.js';
+import appConfig from '../../core/config.js';
 
 // 模块名称
 // 就像捕捞行动中心的标识牌
@@ -132,10 +132,10 @@ export class TraderExecutor {
     
     // 从配置中加载交易参数
     // 就像查看捕捞手册中的标准规则
-    this.maxRetries = appConfig.trading.txRetryCount;
-    this.confirmTimeout = appConfig.trading.txConfirmTimeout;
-    this.priorityFeeEnabled = appConfig.trading.buyStrategy.priorityFee.enabled;
-    this.maxSlippageBps = appConfig.trading.buyStrategy.maxSlippage * 100; // 转换为基点(1% = 100bps)
+    this.maxRetries = appConfig!.trading.txRetryCount;
+    this.confirmTimeout = appConfig!.trading.txConfirmTimeout;
+    this.priorityFeeEnabled = appConfig!.trading.buyStrategy.priorityFee.enabled;
+    this.maxSlippageBps = appConfig!.trading.buyStrategy.maxSlippage * 100; // 转换为基点(1% = 100bps)
     
     logger.info('交易执行器初始化完成', MODULE_NAME);
   }
@@ -475,7 +475,7 @@ export class TraderExecutor {
    */
   private calculateBuyAmount(opportunity: TradingOpportunity): bigint {
     // 从配置获取最大交易额
-    const maxAmountPerTrade = appConfig.trading.buyStrategy.maxAmountPerTrade;
+    const maxAmountPerTrade = appConfig!.trading.buyStrategy.maxAmountPerTrade;
     
     // 根据优先级分数调整买入金额
     let adjustedAmount = maxAmountPerTrade;

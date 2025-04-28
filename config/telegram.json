@@ -1,0 +1,52 @@
+{
+  "bot": {
+    "token": "YOUR_BOT_TOKEN",
+    "chatId": "YOUR_CHAT_ID",
+    "timeout": 10000
+  },
+  "queue": {
+    "maxSize": 1000,
+    "processInterval": 1000
+  },
+  "rateLimit": {
+    "normal": {
+      "messages": 20,
+      "window": 60
+    },
+    "high": {
+      "messages": 30,
+      "window": 60
+    },
+    "urgent": {
+      "messages": 50,
+      "window": 60
+    }
+  },
+  "retry": {
+    "maxAttempts": 3,
+    "initialDelay": 5000,
+    "backoffFactor": 2
+  },
+  "notifications": {
+    "trade": {
+      "enabled": true,
+      "priority": "normal",
+      "format": "markdown"
+    },
+    "system": {
+      "enabled": true,
+      "priority": "high",
+      "format": "markdown"
+    },
+    "market": {
+      "enabled": true,
+      "priority": "normal",
+      "format": "markdown"
+    },
+    "risk": {
+      "enabled": true,
+      "priority": "high",
+      "format": "markdown"
+    }
+  }
+} 

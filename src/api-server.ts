@@ -7,8 +7,9 @@ import dotenv from 'dotenv';
 // 加载环境变量
 dotenv.config();
 
-import apiServer from './api/server';
-import logger from './core/logger';
+import apiServer from './api/server.js';
+import logger from './core/logger.js';
+import appConfig, { initAppConfig } from './core/config.js';
 
 const MODULE_NAME = 'ApiServerEntry';
 
@@ -17,12 +18,13 @@ const MODULE_NAME = 'ApiServerEntry';
  */
 async function main() {
   try {
+    await initAppConfig();
     logger.info('正在启动API服务器...', MODULE_NAME);
     
     // 启动API服务器
     await apiServer.start();
     
-    logger.info(`API服务器已成功启动，访问地址: http://localhost:8081`, MODULE_NAME);
+    logger.info(`API服务器已成功启动，访问地址: http://localhost:${(appConfig as any)?.api?.port ?? 3000}`, MODULE_NAME);
     
     // 添加进程退出处理
     process.on('SIGINT', handleShutdown);
@@ -42,7 +44,7 @@ async function handleShutdown() {
   try {
     logger.info('正在关闭API服务器...', MODULE_NAME);
     await apiServer.stop();
-    logger.info('API服务器已安全关闭', MODULE_NAME);
+    logger.info('API服务器已关闭', MODULE_NAME);
     process.exit(0);
   } catch (error) {
     logger.error('关闭API服务器时出错', MODULE_NAME, {

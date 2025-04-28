@@ -4,7 +4,7 @@
  */
 
 import { Request, Response } from 'express';
-import logger from '../../core/logger';
+import logger from '../../core/logger.js';
 
 // 模块名称
 const MODULE_NAME = 'TransactionController';

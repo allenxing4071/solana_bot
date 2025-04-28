@@ -34,14 +34,14 @@
 
 import { EventEmitter } from 'node:events';
 import { PublicKey } from '@solana/web3.js';
-import logger from '../../core/logger';
+import logger from '../../core/logger.js';
 import { 
   Position, 
   TokenInfo, 
   TradeResult, 
   TradingOpportunity 
-} from '../../core/types';
-import appConfig from '../../core/config';
+} from '../../core/types.js';
+import appConfig from '../../core/config.js';
 import fs from 'node:fs';
 import path from 'node:path';
 

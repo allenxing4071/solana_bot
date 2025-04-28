@@ -7,8 +7,8 @@ import {
   getSystemStats,
   getTransactionStats,
   getTokenStats
-} from '../controllers/stats_controller';
-import logger from '../../core/logger';
+} from '../controllers/stats_controller.js';
+import logger from '../../core/logger.js';
 
 const MODULE_NAME = 'StatsRoutes';
 const router = Router();

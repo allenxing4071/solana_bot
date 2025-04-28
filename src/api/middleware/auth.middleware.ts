@@ -4,8 +4,8 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import logger from '../../core/logger';
-import appConfig from '../../core/config';
+import logger from '../../core/logger.js';
+import appConfig from '../../core/config.js';
 
 const MODULE_NAME = 'AuthMiddleware';
 
@@ -23,7 +23,7 @@ export const authMiddleware = (
   next: NextFunction
 ): void | Response => {
   // 如果未启用认证，直接放行
-  if (!appConfig.api.enableAuth) {
+  if (!appConfig!.api.enableAuth) {
     next();
     return;
   }
@@ -41,7 +41,7 @@ export const authMiddleware = (
   }
 
   // 验证API密钥是否正确
-  if (apiKey !== appConfig.api.apiKey) {
+  if (apiKey !== appConfig!.api.apiKey) {
     logger.warn('API密钥无效', MODULE_NAME);
     return res.status(401).json({
       success: false,

@@ -5,7 +5,7 @@
 
 import * as crypto from 'crypto';
 import * as fs from 'fs';
-import logger from '../core/logger';
+import logger from '../core/logger.js';
 
 const MODULE_NAME = 'CryptoUtil';
 const ENCRYPTION_ALGORITHM = 'aes-256-cbc';

@@ -1,0 +1,272 @@
+{
+  // Network configuration for Solana connection
+  "network": {
+    // Solana 网络集群
+    "cluster": "mainnet-beta",
+    // RPC 节点 URL
+    "rpcUrl": "https://api.mainnet-beta.solana.com",
+    // WebSocket URL
+    "wsUrl": "wss://api.mainnet-beta.solana.com"
+  },
+  // Wallet settings including private key and transaction limits
+  "wallet": {
+    // 私钥（请在生产环境中通过环境变量设置）
+    "privateKey": "",
+    // 单笔交易最大金额（SOL）
+    "maxTransactionAmount": 1.0
+  },
+  // Monitoring configuration for pool and price tracking
+  "monitoring": {
+    // 资金池监控间隔（毫秒）
+    "poolMonitorInterval": 5000,
+    // 价格检查间隔（毫秒）
+    "priceCheckInterval": 2000,
+    // 健康检查间隔（毫秒）
+    "healthCheckInterval": 30000,
+    // 资金池来源
+    "poolsSources": ["raydium", "orca", "jup"],
+    // 最大并发请求数
+    "maxConcurrentRequests": 5,
+    // 重试次数
+    "retryAttempts": 3,
+    // 重试延迟（毫秒）
+    "retryDelay": 1000
+  },
+  // Trading agent limitations and settings
+  "agent": {
+    // 最大同时交易数
+    "maxSimultaneousTrades": 3,
+    // 交易超时时间（毫秒）
+    "tradeTimeout": 30000,
+    // 最大损失百分比
+    "maxLossPercentage": 2.0,
+    // 每日交易限制
+    "dailyTradeLimit": 50,
+    // 冷却期（毫秒）
+    "cooldownPeriod": 300000
+  },
+  // Trading strategies for buying and selling
+  "trading": {
+    // Buy strategy parameters
+    "buyStrategy": {
+      // 每笔交易最大金额
+      "maxAmountPerTrade": 0.1,
+      // 最大滑点
+      "maxSlippage": 0.5,
+      // 价格影响限制
+      "priceImpactLimit": 1.0,
+      // 最小流动性要求
+      "minimumLiquidity": 10000,
+      // 最大交易费用
+      "maxTransactionFee": 0.01,
+      // 启用定投
+      "enableDCA": true,
+      // 定投间隔（分钟）
+      "dcaIntervals": [5, 10, 15],
+      // 定投百分比
+      "dcaPercentages": [50, 30, 20]
+    },
+    // Sell strategy parameters
+    "sellStrategy": {
+      // 目标利润百分比
+      "profitPercentage": 2.5,
+      // 止损百分比
+      "stopLossPercentage": 1.5,
+      // 追踪止损百分比
+      "trailingStopPercentage": 1.0,
+      // 部分卖出百分比
+      "partialSellPercentage": 50,
+      // 最大持有时间（毫秒）
+      "maxHoldingTime": 3600000,
+      // 优先考虑交易量
+      "prioritizeVolume": true,
+      // 高波动性时立即卖出
+      "sellImmediatelyOnHighVolatility": true,
+      // 波动性阈值
+      "volatilityThreshold": 5.0
+    },
+    // General trading settings
+    "generalSettings": {
+      // 首选 DEX
+      "preferredDex": "raydium",
+      // 备用 DEX
+      "fallbackDex": "orca",
+      // 使用智能路由
+      "useSmartRouting": true,
+      // 燃料费优化策略
+      "gasOptimization": "balanced",
+      // 优先费用
+      "priorityFee": 0.000005,
+      // 失败时回滚
+      "revertOnFailure": true,
+      // 提交前模拟交易
+      "simulateBeforeSubmit": true,
+      // 最大重试次数
+      "maxRetries": 3
+    }
+  },
+  // Security settings for token validation and transactions
+  "security": {
+    // 代币验证
+    "tokenValidation": {
+      // 要求审计
+      "requiresAudit": false,
+      // 最小代币年龄（毫秒）
+      "minimumAge": 86400000,
+      // 最小流动性
+      "minimumLiquidity": 5000,
+      // 黑名单代币
+      "blockedTokens": [],
+      // 信任的创建者
+      "trustedCreators": []
+    },
+    // 交易安全
+    "transactionSafety": {
+      // 最大燃料价格
+      "maxGasPrice": 0.00001,
+      // 最大优先费用
+      "maxPriorityFee": 0.000005,
+      // 最大总费用
+      "maxTotalFee": 0.00015,
+      // 最大交易大小
+      "maxTransactionSize": 1337,
+      // 需要确认
+      "requireConfirmation": true,
+      // 确认区块数
+      "confirmationBlocks": 1
+    }
+  },
+  // Jito MEV configuration for Solana
+  "jitoMev": {
+    // 是否启用
+    "enabled": false,
+    // 端点
+    "endpoint": "https://mev.jito.wtf",
+    // API 密钥
+    "apiKey": "",
+    // 小费百分比
+    "tipPercent": 80
+  },
+  // Notification settings for alerts and reporting
+  "notification": {
+    // Telegram 配置
+    "telegram": {
+      // 是否启用
+      "enabled": false,
+      // 机器人令牌
+      "botToken": "",
+      // 聊天 ID
+      "chatId": ""
+    },
+    // Discord 配置
+    "discord": {
+      // 是否启用
+      "enabled": false,
+      // Webhook URL
+      "webhookUrl": ""
+    },
+    // 邮件配置
+    "email": {
+      // 是否启用
+      "enabled": false,
+      // SMTP 服务器
+      "smtpServer": "smtp.gmail.com",
+      // SMTP 端口
+      "smtpPort": 587,
+      // 用户名
+      "username": "",
+      // 密码
+      "password": "",
+      // 接收者
+      "recipient": ""
+    },
+    // 事件配置
+    "events": {
+      // 交易开始通知
+      "tradeStart": true,
+      // 交易完成通知
+      "tradeComplete": true,
+      // 达到利润通知
+      "profitAchieved": true,
+      // 触发止损通知
+      "stopLossTriggered": true,
+      // 错误发生通知
+      "errorOccurred": true,
+      // 余额不足警告
+      "lowBalanceWarning": true
+    }
+  },
+  // Logging configuration
+  "logging": {
+    // 日志级别
+    "level": "info",
+    // 控制台输出
+    "console": true,
+    // 文件输出
+    "file": true,
+    // 日志目录
+    "directory": "logs",
+    // 最大文件大小（字节）
+    "maxFileSize": 10485760,
+    // 最大文件数
+    "maxFiles": 5,
+    // 包含时间戳
+    "includeTimestamp": true
+  },
+  // API server configuration
+  "server": {
+    // 主机
+    "host": "0.0.0.0",
+    // 端口
+    "port": 3000
+  },
+  // API endpoints and security
+  "api": {
+    // API 版本
+    "version": "v1",
+    // API 前缀
+    "prefix": "/api",
+    // 速率限制
+    "rateLimiting": {
+      // 是否启用
+      "enabled": true,
+      // 最大请求数
+      "maxRequests": 100,
+      // 时间窗口（毫秒）
+      "windowMs": 900000
+    },
+    // 认证配置
+    "authentication": {
+      // 是否启用
+      "enabled": true,
+      // JWT 密钥
+      "jwtSecret": "change-this-secret-in-production",
+      // 令牌过期时间（秒）
+      "tokenExpiration": 86400
+    }
+  },
+  // CORS settings for API access
+  "cors": {
+    // 允许的源
+    "origin": "*",
+    // 允许的方法
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    // 允许的头部
+    "allowedHeaders": ["Content-Type", "Authorization"]
+  },
+  // Service enablement configuration
+  "services": {
+    // 资金池监控
+    "poolMonitoring": true,
+    // 价格追踪
+    "priceTracking": true,
+    // 代币验证
+    "tokenValidation": true,
+    // 交易执行
+    "tradeExecution": true,
+    // 性能分析
+    "performanceAnalytics": false,
+    // 警报系统
+    "alertSystem": true
+  }
+} 

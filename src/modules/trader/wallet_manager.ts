@@ -48,10 +48,10 @@ import {
 import * as fs from 'fs';
 import path from 'path';
 import BN from 'bn.js';
-import appConfig from '../../core/config';
-import logger from '../../core/logger';
-import { TokenInfo } from '../../core/types';
-import rpcService from '../../services/rpc_service';
+import appConfig from '../../core/config.js';
+import logger from '../../core/logger.js';
+import { TokenInfo } from '../../core/types.js';
+import rpcService from '../../services/rpc_service.js';
 
 // 模块名称
 // 就像这个财务舱的标识牌
@@ -481,5 +481,5 @@ class WalletManager {
 }
 
 // 创建并导出单例
-export const walletManager = new WalletManager(appConfig.wallet.privateKey);
+export const walletManager = new WalletManager(appConfig!.wallet.privateKey);
 export default walletManager; 

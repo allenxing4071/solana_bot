@@ -7,17 +7,31 @@ import type { Request, Response } from 'express';
 import fs from 'fs-extra';
 import { PublicKey } from '@solana/web3.js';
 import path from 'node:path';
-import appConfig from '../../core/config';
-import logger from '../../core/logger';
-import tokenValidator from '../../modules/analyzer/token_validator';
-import riskManager from '../../modules/risk/risk_manager';
+import appConfig from '../../core/config.js';
+import logger from '../../core/logger.js';
+import tokenValidator from '../../modules/analyzer/token_validator.js';
+import riskManager from '../../modules/risk/risk_manager.js';
 
 // 模块名称
 const MODULE_NAME = 'TokenController';
 
 // 黑名单和白名单文件路径
-const blacklistPath = appConfig.security.tokenValidation.blacklistPath;
-const whitelistPath = appConfig.security.tokenValidation.whitelistPath;
+// const blacklistPath = appConfig!.security.tokenValidation.blacklistPath;
+// const whitelistPath = appConfig!.security.tokenValidation.whitelistPath;
+
+function getBlacklistPath(): string {
+  if (!appConfig || !appConfig.security || !appConfig.security.tokenValidation) {
+    throw new Error('appConfig未初始化或缺少security.tokenValidation配置');
+  }
+  return appConfig.security.tokenValidation.blacklistPath;
+}
+
+function getWhitelistPath(): string {
+  if (!appConfig || !appConfig.security || !appConfig.security.tokenValidation) {
+    throw new Error('appConfig未初始化或缺少security.tokenValidation配置');
+  }
+  return appConfig.security.tokenValidation.whitelistPath;
+}
 
 /**
  * 读取代币文件内容
@@ -84,6 +98,7 @@ interface WhitelistEntry {
  * @returns 黑名单数组
  */
 async function loadBlacklistFile(): Promise<BlacklistEntry[]> {
+  const blacklistPath = getBlacklistPath();
   try {
     if (!fs.existsSync(blacklistPath)) {
       await fs.ensureFile(blacklistPath);
@@ -106,6 +121,7 @@ async function loadBlacklistFile(): Promise<BlacklistEntry[]> {
  * @param blacklist 黑名单数组
  */
 async function saveBlacklistFile(blacklist: BlacklistEntry[]): Promise<boolean> {
+  const blacklistPath = getBlacklistPath();
   try {
     await fs.ensureFile(blacklistPath);
     await fs.writeJson(blacklistPath, blacklist, { spaces: 2 });
@@ -124,6 +140,7 @@ async function saveBlacklistFile(blacklist: BlacklistEntry[]): Promise<boolean> 
  * @returns 白名单数组
  */
 async function loadWhitelistFile(): Promise<WhitelistEntry[]> {
+  const whitelistPath = getWhitelistPath();
   try {
     if (!fs.existsSync(whitelistPath)) {
       await fs.ensureFile(whitelistPath);
@@ -146,6 +163,7 @@ async function loadWhitelistFile(): Promise<WhitelistEntry[]> {
  * @param whitelist 白名单数组
  */
 async function saveWhitelistFile(whitelist: WhitelistEntry[]): Promise<boolean> {
+  const whitelistPath = getWhitelistPath();
   try {
     await fs.ensureFile(whitelistPath);
     await fs.writeJson(whitelistPath, whitelist, { spaces: 2 });
@@ -650,8 +668,8 @@ export const getAllTokens = async (req: Request, res: Response): Promise<void> =
     const type = (req.query.type as string) || 'all';
     
     // 获取白名单和黑名单
-    const whitelistRaw = await readTokenFile(whitelistPath);
-    const blacklistRaw = await readTokenFile(blacklistPath);
+    const whitelistRaw = await readTokenFile(getWhitelistPath());
+    const blacklistRaw = await readTokenFile(getBlacklistPath());
     
     // 转换为TokenInfo数组
     const whitelist = parseTokenList(whitelistRaw);

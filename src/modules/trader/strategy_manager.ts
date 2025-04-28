@@ -34,16 +34,16 @@
  */
 
 import type { PublicKey } from '@solana/web3.js';
-import logger from '../../core/logger';
-import { StrategyType } from '../../core/types';
+import logger from '../../core/logger.js';
+import { StrategyType } from '../../core/types.js';
 import type { 
   Position, 
   StrategyCondition, 
   TradingOpportunity, 
   TradeResult, 
   TokenInfo
-} from '../../core/types';
-import appConfig from '../../core/config';
+} from '../../core/types.js';
+import appConfig from '../../core/config.js';
 
 // 模块名称
 // 就像渔船上这个部门的舱位编号
@@ -180,7 +180,7 @@ export class StrategyManager implements PositionManager {
    * void = 无需汇报：这项工作不需要向外返回结果
    */
   private loadStrategies(): void {
-    this.sellConditions = appConfig.trading.sellStrategy.conditions;
+    this.sellConditions = appConfig!.trading.sellStrategy.conditions;
     
     // 确保至少有一个默认的止盈策略
     if (!this.sellConditions.length) {
@@ -224,7 +224,7 @@ export class StrategyManager implements PositionManager {
   shouldBuy(opportunity: TradingOpportunity): boolean {
     // 如果禁用了买入策略
     // 就像船长下令今天不捕捞
-    if (!appConfig.trading.buyStrategy.enabled) {
+    if (!appConfig!.trading.buyStrategy.enabled) {
       return false;
     }
     
@@ -253,7 +253,7 @@ export class StrategyManager implements PositionManager {
     
     // 检查信心分数
     // 就像判断鱼探信号的清晰度和可靠性
-    if (opportunity.confidence < appConfig.trading.buyStrategy.minConfidence) {
+    if (opportunity.confidence < appConfig!.trading.buyStrategy.minConfidence) {
       logger.debug('跳过买入: 信心分数过低', MODULE_NAME, {
         token: opportunity.targetToken.symbol || mintAddress,
         confidence: opportunity.confidence

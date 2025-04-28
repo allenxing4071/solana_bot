@@ -11,7 +11,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import logger from '../../core/logger';
+import logger from '../../core/logger.js';
 
 // 模块名称常量
 const MODULE_NAME = 'TradeHistoryManager';

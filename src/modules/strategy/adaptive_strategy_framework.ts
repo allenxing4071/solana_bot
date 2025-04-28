@@ -21,15 +21,15 @@
  */
 
 import { PublicKey } from '@solana/web3.js';
-import logger from '../../core/logger';
-import { StrategyType } from '../../core/types';
+import logger from '../../core/logger.js';
+import { StrategyType } from '../../core/types.js';
 import type { 
   StrategyCondition, 
   TokenInfo, 
   TradingOpportunity, 
   Position 
-} from '../../core/types';
-import appConfig from '../../core/config';
+} from '../../core/types.js';
+import appConfig from '../../core/config.js';
 
 // 模块名称
 const MODULE_NAME = 'AdaptiveStrategyFramework';

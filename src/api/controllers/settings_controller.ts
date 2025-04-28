@@ -6,7 +6,7 @@
 import { Request, Response } from 'express';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import logger from '../../core/logger';
+import logger from '../../core/logger.js';
 
 // 模块名称
 const MODULE_NAME = 'SettingsController';

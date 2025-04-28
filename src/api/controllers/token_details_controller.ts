@@ -4,89 +4,16 @@
  */
 
 import { Request, Response } from 'express';
-import logger from '../../core/logger';
+import { PublicKey } from '@solana/web3.js';
+import logger from '../../core/logger.js';
+import { getTokenMetadata } from '../../services/token_service.js';
+import { getTokenPrice, getTokenPriceHistory } from '../../services/price_service.js';
+import { getTokenLiquidity } from '../../services/liquidity_service.js';
+import { getTokenTransactionHistory } from '../../services/transaction_service.js';
+import { TokenMetadata } from '../../core/types.js';
 
 // 模块名称
 const MODULE_NAME = 'TokenDetailsController';
-
-// 模拟代币数据
-const mockTokens = [
-  {
-    address: 'SLRf5e2a',
-    name: 'Solar Flare',
-    symbol: 'SLR',
-    logo: 'https://example.com/tokens/slr.png',
-    decimals: 9,
-    totalSupply: '1000000000',
-    marketCap: '15420000',
-    price: '0.01542',
-    volume24h: '342500',
-    liquidity: '15420',
-    holders: 2340,
-    createdAt: Date.now() - 10 * 86400000, // 10天前
-    riskScore: 25, // 低风险
-    transactions: [
-      { type: 'swap', time: Date.now() - 3600000, amount: '1250', price: '0.01542', value: '19.28' },
-      { type: 'swap', time: Date.now() - 7200000, amount: '500', price: '0.01538', value: '7.69' },
-      { type: 'swap', time: Date.now() - 10800000, amount: '2000', price: '0.01535', value: '30.7' }
-    ],
-    priceHistory: Array(24).fill(0).map((_, i) => ({
-      time: Date.now() - (23 - i) * 3600000,
-      price: 0.015 + (Math.random() * 0.001),
-      volume: Math.random() * 10000 + 5000
-    }))
-  },
-  {
-    address: 'MRkt7c9d',
-    name: 'Moon Rocket',
-    symbol: 'MRK',
-    logo: 'https://example.com/tokens/mrk.png',
-    decimals: 6,
-    totalSupply: '500000000',
-    marketCap: '8750000',
-    price: '0.0175',
-    volume24h: '195000',
-    liquidity: '8750',
-    holders: 1870,
-    createdAt: Date.now() - 15 * 86400000, // 15天前
-    riskScore: 45, // 中风险
-    transactions: [
-      { type: 'swap', time: Date.now() - 1800000, amount: '3000', price: '0.0175', value: '52.5' },
-      { type: 'swap', time: Date.now() - 5400000, amount: '1200', price: '0.0174', value: '20.88' },
-      { type: 'swap', time: Date.now() - 9000000, amount: '800', price: '0.0173', value: '13.84' }
-    ],
-    priceHistory: Array(24).fill(0).map((_, i) => ({
-      time: Date.now() - (23 - i) * 3600000,
-      price: 0.017 + (Math.random() * 0.001),
-      volume: Math.random() * 8000 + 3000
-    }))
-  },
-  {
-    address: 'CSmc4a3b',
-    name: 'Cosmic Coin',
-    symbol: 'CSM',
-    logo: 'https://example.com/tokens/csm.png',
-    decimals: 9,
-    totalSupply: '10000000000',
-    marketCap: '5200000',
-    price: '0.00052',
-    volume24h: '85000',
-    liquidity: '5200',
-    holders: 980,
-    createdAt: Date.now() - 5 * 86400000, // 5天前
-    riskScore: 75, // 高风险
-    transactions: [
-      { type: 'swap', time: Date.now() - 2700000, amount: '500000', price: '0.00052', value: '260' },
-      { type: 'swap', time: Date.now() - 6300000, amount: '200000', price: '0.00051', value: '102' },
-      { type: 'swap', time: Date.now() - 9900000, amount: '350000', price: '0.0005', value: '175' }
-    ],
-    priceHistory: Array(24).fill(0).map((_, i) => ({
-      time: Date.now() - (23 - i) * 3600000,
-      price: 0.0005 + (Math.random() * 0.00005),
-      volume: Math.random() * 12000 + 2000
-    }))
-  }
-];
 
 /**
  * 获取代币详细信息
@@ -96,35 +23,61 @@ export const getTokenDetails = async (req: Request, res: Response): Promise<void
     const tokenAddress = req.query.address as string;
     
     if (!tokenAddress) {
-      // 如果没有提供地址参数，返回所有代币的统计和详细信息
-      // 构建符合dashboard期望的数据格式
+      // 获取所有代币的统计信息
+      const tokens = await getTokenMetadata() as TokenMetadata[];
+      
+      // 获取今日新增代币
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const newTokensToday = mockTokens.filter(t => t.createdAt >= today.getTime()).length;
+      const newTokensToday = tokens.filter(t => 
+        new Date(t.createdAt).getTime() >= today.getTime()
+      ).length;
+      
+      // 获取白名单和黑名单数量
+      const whitelistCount = tokens.filter(t => t.isWhitelisted).length;
+      const blacklistCount = tokens.filter(t => t.isBlacklisted).length;
+      
+      // 获取每个代币的价格
+      const tokensWithPrice = await Promise.all(
+        tokens.map(async token => {
+          const price = await getTokenPrice(token.address);
+          return {
+            symbol: token.symbol,
+            address: token.address,
+            price,
+            riskScore: token.riskScore || 0,
+            status: (token.riskScore || 0) < 50 ? '正常' : '风险'
+          };
+        })
+      );
       
       res.json({
         success: true,
         data: {
-          total: mockTokens.length,
-          whitelistCount: 1,
-          blacklistCount: 1,
-          newTokensToday: newTokensToday,
-          tokens: mockTokens.map(token => ({
-            symbol: token.symbol,
-            address: token.address,
-            price: token.price,
-            riskScore: token.riskScore,
-            status: token.riskScore < 50 ? '正常' : '风险'
-          }))
+          total: tokens.length,
+          whitelistCount,
+          blacklistCount,
+          newTokensToday,
+          tokens: tokensWithPrice
         }
       });
       return;
     }
     
-    // 查找代币
-    const token = mockTokens.find(t => t.address.includes(tokenAddress));
+    try {
+      // 验证代币地址
+      new PublicKey(tokenAddress);
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        error: '无效的代币地址'
+      });
+      return;
+    }
     
-    if (!token) {
+    // 获取代币元数据
+    const metadata = await getTokenMetadata(tokenAddress) as TokenMetadata;
+    if (!metadata) {
       res.status(404).json({
         success: false,
         error: '找不到该代币'
@@ -132,10 +85,28 @@ export const getTokenDetails = async (req: Request, res: Response): Promise<void
       return;
     }
     
+    // 获取代币价格
+    const price = await getTokenPrice(tokenAddress);
+    
+    // 获取代币流动性
+    const liquidity = await getTokenLiquidity(tokenAddress);
+    
+    // 获取代币交易历史
+    const transactions = await getTokenTransactionHistory(tokenAddress);
+    
+    // 获取代币价格历史
+    const priceHistory = await getTokenPriceHistory(tokenAddress);
+    
     // 返回代币详情
     res.json({
       success: true,
-      data: token
+      data: {
+        ...metadata,
+        price,
+        liquidity,
+        transactions,
+        priceHistory
+      }
     });
   } catch (error) {
     logger.error('获取代币详情失败', MODULE_NAME, { 
@@ -158,26 +129,30 @@ export const getTokensList = async (req: Request, res: Response): Promise<void> 
     const limit = Number(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     
-    // 计算分页
-    const total = mockTokens.length;
-    const tokens = mockTokens.slice(offset, offset + limit);
+    // 获取所有代币
+    const tokens = await getTokenMetadata() as TokenMetadata[];
     
-    // 简化返回的代币信息
-    const simplifiedTokens = tokens.map(token => ({
-      address: token.address,
-      name: token.name,
-      symbol: token.symbol,
-      price: token.price,
-      marketCap: token.marketCap,
-      liquidity: token.liquidity,
-      riskScore: token.riskScore,
-      createdAt: token.createdAt
-    }));
+    // 计算分页
+    const total = tokens.length;
+    const paginatedTokens = tokens.slice(offset, offset + limit);
+    
+    // 获取每个代币的额外信息
+    const tokensWithDetails = await Promise.all(
+      paginatedTokens.map(async token => {
+        const price = await getTokenPrice(token.address);
+        const liquidity = await getTokenLiquidity(token.address);
+        return {
+          ...token,
+          price,
+          liquidity
+        };
+      })
+    );
     
     res.json({
       success: true,
       data: {
-        tokens: simplifiedTokens,
+        tokens: tokensWithDetails,
         pagination: {
           total,
           page,

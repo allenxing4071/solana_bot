@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import * as poolController from '../controllers/pool_controller';
+import * as poolController from '../controllers/pool_controller.js';
 
 const router = express.Router();
 

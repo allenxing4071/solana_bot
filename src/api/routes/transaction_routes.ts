@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import * as transactionController from '../controllers/transaction_controller';
+import * as transactionController from '../controllers/transaction_controller.js';
 
 const router = express.Router();
 

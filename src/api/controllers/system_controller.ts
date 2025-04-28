@@ -6,9 +6,9 @@
 import { Request, Response } from 'express';
 import * as os from 'node:os';
 import * as v8 from 'node:v8';
-import logger from '../../core/logger';
-import { poolMonitor } from '../../modules/listener/pool_monitor';
-import appConfig from '../../core/config';
+import logger from '../../core/logger.js';
+import { poolMonitor } from '../../modules/listener/pool_monitor.js';
+import appConfig from '../../core/config.js';
 
 // 模块名称
 const MODULE_NAME = 'SystemController';

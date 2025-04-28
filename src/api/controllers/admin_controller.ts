@@ -8,8 +8,8 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import * as v8 from 'node:v8';
-import logger from '../../core/logger';
-import { poolMonitor } from '../../modules/listener/pool_monitor';
+import logger from '../../core/logger.js';
+import { poolMonitor } from '../../modules/listener/pool_monitor.js';
 
 // 模块名称
 const MODULE_NAME = 'AdminController';

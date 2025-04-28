@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
-import logger from '../../core/logger';
-import { TradeHistoryManager } from '../../modules/trader/trade_history_manager';
+import logger from '../../core/logger.js';
+import { TradeHistoryManager } from '../../modules/trader/trade_history_manager.js';
 
 // 模块名称常量
 const MODULE_NAME = 'TradeController';

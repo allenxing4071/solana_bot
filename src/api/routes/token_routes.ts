@@ -4,8 +4,8 @@
  */
 
 import express from 'express';
-import * as tokenController from '../controllers/token_controller';
-import * as tokenDetailsController from '../controllers/token_details_controller';
+import * as tokenController from '../controllers/token_controller.js';
+import * as tokenDetailsController from '../controllers/token_details_controller.js';
 
 const router = express.Router();
 
